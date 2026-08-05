@@ -455,6 +455,28 @@
   </div>
 </div>
 
+<!-- 形态选择界面 -->
+<div class="overlay hidden" id="formChoiceOverlay" style="background:rgba(0,0,0,0.7);">
+  <div class="overlay-content">
+    <h2 style="font-size:24px;animation:pulse 0.8s infinite;">⚡ 选择进化形态 ⚡</h2>
+    <div style="display:flex;gap:20px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
+      <div id="choiceMythic" style="background:linear-gradient(135deg,#2a1a00,#4a3000);border:3px solid #ffd700;border-radius:12px;padding:20px;cursor:pointer;width:150px;text-align:center;">
+        <div style="font-size:40px;">🌟</div>
+        <div style="color:#ffd700;font-weight:bold;font-size:18px;">神话形态</div>
+        <div style="color:#ccc;font-size:11px;">360°追踪激光</div>
+        <div style="color:#ccc;font-size:11px;">高速移动</div>
+      </div>
+      <div id="choiceGodSlayer" style="background:linear-gradient(135deg,#1a0000,#4a0000);border:3px solid #ff4500;border-radius:12px;padding:20px;cursor:pointer;width:150px;text-align:center;">
+        <div style="font-size:40px;">🔥</div>
+        <div style="color:#ff4500;font-weight:bold;font-size:18px;">杀神形态</div>
+        <div style="color:#ccc;font-size:11px;">巨型火球</div>
+        <div style="color:#ccc;font-size:11px;">范围爆炸</div>
+      </div>
+    </div>
+    <p style="color:#666;font-size:11px;margin-top:12px;">点击选择，5秒后自动选择神话</p>
+  </div>
+</div>
+
 <!-- 暂停界面（保留兼容） -->
 <div class="overlay hidden" id="pauseOverlay">
   <div class="overlay-content">
@@ -547,6 +569,8 @@ let lives = 10;
 let kills = 0;
 let killStreak = 0;           // 连续击杀数
 let mythicMode = false;       // 神话模式
+let godSlayerMode = false;    // 杀神形态
+let showFormChoice = false;   // 显示形态选择
 // 冲刺系统
 let dashState = null;         // { dir, timer, maxTimer }
 let stamina = 100;            // 体力值
@@ -1353,7 +1377,20 @@ class Tank {
     if (this.shootCooldown > 0) return;
     this.shootCooldown = this.isPlayer && mythicMode ? 8 : this.shootDelay;
 
-    if (this.isPlayer && mythicMode) {
+    if (this.isPlayer && godSlayerMode) {
+      // 杀神形态：发射巨型火球
+      const fireDir = this.turretDir;
+      const bx = this.x + fireDir.x * 0.8;
+      const by = this.y + fireDir.y * 0.8;
+      const fb = new Bullet(bx, by, fireDir, true);
+      fb.isMissile = true;
+      fb.speed = 0.12;
+      fb.size = Math.max(8, CELL * 0.4);
+      fb.hp = 999;
+      fb._fireball = true;
+      bullets.push(fb);
+      this.shootCooldown = 20;
+    } else if (this.isPlayer && mythicMode) {
       // 追踪攻击次数
       if (!this._mythicAttacks) this._mythicAttacks = 0;
       this._mythicAttacks++;
@@ -1499,7 +1536,9 @@ class Tank {
       if (this.isPlayer) {
         killStreak = 0;
         mythicMode = false;
+        godSlayerMode = false;
         player._mythicAttacks = 0;
+        player.color = '#2ecc71';
       }
     }
   }
@@ -1539,10 +1578,15 @@ class Tank {
           ));
         }
       }
-      // 连续击杀3个进入神话模式
-      if (killStreak >= 3 && !mythicMode) {
-        mythicMode = true;
-        player.invincible = 90;
+      // 连续击杀3个弹出形态选择
+      if (killStreak >= 3 && !mythicMode && !godSlayerMode && !showFormChoice) {
+        showFormChoice = true;
+        gameState = STATE.PAUSED;
+        document.getElementById('formChoiceOverlay').classList.remove('hidden');
+        // 5秒自动选神话
+        setTimeout(() => {
+          if (showFormChoice) activateMythic();
+        }, 5000);
       }
     }
 
@@ -1750,8 +1794,16 @@ class Bullet {
     if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
       const tile = mapData[cy * COLS + cx];
       if (tile === 1) {
-        if (this.isMissile) {
-          this.missileExplode(cx, cy); // 导弹范围爆炸
+        if (this._fireball) {
+          this.missileExplode(cx, cy);
+          // 火球额外大范围摧毁
+          for (let dy = -3; dy <= 3; dy++)
+            for (let dx = -3; dx <= 3; dx++) {
+              const tx = cx+dx, ty = cy+dy;
+              if (tx>=0&&tx<COLS&&ty>=0&&ty<ROWS&&mapData[ty*COLS+tx]===1) mapData[ty*COLS+tx]=0;
+            }
+        } else if (this.isMissile) {
+          this.missileExplode(cx, cy);
         } else {
           mapData[cy * COLS + cx] = 0;
           for (let i = 0; i < 5; i++) {
@@ -1866,6 +1918,32 @@ class Bullet {
 
   draw(ctx) {
     if (!this.alive) return;
+
+    // 杀神火球特效
+    if (this._fireball) {
+      const fx = this.x * CELL, fy = this.y * CELL;
+      // 外层火焰光环
+      const fPulse = this.size * 2.5 + Math.sin(Date.now() / 40) * this.size;
+      const fGrad = ctx.createRadialGradient(fx, fy, this.size * 0.3, fx, fy, fPulse);
+      fGrad.addColorStop(0, 'rgba(255,200,0,0.9)');
+      fGrad.addColorStop(0.3, 'rgba(255,100,0,0.7)');
+      fGrad.addColorStop(0.6, 'rgba(255,30,0,0.3)');
+      fGrad.addColorStop(1, 'rgba(255,0,0,0)');
+      ctx.fillStyle = fGrad;
+      ctx.beginPath();
+      ctx.arc(fx, fy, fPulse, 0, Math.PI*2);
+      ctx.fill();
+      // 内核
+      const innerGrad = ctx.createRadialGradient(fx, fy, 0, fx, fy, this.size * 1.2);
+      innerGrad.addColorStop(0, '#fff');
+      innerGrad.addColorStop(0.4, '#ffd700');
+      innerGrad.addColorStop(1, '#ff4500');
+      ctx.fillStyle = innerGrad;
+      ctx.beginPath();
+      ctx.arc(fx, fy, this.size * 1.2, 0, Math.PI*2);
+      ctx.fill();
+      return;
+    }
 
     ctx.fillStyle = this.isMissile ? (this.isPlayer ? '#00aaff' : '#ff4500') : (this.homing ? '#ffd700' : (this.isPlayer ? '#fff' : '#ff6b6b'));
     if (this.isMissile) {
@@ -2190,8 +2268,10 @@ function loadLevel(lvl) {
   stamina = MAX_STAMINA;
   dashState = null;
   mythicMode = false;
+  godSlayerMode = false;
+  showFormChoice = false;
   killStreak = 0;
-  healthSpawnTimer = 180; // 3秒后开始
+  healthSpawnTimer = 180;
   updateUI();
 }
 
@@ -3027,6 +3107,28 @@ window.addEventListener('keydown', function menuHandler(e) {
     }
   }
 });
+
+// 形态选择
+function activateMythic() {
+  mythicMode = true;
+  godSlayerMode = false;
+  showFormChoice = false;
+  player.invincible = 90;
+  player._mythicAttacks = 0;
+  document.getElementById('formChoiceOverlay').classList.add('hidden');
+  gameState = STATE.PLAYING;
+}
+function activateGodSlayer() {
+  godSlayerMode = true;
+  mythicMode = false;
+  showFormChoice = false;
+  player.invincible = 90;
+  player.color = '#ff4500';
+  document.getElementById('formChoiceOverlay').classList.add('hidden');
+  gameState = STATE.PLAYING;
+}
+document.getElementById('choiceMythic').addEventListener('click', activateMythic);
+document.getElementById('choiceGodSlayer').addEventListener('click', activateGodSlayer);
 
 document.getElementById('menuResumeBtn').addEventListener('click', closeMenu);
 document.getElementById('menuRestartBtn').addEventListener('click', () => {
