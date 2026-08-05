@@ -127,101 +127,66 @@
     font-weight: bold;
   }
 
-  /* ====== 触屏控制 ====== */
+  /* ====== 双摇杆触屏控制 ====== */
   .touch-controls {
     display: none;
     width: 100%;
     max-width: 640px;
     justify-content: space-between;
     align-items: center;
-    padding: 4px 8px;
+    padding: 4px 0;
   }
 
-  .dpad {
-    display: grid;
-    grid-template-columns: 60px 60px 60px;
-    grid-template-rows: 60px 60px 60px;
-    gap: 2px;
-  }
-
-  .dpad-btn {
-    width: 60px;
-    height: 60px;
-    background: rgba(233, 69, 96, 0.25);
-    border: 2px solid rgba(233, 69, 96, 0.5);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    color: rgba(255,255,255,0.7);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: background 0.1s;
-  }
-
-  .dpad-btn:active,
-  .dpad-btn.active {
-    background: rgba(233, 69, 96, 0.7);
-    border-color: #e94560;
-    color: #fff;
-  }
-
-  .dpad-empty {
-    width: 60px;
-    height: 60px;
-  }
-
-  .dpad-up { grid-column: 2; grid-row: 1; }
-  .dpad-left { grid-column: 1; grid-row: 2; }
-  .dpad-center { grid-column: 2; grid-row: 2; }
-  .dpad-right { grid-column: 3; grid-row: 2; }
-  .dpad-down { grid-column: 2; grid-row: 3; }
-
-  .fire-area {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: center;
-  }
-
-  .btn-fire {
-    width: 90px;
-    height: 90px;
+  .joystick-area {
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(233,69,96,0.5), rgba(233,69,96,0.2));
-    border: 3px solid #e94560;
-    color: #fff;
-    font-size: 16px;
-    font-weight: bold;
-    font-family: inherit;
-    letter-spacing: 2px;
-    cursor: pointer;
+    background: rgba(255,255,255,0.06);
+    border: 3px solid rgba(255,255,255,0.2);
+    position: relative;
+    touch-action: none;
     -webkit-tap-highlight-color: transparent;
-    transition: all 0.1s;
-    text-shadow: 0 0 8px rgba(233,69,96,0.8);
   }
 
-  .btn-fire:active,
-  .btn-fire.active {
-    background: radial-gradient(circle, #e94560, #c0392b);
-    transform: scale(0.92);
-    box-shadow: 0 0 25px rgba(233,69,96,0.8);
+  .joystick-knob {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(233,69,96,0.6);
+    border: 2px solid #e94560;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: none;
+  }
+
+  .joystick-label {
+    text-align: center;
+    color: #888;
+    font-size: 10px;
+    margin-top: 4px;
+    letter-spacing: 1px;
   }
 
   .btn-pause-mobile {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: rgba(255,255,255,0.1);
     border: 2px solid rgba(255,255,255,0.3);
     color: #aaa;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     -webkit-tap-highlight-color: transparent;
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .overlay {
@@ -364,18 +329,22 @@
     <div class="key-hint"><span>P</span> 暂停</div>
   </div>
 
-  <!-- 手机触屏控制 -->
+  <!-- 手机双摇杆控制 -->
   <div class="touch-controls" id="touchControls">
-    <div class="dpad" id="dpad">
-      <button class="dpad-btn dpad-up" id="btnUp">▲</button>
-      <button class="dpad-btn dpad-left" id="btnLeft">◄</button>
-      <button class="dpad-btn dpad-center" id="btnCenter" style="font-size:12px;color:#666;">P</button>
-      <button class="dpad-btn dpad-right" id="btnRight">►</button>
-      <button class="dpad-btn dpad-down" id="btnDown">▼</button>
+    <div style="display:flex;flex-direction:column;align-items:center;">
+      <div class="joystick-area" id="moveJoystick">
+        <div class="joystick-knob" id="moveKnob"></div>
+      </div>
+      <div class="joystick-label">移动</div>
     </div>
-    <div class="fire-area">
-      <button class="btn-fire" id="btnFire">开火</button>
-      <button class="btn-pause-mobile" id="btnPause">⏸️</button>
+    <div style="position:relative;">
+      <button class="btn-pause-mobile" id="btnPause">⏸</button>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;">
+      <div class="joystick-area" id="aimJoystick">
+        <div class="joystick-knob" id="aimKnob"></div>
+      </div>
+      <div class="joystick-label">瞄准·射击</div>
     </div>
   </div>
 </div>
@@ -553,59 +522,78 @@ window.addEventListener('keyup', e => {
   }
 });
 
-// ====== 触屏按钮事件 ======
-function setupTouchButton(elId, keyName) {
-  const el = document.getElementById(elId);
-  if (!el) return;
+// ====== 双摇杆触屏控制 ======
+let moveJoy = { active: false, dx: 0, dy: 0 };
+let aimJoy = { active: false, dx: 0, dy: 0 };
 
-  el.addEventListener('pointerdown', (e) => {
+function setupJoystick(areaId, knobId, stateObj, isAim) {
+  const area = document.getElementById(areaId);
+  const knob = document.getElementById(knobId);
+  if (!area || !knob) return;
+
+  const getPos = (e) => {
+    const rect = area.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const maxR = rect.width / 2 - 22;
+    return { cx, cy, maxR, clientX: e.touches ? e.touches[0].clientX : e.clientX, clientY: e.touches ? e.touches[0].clientY : e.clientY };
+  };
+
+  const onStart = (e) => {
     e.preventDefault();
-    touchKeys[keyName] = true;
-    el.classList.add('active');
-  });
+    const { cx, cy, maxR, clientX, clientY } = getPos(e);
+    stateObj.active = true;
+    updateKnob(clientX, clientY);
+  };
 
-  el.addEventListener('pointerup', (e) => {
+  const onMove = (e) => {
+    if (!stateObj.active) return;
     e.preventDefault();
-    touchKeys[keyName] = false;
-    el.classList.remove('active');
-  });
+    const { clientX, clientY } = getPos(e);
+    updateKnob(clientX, clientY);
+  };
 
-  el.addEventListener('pointerleave', (e) => {
-    touchKeys[keyName] = false;
-    el.classList.remove('active');
-  });
+  const onEnd = (e) => {
+    stateObj.active = false;
+    stateObj.dx = 0;
+    stateObj.dy = 0;
+    knob.style.transform = 'translate(-50%, -50%)';
+  };
 
-  el.addEventListener('pointercancel', (e) => {
-    touchKeys[keyName] = false;
-    el.classList.remove('active');
-  });
+  const updateKnob = (clientX, clientY) => {
+    const rect = area.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const maxR = rect.width / 2 - 22;
+    let dx = clientX - cx;
+    let dy = clientY - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > maxR) { dx = dx / dist * maxR; dy = dy / dist * maxR; }
+    stateObj.dx = dx / maxR;
+    stateObj.dy = dy / maxR;
+    knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  };
 
-  // 防止双击缩放
-  el.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    touchKeys[keyName] = true;
-    el.classList.add('active');
-  });
-
-  el.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    touchKeys[keyName] = false;
-    el.classList.remove('active');
-  });
+  area.addEventListener('touchstart', onStart, { passive: false });
+  area.addEventListener('touchmove', onMove, { passive: false });
+  area.addEventListener('touchend', onEnd);
+  area.addEventListener('touchcancel', onEnd);
+  area.addEventListener('mousedown', onStart);
+  window.addEventListener('mousemove', (e) => { if (stateObj.active) { updateKnob(e.clientX, e.clientY); } });
+  window.addEventListener('mouseup', onEnd);
 }
 
-setupTouchButton('btnUp', 'moveUp');
-setupTouchButton('btnDown', 'moveDown');
-setupTouchButton('btnLeft', 'moveLeft');
-setupTouchButton('btnRight', 'moveRight');
-setupTouchButton('btnFire', 'j');
+setupJoystick('moveJoystick', 'moveKnob', moveJoy, false);
+setupJoystick('aimJoystick', 'aimKnob', aimJoy, true);
 
-// D-pad 中心按钮和暂停按钮 = 暂停
+// 暂停按钮
 document.getElementById('btnPause')?.addEventListener('click', () => {
   if (gameState === STATE.PLAYING) pauseGame();
   else if (gameState === STATE.PAUSED) resumeGame();
 });
-document.getElementById('btnCenter')?.addEventListener('click', () => {
+document.getElementById('btnPause')?.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
   if (gameState === STATE.PLAYING) pauseGame();
   else if (gameState === STATE.PAUSED) resumeGame();
 });
@@ -1024,12 +1012,17 @@ class Tank {
       return;
     }
 
-    // ===== 移动输入：WASD（桌面）或触屏方向键（手机） =====
+    // ===== 移动输入：WASD（桌面）或左摇杆（手机） =====
     let moveDx = 0, moveDy = 0;
-    if (isKeyDown('KeyW') || isKeyDown('moveUp'))    moveDy = -1;
-    if (isKeyDown('KeyS') || isKeyDown('moveDown'))  moveDy = 1;
-    if (isKeyDown('KeyA') || isKeyDown('moveLeft'))  moveDx = -1;
-    if (isKeyDown('KeyD') || isKeyDown('moveRight')) moveDx = 1;
+    if (moveJoy.active) {
+      moveDx = moveJoy.dx;
+      moveDy = moveJoy.dy;
+    } else {
+      if (isKeyDown('KeyW')) moveDy = -1;
+      if (isKeyDown('KeyS')) moveDy = 1;
+      if (isKeyDown('KeyA')) moveDx = -1;
+      if (isKeyDown('KeyD')) moveDx = 1;
+    }
 
     if (moveDx !== 0 || moveDy !== 0) {
       // 更新车身朝向（优先水平方向）
@@ -1050,21 +1043,26 @@ class Tank {
         if (this.canMoveTo(this.x, ny, this.dir)) this.y = ny;
       }
 
-      // 触屏模式下，炮塔跟随移动方向
-      if (isTouchDevice) {
+      // 无摇杆输入时炮塔跟随移动方向
+      if (!aimJoy.active && !mouseOnCanvas) {
         this.turretDir = this.dir;
       }
     }
 
-    // 炮塔跟随鼠标（桌面）或移动方向（触屏）
-    if (mouseOnCanvas && !isTouchDevice) {
+    // 炮塔跟随鼠标（桌面）或右摇杆（手机）或移动方向
+    if (aimJoy.active) {
+      const angle = Math.atan2(aimJoy.dy, aimJoy.dx);
+      this.turretDir = { x: Math.cos(angle), y: Math.sin(angle), angle };
+      // 右摇杆拖动时自动射击
+      this.shoot();
+    } else if (mouseOnCanvas && !isTouchDevice) {
       const angle = Math.atan2(mouseY - this.y, mouseX - this.x);
       this.turretDir = { x: Math.cos(angle), y: Math.sin(angle), angle };
     } else if (moveDx !== 0 || moveDy !== 0) {
       this.turretDir = this.dir;
     }
 
-    // ===== 射击（J键或保留键盘备用） =====
+    // ===== 射击（J键，手机右摇杆自动射击） =====
     if (isKeyDown('j') || isKeyDown('KeyJ')) {
       this.shoot();
     }
