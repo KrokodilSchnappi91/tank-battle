@@ -35,17 +35,7 @@
   }
 
   .game-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    padding: 3px 12px;
-    background: #16213e;
-    border: 2px solid #e94560;
-    border-radius: 6px;
-    flex-wrap: wrap;
-    gap: 4px;
-    flex-shrink: 0;
+    display: none;
   }
 
   .game-title {
@@ -460,10 +450,9 @@ let CELL = BASE_CELL;
 let scaleFactor = 1;
 
 function resizeCanvas() {
-  const headerH = document.querySelector('.game-header')?.offsetHeight || 40;
   const footerH = document.querySelector('.game-controls.desktop-only')?.offsetHeight || 0;
   const maxWidth = window.innerWidth;
-  const maxHeight = window.innerHeight - headerH - footerH - 12;
+  const maxHeight = window.innerHeight - footerH;
 
   const gameW = COLS * BASE_CELL;
   const gameH = ROWS * BASE_CELL;
@@ -2814,12 +2803,39 @@ function render() {
     }
   }
 
-  // 体力条
-  const stBarW = 80;
-  const stBarH = 5;
-  const stBarX = 10;
-  const stBarY = canvas.height - 18;
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  // 血量条（左上角）
+  const hpBarX = 8, hpBarY = 8;
+  const hpBarW = 120, hpBarH = 10;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(hpBarX - 1, hpBarY - 1, hpBarW + 2, hpBarH + 2);
+  ctx.fillStyle = '#400';
+  ctx.fillRect(hpBarX, hpBarY, hpBarW, hpBarH);
+  const hpRatio = Math.max(0, lives) / 10;
+  const hpColor = hpRatio > 0.5 ? '#ff4444' : hpRatio > 0.25 ? '#ff8800' : '#ff0000';
+  ctx.fillStyle = hpColor;
+  ctx.fillRect(hpBarX, hpBarY, hpBarW * hpRatio, hpBarH);
+  // 血量文字和爱心
+  ctx.fillStyle = '#fff';
+  const hpfs = Math.max(10, CELL * 0.42);
+  ctx.font = `bold ${hpfs}px Arial`;
+  ctx.textAlign = 'left';
+  ctx.fillText(`❤️ ${Math.max(0, lives)}`, hpBarX, hpBarY - 4);
+
+  // 得分和击杀（血条下方）
+  ctx.fillStyle = '#ffd700';
+  const sfs = Math.max(9, CELL * 0.38);
+  ctx.font = `${sfs}px Arial`;
+  ctx.fillText(`⭐${score}`, hpBarX, hpBarY + hpBarH + 12);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(`💀${kills}`, hpBarX + 60, hpBarY + hpBarH + 12);
+  // 关卡
+  ctx.fillStyle = '#4ecdc4';
+  ctx.fillText(`🏆${level}`, hpBarX, hpBarY + hpBarH + 24);
+
+  // 体力条（左上血条下方）
+  const stBarW = 80, stBarH = 4;
+  const stBarX = 8, stBarY = hpBarY + hpBarH + 36;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fillRect(stBarX - 1, stBarY - 1, stBarW + 2, stBarH + 2);
   ctx.fillStyle = '#333';
   ctx.fillRect(stBarX, stBarY, stBarW, stBarH);
@@ -2827,10 +2843,9 @@ function render() {
   ctx.fillStyle = stRatio > 0.5 ? '#4ecdc4' : stRatio > 0.25 ? '#ff8c00' : '#ff0000';
   ctx.fillRect(stBarX, stBarY, stBarW * stRatio, stBarH);
   ctx.fillStyle = '#aaa';
-  const stfs = Math.max(9, CELL * 0.38);
+  const stfs = Math.max(8, CELL * 0.32);
   ctx.font = `${stfs}px Arial`;
-  ctx.textAlign = 'left';
-  ctx.fillText(`体力 ${Math.ceil(stamina)}`, stBarX + stBarW + 4, stBarY + stBarH);
+  ctx.fillText(`⚡${Math.ceil(stamina)}`, stBarX + stBarW + 3, stBarY + stBarH);
 
   // 神话模式指示器
   if (mythicMode && player && player.alive) {
