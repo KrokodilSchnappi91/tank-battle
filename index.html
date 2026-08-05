@@ -1132,7 +1132,7 @@ class Tank {
     if (dashState && dashState.timer > 0) {
       dashState.timer--;
       // 冲刺移动（高速）
-      const dashSpd = dashState.mythic ? 0.11 : 0.07;
+      const dashSpd = dashState.mythic ? 0.055 : 0.035;
       const nx = this.x + dashState.dir.x * dashSpd;
       const ny = this.y + dashState.dir.y * dashSpd;
       if (this.canMoveTo(nx, ny, dashState.dir)) {
@@ -1180,7 +1180,7 @@ class Tank {
       else if (moveDy !== 0) this.dir = moveDy > 0 ? DIR.DOWN : DIR.UP;
 
       // 移动车身（普通半速，神话1.5倍速）
-      const spd = this.speed * (mythicMode ? 0.012 : 0.004);
+      const spd = this.speed * (mythicMode ? 0.006 : 0.002);
       const nx = this.x + moveDx * spd;
       const ny = this.y + moveDy * spd;
 
@@ -1269,7 +1269,7 @@ class Tank {
     if (!this.targetDir) this.targetDir = this.dir;
 
     // Boss全速，小兵半速（全部减速40%）
-    const spd = this.speed * (this.type === 'boss' ? 0.008 : 0.004);
+    const spd = this.speed * (this.type === 'boss' ? 0.004 : 0.002);
     // 先尝试朝目标方向移动
     const tx = this.x + this.targetDir.x * spd;
     const ty = this.y + this.targetDir.y * spd;
