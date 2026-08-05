@@ -669,7 +669,7 @@ class Tank {
     this.size = 0.85;
     this.alive = true;
     this.shootCooldown = 0;
-    this.shootDelay = isPlayer ? 12 : 45;
+    this.shootDelay = isPlayer ? 12 : 70;
     this.moveTimer = 0;
     this.moveDelay = isPlayer ? 0 : 35 + Math.floor(Math.random() * 50);
     this.changeDirTimer = 0;
@@ -775,7 +775,7 @@ class Tank {
       this.changeDirTimer = this.changeDirDelay;
     }
 
-    if (this.shootCooldown <= 0 && Math.random() < 0.03) {
+    if (this.shootCooldown <= 0 && Math.random() < 0.015) {
       this.shoot();
     }
   }
