@@ -456,6 +456,7 @@ let mythicMode = false;       // 神话模式
 let deathTimer = 0;           // 死亡重生倒计时
 let bossActive = false;       // Boss 战中
 let bossTank = null;          // Boss 坦克引用
+let bossPhase = 1;            // Boss 当前阶段
 let enemiesRemaining = 0;
 let enemiesOnScreen = 0;
 let maxEnemiesOnScreen = 4;
@@ -908,11 +909,14 @@ class Tank {
   bossShoot() {
     if (this.shootCooldown > 0) return;
     this.shootCooldown = this.shootDelay;
-    // 3 发扇形子弹，朝向玩家方向
+    const isPhase2 = bossPhase === 2;
+    // 一阶段 3发，二阶段 5发更密集
+    const count = isPhase2 ? 5 : 3;
+    const spread = isPhase2 ? 0.2 : 0.3;
     const baseDir = this.turretDir;
-    const spread = 0.3; // 散射角度（弧度）
-    for (let i = -1; i <= 1; i++) {
-      const angle = baseDir.angle + i * spread;
+    for (let i = 0; i < count; i++) {
+      const offset = (i - (count - 1) / 2) * spread;
+      const angle = baseDir.angle + offset;
       const dir = { x: Math.cos(angle), y: Math.sin(angle), angle: angle };
       const bx = this.x + dir.x * 0.5;
       const by = this.y + dir.y * 0.5;
@@ -1358,15 +1362,18 @@ function loadLevel(lvl) {
 
   bossActive = false;
   bossTank = null;
+  bossPhase = 1;
   updateUI();
 }
 
 function spawnBoss() {
   bossActive = true;
+  bossPhase = 1;
   // Boss出生在顶部中央
   const bx = 12.5, by = 2;
   bossTank = new Tank(bx, by, DIR.DOWN, '#8b00ff', 0.7, false);
   bossTank.hp = 80 + level * 50;     // Boss血量：L1=130, L2=180, L3=230...
+  bossTank._maxHp = bossTank.hp;     // 记录最大血量
   bossTank.size = 1.2;               // 体型更大
   bossTank.shootDelay = 30;          // 射击更快
   bossTank.type = 'boss';
@@ -1436,10 +1443,31 @@ function update() {
     spawnBoss();
   }
 
+  // Boss 二阶段检测（偶数关，血量<50%触发）
+  if (bossActive && bossTank && bossTank.alive && bossPhase === 1 && level % 2 === 0) {
+    if (bossTank.hp <= bossTank._maxHp * 0.5) {
+      bossPhase = 2;
+      bossTank.color = '#ff0040';        // 变红
+      bossTank.shootDelay = 14;          // 射速翻倍
+      bossTank.speed = 0.9;              // 移动加快
+      bossTank.invincible = 30;          // 短暂无敌
+      // 二阶段特效
+      for (let i = 0; i < 40; i++) {
+        particles.push(new Particle(
+          bossTank.x * BASE_CELL, bossTank.y * BASE_CELL,
+          (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8,
+          Math.random() < 0.5 ? '#ff0040' : '#ffd700',
+          30 + Math.random() * 40
+        ));
+      }
+    }
+  }
+
   // Boss被击败 → 过关
   if (bossActive && (!bossTank || !bossTank.alive)) {
     bossActive = false;
     bossTank = null;
+    bossPhase = 1;
     levelUp();
     return;
   }
@@ -1576,6 +1604,7 @@ function resetGame() {
   deathTimer = 0;
   bossActive = false;
   bossTank = null;
+  bossPhase = 1;
   enemiesRemaining = 0;
   enemiesOnScreen = 0;
   maxEnemiesOnScreen = 4;
@@ -1694,12 +1723,14 @@ function render() {
 
   // Boss 警告
   if (bossActive && bossTank && bossTank.alive) {
+    const isP2 = bossPhase === 2;
     const bpulse = 0.5 + Math.sin(Date.now() / 150) * 0.5;
-    ctx.fillStyle = `rgba(139, 0, 255, ${0.4 + bpulse * 0.6})`;
+    const bcolor = isP2 ? `rgba(255, 0, 64, ${0.5 + bpulse * 0.5})` : `rgba(139, 0, 255, ${0.4 + bpulse * 0.6})`;
+    ctx.fillStyle = bcolor;
     const bfs = Math.max(20, CELL * 0.9);
     ctx.font = `bold ${bfs}px "Microsoft YaHei", Arial`;
     ctx.textAlign = 'center';
-    ctx.fillText('⚠ BOSS ⚠', canvas.width / 2, 30);
+    ctx.fillText(isP2 ? '⚠ BOSS · PHASE 2 ⚠' : '⚠ BOSS ⚠', canvas.width / 2, 30);
     // Boss血条
     const barW = canvas.width * 0.4;
     const barH = 6;
@@ -1707,9 +1738,15 @@ function render() {
     const barY = 38;
     ctx.fillStyle = '#333';
     ctx.fillRect(barX, barY, barW, barH);
-    const hpRatio = bossTank.hp / (80 + level * 50);
-    ctx.fillStyle = hpRatio > 0.5 ? '#8b00ff' : hpRatio > 0.25 ? '#ff8c00' : '#ff0000';
+    const hpRatio = bossTank.hp / bossTank._maxHp;
+    const hpColor = isP2 ? '#ff0040' : (hpRatio > 0.5 ? '#8b00ff' : hpRatio > 0.25 ? '#ff8c00' : '#ff0000');
+    ctx.fillStyle = hpColor;
     ctx.fillRect(barX, barY, barW * Math.max(0, hpRatio), barH);
+    // 二阶段指示线
+    if (!isP2 && level % 2 === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fillRect(barX + barW * 0.5 - 1, barY, 2, barH);
+    }
   }
 
   // 神话模式指示器
