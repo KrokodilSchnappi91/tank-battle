@@ -1862,8 +1862,117 @@ class PowerUp {
 
 // ==================== 游戏逻辑 ====================
 
+// 随机地图生成器（关卡11起自动生成，1-10用手工地图）
 function getMapTemplate(lvl) {
-  return MAP_TEMPLATES[(lvl - 1) % MAP_TEMPLATES.length];
+  if (lvl <= MAP_TEMPLATES.length) {
+    return MAP_TEMPLATES[(lvl - 1) % MAP_TEMPLATES.length];
+  }
+  // 使用关卡号作为随机种子，确保同一关每次生成相同地图
+  return generateMap(lvl);
+}
+
+function seededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function generateMap(seed) {
+  const rand = seededRandom(seed);
+  const map = new Array(COLS * ROWS).fill(0);
+
+  // 确保玩家出生点和敌人出生点空旷
+  const clearZone = (cx, cy, r) => {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        const tx = cx + dx, ty = cy + dy;
+        if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS) {
+          map[ty * COLS + tx] = 0;
+        }
+      }
+    }
+  };
+
+  // 玩家出生区
+  clearZone(12, 24, 2);
+  // 敌人出生区
+  clearZone(1, 1, 2);
+  clearZone(COLS - 2, 1, 2);
+  clearZone(COLS - 2, ROWS - 2, 2);
+
+  // 10-15关递增难度
+  const difficulty = Math.min(seed - 10, 50);
+
+  // 砖墙密度：15%-40%
+  const brickDensity = 0.15 + Math.min(difficulty * 0.005, 0.25);
+  // 钢墙密度：2%-15%
+  const steelDensity = 0.02 + Math.min(difficulty * 0.003, 0.13);
+  // 草丛密度：3%-10%
+  const grassDensity = 0.03 + Math.min(difficulty * 0.001, 0.07);
+
+  // 随机砖墙
+  for (let i = 0; i < COLS * ROWS * brickDensity; i++) {
+    const x = Math.floor(rand() * (COLS - 4)) + 2;
+    const y = Math.floor(rand() * (ROWS - 4)) + 2;
+    if (map[y * COLS + x] === 0) map[y * COLS + x] = 1;
+  }
+
+  // 钢墙（偏向中间和关键位置）
+  for (let i = 0; i < COLS * ROWS * steelDensity; i++) {
+    const x = Math.floor(rand() * (COLS - 6)) + 3;
+    const y = Math.floor(rand() * (ROWS - 10)) + 5;
+    if (map[y * COLS + x] === 0) map[y * COLS + x] = 2;
+  }
+
+  // 草丛
+  for (let i = 0; i < COLS * ROWS * grassDensity; i++) {
+    const x = Math.floor(rand() * (COLS - 4)) + 2;
+    const y = Math.floor(rand() * (ROWS - 6)) + 3;
+    if (map[y * COLS + x] === 0) map[y * COLS + x] = 4;
+  }
+
+  // 每隔几关有特殊布局
+  if (seed % 5 === 0) {
+    // 环形钢墙
+    for (let x = 6; x < 20; x++) {
+      map[6 * COLS + x] = 2;
+      map[19 * COLS + x] = 2;
+    }
+    for (let y = 6; y < 20; y++) {
+      map[y * COLS + 6] = 2;
+      map[y * COLS + 19] = 2;
+    }
+  }
+
+  if (seed % 7 === 0) {
+    // 十字通道
+    for (let y = 3; y < 23; y++) {
+      if (map[y * COLS + 13] === 0) map[y * COLS + 13] = 1;
+    }
+    for (let x = 3; x < 23; x++) {
+      if (map[13 * COLS + x] === 0) map[13 * COLS + x] = 1;
+    }
+  }
+
+  if (seed % 3 === 0) {
+    // 散落草丛区
+    for (let i = 0; i < 15; i++) {
+      const gx = 3 + Math.floor(rand() * 5) * 4;
+      const gy = 4 + Math.floor(rand() * 4) * 4;
+      for (let dy = 0; dy < 3; dy++) {
+        for (let dx = 0; dx < 3; dx++) {
+          const tx = gx + dx, ty = gy + dy;
+          if (tx < COLS && ty < ROWS && map[ty * COLS + tx] === 0) {
+            map[ty * COLS + tx] = 4;
+          }
+        }
+      }
+    }
+  }
+
+  return map;
 }
 
 function loadLevel(lvl) {
