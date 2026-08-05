@@ -557,6 +557,7 @@ let bossPhase = 1;            // Boss 当前阶段
 let nukes = [];               // 核弹列表
 let bossKillCount = 0;        // Boss击杀总数（跨关卡）
 let demonKingActive = false;  // 魔王战中
+let advancedUnlocked = false; // 66关后是否解锁（需66关达1万分）
 let victoryTimer = 0;          // 胜利动画计时器
 let victoryParticles = [];     // 胜利烟花粒子
 let healthSpawnTimer = 0;      // 血包生成计时器
@@ -2303,12 +2304,17 @@ function spawnEnemy() {
 function update() {
   if (gameState !== STATE.PLAYING) return;
 
-  // 体力回复
-  if (!dashState && stamina < MAX_STAMINA) {
-    stamina = Math.min(MAX_STAMINA, stamina + 0.15); // 约9/sec，11秒回满
+  // 66关达到1万分解锁后续关卡
+  if (!advancedUnlocked && level >= 66 && score >= 10000) {
+    advancedUnlocked = true;
   }
 
-  // 随机血包生成（每15秒左右一个）
+  // 体力回复
+  if (!dashState && stamina < MAX_STAMINA) {
+    stamina = Math.min(MAX_STAMINA, stamina + 0.15);
+  }
+
+  // 随机血包生成
   healthSpawnTimer--;
   if (healthSpawnTimer <= 0 && player && player.alive) {
     const hx = 2 + Math.random() * (COLS - 4);
@@ -2512,7 +2518,7 @@ let currentSaveSlot = 1; // 当前使用的存档槽
 
 function saveProgress(slot) {
   slot = slot || currentSaveSlot;
-  const save = { level, score, kills, time: new Date().toLocaleString() };
+  const save = { level, score, kills, advancedUnlocked, time: new Date().toLocaleString() };
   localStorage.setItem(`tankBattle_save_${slot}`, JSON.stringify(save));
 }
 
@@ -3003,13 +3009,17 @@ let menuSelectedLevel = level;
 function buildMenuLevelGrid() {
   const grid = document.getElementById('menuLevelGrid');
   grid.innerHTML = '';
+  const mIsLocked = (l) => l > 66 && !advancedUnlocked;
   for (let l = 1; l <= 110; l++) {
     const btn = document.createElement('button');
-    btn.textContent = l;
-    btn.style.cssText = 'background:#e94560;color:#fff;border:none;padding:3px 0;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold;';
+    btn.textContent = mIsLocked(l) ? '🔒' : l;
+    btn.style.cssText = mIsLocked(l)
+      ? 'background:#333;color:#666;border:none;padding:3px 0;border-radius:3px;cursor:not-allowed;font-size:9px;'
+      : 'background:#e94560;color:#fff;border:none;padding:3px 0;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold;';
     btn.addEventListener('click', () => {
+      if (mIsLocked(l)) return;
       menuSelectedLevel = l;
-      document.querySelectorAll('#menuLevelGrid button').forEach(b=>b.style.background='#e94560');
+      document.querySelectorAll('#menuLevelGrid button').forEach(b=>{if(!mIsLocked(parseInt(b.textContent==='🔒'?'999':b.textContent)))b.style.background='#e94560';});
       btn.style.background='#ffd700';
       document.getElementById('menuSelectedLevel').textContent = `已选：第 ${l} 关`;
     });
@@ -3111,10 +3121,11 @@ function continueGame(slot) {
   document.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
 
   resetGame();
-  selectedLevel = save.level; // 同步选择器
+  selectedLevel = save.level;
   level = save.level;
   score = save.score;
   kills = save.kills || 0;
+  advancedUnlocked = save.advancedUnlocked || false;
   updateUI();
 
   document.getElementById('startOverlay').classList.add('hidden');
@@ -3128,16 +3139,21 @@ function continueGame(slot) {
 // 关卡选择按钮（1-66）
 let selectedLevel = 1;
 const levelGrid = document.getElementById('levelGrid');
+const isLocked = (l) => l > 66 && !advancedUnlocked;
 for (let l = 1; l <= 110; l++) {
   const btn = document.createElement('button');
-  btn.textContent = l;
+  btn.textContent = isLocked(l) ? '🔒' : l;
   btn.dataset.lvl = l;
-  btn.style.cssText = 'background:#e94560;color:#fff;border:none;padding:3px 0;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold;min-width:28px;';
+  btn.style.cssText = isLocked(l)
+    ? 'background:#333;color:#666;border:none;padding:3px 0;border-radius:3px;cursor:not-allowed;font-size:9px;'
+    : 'background:#e94560;color:#fff;border:none;padding:3px 0;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold;min-width:28px;';
   btn.addEventListener('click', () => {
+    if (isLocked(l)) return;
     selectedLevel = l;
     document.querySelectorAll('#levelGrid button').forEach(b => {
-      b.style.background = '#e94560';
-      b.style.color = '#fff';
+      if (!isLocked(parseInt(b.dataset.lvl))) {
+        b.style.background = '#e94560'; b.style.color = '#fff';
+      }
     });
     btn.style.background = '#ffd700';
     btn.style.color = '#000';
