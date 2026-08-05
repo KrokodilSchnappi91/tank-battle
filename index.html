@@ -100,6 +100,7 @@
     max-width: 100vw;
     max-height: 60vh;
     display: block;
+    cursor: crosshair;
   }
 
   .game-controls {
@@ -344,9 +345,10 @@
 
   <!-- 桌面键盘提示 -->
   <div class="game-controls desktop-only">
-    <div class="key-hint"><span>WASD</span> 移动+瞄准</div>
+    <div class="key-hint"><span>WASD</span> 移动</div>
+    <div class="key-hint"><span>鼠标</span> 瞄准</div>
+    <div class="key-hint"><span>左键/J</span> 射击</div>
     <div class="key-hint"><span>空格</span> 冲刺</div>
-    <div class="key-hint"><span>J</span> 射击</div>
     <div class="key-hint"><span>P</span> 暂停</div>
   </div>
 
@@ -462,6 +464,8 @@ let mythicMode = false;       // 神话模式
 // 冲刺系统
 let dashState = null;         // { dir, timer, maxTimer }
 let stamina = 100;            // 体力值
+let mouseX = 0, mouseY = 0;   // 鼠标在canvas上的坐标
+let mouseOnCanvas = false;    // 鼠标是否在canvas上
 const MAX_STAMINA = 100;
 const DASH_COST = 30;         // 冲刺消耗
 let deathTimer = 0;           // 死亡重生倒计时
@@ -573,6 +577,23 @@ document.getElementById('btnCenter')?.addEventListener('click', () => {
   if (gameState === STATE.PLAYING) pauseGame();
   else if (gameState === STATE.PAUSED) resumeGame();
 });
+
+// 鼠标跟踪（炮塔瞄准）
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = (e.clientX - rect.left) / rect.width * COLS;
+  mouseY = (e.clientY - rect.top) / rect.height * ROWS;
+  mouseOnCanvas = true;
+});
+canvas.addEventListener('mouseleave', () => { mouseOnCanvas = false; });
+// 左键射击
+canvas.addEventListener('mousedown', (e) => {
+  if (e.button === 0 && gameState === STATE.PLAYING && player && player.alive) {
+    e.preventDefault();
+    player.shoot();
+  }
+});
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 // 防止 canvas 上的触摸滚动
 canvas.addEventListener('touchstart', (e) => e.preventDefault());
@@ -800,12 +821,15 @@ class Tank {
       }
     }
 
-    // 炮塔跟随移动方向
-    if (moveDx !== 0 || moveDy !== 0) {
+    // 炮塔跟随鼠标（桌面）或移动方向（触屏）
+    if (mouseOnCanvas && !isTouchDevice) {
+      const angle = Math.atan2(mouseY - this.y, mouseX - this.x);
+      this.turretDir = { x: Math.cos(angle), y: Math.sin(angle), angle };
+    } else if (moveDx !== 0 || moveDy !== 0) {
       this.turretDir = this.dir;
     }
 
-    // ===== 射击 =====
+    // ===== 射击（J键或保留键盘备用） =====
     if (isKeyDown('j') || isKeyDown('KeyJ')) {
       this.shoot();
     }
