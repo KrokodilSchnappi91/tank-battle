@@ -905,22 +905,57 @@ class Tank {
     }
   }
 
-  // Boss 专属：扇形散射
+  // Boss 专属：扇形散射 + 每3次攻击发射导弹
   bossShoot() {
     if (this.shootCooldown > 0) return;
     this.shootCooldown = this.shootDelay;
+
+    // 追踪攻击次数
+    if (!this._attackCount) this._attackCount = 0;
+    this._attackCount++;
+
     const isPhase2 = bossPhase === 2;
-    // 一阶段 3发，二阶段 5发更密集
     const count = isPhase2 ? 5 : 3;
     const spread = isPhase2 ? 0.2 : 0.3;
     const baseDir = this.turretDir;
-    for (let i = 0; i < count; i++) {
-      const offset = (i - (count - 1) / 2) * spread;
-      const angle = baseDir.angle + offset;
-      const dir = { x: Math.cos(angle), y: Math.sin(angle), angle: angle };
-      const bx = this.x + dir.x * 0.5;
-      const by = this.y + dir.y * 0.5;
-      bullets.push(new Bullet(bx, by, dir, false, false, 2)); // Boss子弹hp=2
+
+    // 每第3次攻击：发射追踪导弹
+    if (this._attackCount % 3 === 0) {
+      // 1发追踪玩家的导弹
+      const pdx = player.x - this.x;
+      const pdy = player.y - this.y;
+      const pAngle = Math.atan2(pdy, pdx);
+      const pDir = { x: Math.cos(pAngle), y: Math.sin(pAngle), angle: pAngle };
+      const mbx = this.x + pDir.x * 0.7;
+      const mby = this.y + pDir.y * 0.7;
+      const missile = new Bullet(mbx, mby, pDir, false, true, 999); // 追踪+无法抵消
+      missile.isMissile = true;
+      missile.speed = 0.09;
+      missile.size = Math.max(4, CELL * 0.22);
+      bullets.push(missile);
+
+      // 3发随机位置导弹
+      for (let m = 0; m < 3; m++) {
+        const rAngle = Math.random() * Math.PI * 2;
+        const rDir = { x: Math.cos(rAngle), y: Math.sin(rAngle), angle: rAngle };
+        const rbx = this.x + rDir.x * 0.7;
+        const rby = this.y + rDir.y * 0.7;
+        const rMissile = new Bullet(rbx, rby, rDir, false, false, 999);
+        rMissile.isMissile = true;
+        rMissile.speed = 0.07;
+        rMissile.size = Math.max(4, CELL * 0.2);
+        bullets.push(rMissile);
+      }
+    } else {
+      // 普通扇形散射
+      for (let i = 0; i < count; i++) {
+        const offset = (i - (count - 1) / 2) * spread;
+        const angle = baseDir.angle + offset;
+        const dir = { x: Math.cos(angle), y: Math.sin(angle), angle: angle };
+        const bx = this.x + dir.x * 0.5;
+        const by = this.y + dir.y * 0.5;
+        bullets.push(new Bullet(bx, by, dir, false, false, 2));
+      }
     }
   }
 
@@ -1109,6 +1144,7 @@ class Bullet {
     this.isPlayer = isPlayer;
     this.homing = homing;     // 追踪弹
     this.hp = hp;             // 子弹生命值（Boss子弹需多枪抵消）
+    this.isMissile = false;   // 是否为Boss导弹（不可抵消+范围爆炸）
     this.speed = isPlayer ? 0.22 : 0.12;
     this.alive = true;
     this.size = Math.max(2, CELL * 0.12);
@@ -1160,20 +1196,28 @@ class Bullet {
     if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
       const tile = mapData[cy * COLS + cx];
       if (tile === 1) {
-        mapData[cy * COLS + cx] = 0;
-        for (let i = 0; i < 5; i++) {
-          particles.push(new Particle(
-            cx * BASE_CELL + BASE_CELL/2, cy * BASE_CELL + BASE_CELL/2,
-            (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2,
-            '#c4934a', 15 + Math.random() * 10
-          ));
+        if (this.isMissile) {
+          this.missileExplode(cx, cy); // 导弹范围爆炸
+        } else {
+          mapData[cy * COLS + cx] = 0;
+          for (let i = 0; i < 5; i++) {
+            particles.push(new Particle(
+              cx * BASE_CELL + BASE_CELL/2, cy * BASE_CELL + BASE_CELL/2,
+              (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2,
+              '#c4934a', 15 + Math.random() * 10
+            ));
+          }
         }
         this.alive = false;
         return;
       }
       if (tile === 2) {
+        if (this.isMissile) {
+          this.missileExplode(cx, cy);
+        } else {
+          this.spark();
+        }
         this.alive = false;
-        this.spark();
         return;
       }
     }
@@ -1185,6 +1229,22 @@ class Bullet {
       const dy = this.y - tank.y;
       if (Math.abs(dx) < tank.size * 0.5 && Math.abs(dy) < tank.size * 0.5) {
         tank.hit();
+        if (this.isMissile) {
+          this.missileExplode(Math.floor(this.x), Math.floor(this.y));
+        }
+        this.alive = false;
+        return;
+      }
+    }
+
+    // 导弹接近玩家时也爆炸（范围伤害）
+    if (this.isMissile && !this.isPlayer && player && player.alive) {
+      const pdx = this.x - player.x;
+      const pdy = this.y - player.y;
+      const pdist = Math.sqrt(pdx * pdx + pdy * pdy);
+      if (pdist < 1.5) {
+        player.hit();
+        this.missileExplode(Math.floor(this.x), Math.floor(this.y));
         this.alive = false;
         return;
       }
@@ -1218,8 +1278,55 @@ class Bullet {
     }
   }
 
+  // 导弹范围爆炸
+  missileExplode(cx, cy) {
+    // 摧毁周围2格砖墙
+    for (let dy = -2; dy <= 2; dy++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        const tx = cx + dx, ty = cy + dy;
+        if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS) {
+          if (mapData[ty * COLS + tx] === 1) {
+            mapData[ty * COLS + tx] = 0;
+          }
+        }
+      }
+    }
+    // 伤害范围内的玩家
+    if (player && player.alive) {
+      const pdx = player.x - cx;
+      const pdy = player.y - cy;
+      if (Math.sqrt(pdx * pdx + pdy * pdy) < 2.5) {
+        player.hit();
+      }
+    }
+    // 大爆炸粒子
+    for (let i = 0; i < 25; i++) {
+      particles.push(new Particle(
+        cx * BASE_CELL, cy * BASE_CELL,
+        (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6,
+        Math.random() < 0.5 ? '#ff4500' : '#ffd700',
+        20 + Math.random() * 30
+      ));
+    }
+  }
+
   draw(ctx) {
     if (!this.alive) return;
+
+    // 导弹特殊外观：红色脉冲光环
+    if (this.isMissile) {
+      ctx.save();
+      const mx = this.x * CELL, my = this.y * CELL;
+      const mpulse = this.size * 1.8 + Math.sin(Date.now() / 60) * this.size * 0.5;
+      const mgrad = ctx.createRadialGradient(mx, my, this.size * 0.4, mx, my, mpulse);
+      mgrad.addColorStop(0, 'rgba(255,50,0,0.6)');
+      mgrad.addColorStop(1, 'rgba(255,50,0,0)');
+      ctx.fillStyle = mgrad;
+      ctx.beginPath();
+      ctx.arc(mx, my, mpulse, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
 
     // 追踪弹金色拖尾
     if (this.homing) {
@@ -1235,9 +1342,9 @@ class Bullet {
       }
     }
 
-    ctx.fillStyle = this.homing ? '#ffd700' : (this.isPlayer ? '#fff' : '#ff6b6b');
-    ctx.shadowColor = this.homing ? '#ff8c00' : (this.isPlayer ? '#4ecdc4' : '#ff4444');
-    ctx.shadowBlur = this.homing ? 10 : 6;
+    ctx.fillStyle = this.isMissile ? '#ff4500' : (this.homing ? '#ffd700' : (this.isPlayer ? '#fff' : '#ff6b6b'));
+    ctx.shadowColor = this.isMissile ? '#ff0000' : (this.homing ? '#ff8c00' : (this.isPlayer ? '#4ecdc4' : '#ff4444'));
+    ctx.shadowBlur = this.isMissile ? 14 : (this.homing ? 10 : 6);
     ctx.beginPath();
     ctx.arc(this.x * CELL, this.y * CELL, this.size, 0, Math.PI * 2);
     ctx.fill();
