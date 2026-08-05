@@ -2173,8 +2173,8 @@ function loadLevel(lvl) {
   player.invincible = 120;
 
   // 每关敌人数量递增：L1=10, L2=15, L3=20, L4=28, L5=35...
-  // 敌人数量：前期递增，20关后稳定在40-60个
-  enemiesRemaining = Math.min(10 + lvl * 3, 40 + Math.floor(lvl / 2));
+  // 敌人数量：10-30个，随关卡缓慢增长
+  enemiesRemaining = Math.min(8 + lvl, 30);
   enemiesOnScreen = 0;
   maxEnemiesOnScreen = Math.min(4 + lvl, 8);
   enemySpawnDelay = Math.max(30, 90 - lvl * 5);
