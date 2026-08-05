@@ -285,6 +285,16 @@
 
   .hidden { display: none !important; }
 
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+  @keyframes victoryText {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
   /* 小屏幕：显示触屏控制 */
   @media (max-width: 768px), (hover: none) and (pointer: coarse) {
     .touch-controls {
@@ -473,6 +483,8 @@ let bossActive = false;       // Boss 战中
 let bossTank = null;          // Boss 坦克引用
 let bossPhase = 1;            // Boss 当前阶段
 let nukes = [];               // 核弹列表
+let victoryTimer = 0;          // 胜利动画计时器
+let victoryParticles = [];     // 胜利烟花粒子
 let enemiesRemaining = 0;
 let enemiesOnScreen = 0;
 let maxEnemiesOnScreen = 4;
@@ -2134,19 +2146,45 @@ function levelUp() {
   level++;
   score += 500;
   updateUI();
-  saveProgress(); // 过关自动存档
+  saveProgress();
+  // 胜利特效
+  victoryTimer = 120; // 2秒胜利动画
+  for (let i = 0; i < 80; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const spd = 1 + Math.random() * 3;
+    victoryParticles.push({
+      x: (COLS / 2) * CELL,
+      y: (ROWS / 2) * CELL,
+      vx: Math.cos(a) * spd,
+      vy: Math.sin(a) * spd - 2,
+      life: 40 + Math.random() * 40,
+      maxLife: 80,
+      color: ['#ffd700','#ff4500','#ff0080','#00ff88','#00ccff','#ff8c00'][Math.floor(Math.random()*6)],
+      size: 2 + Math.random() * 4
+    });
+  }
   gameState = STATE.PAUSED;
   setTimeout(() => {
     if (gameState === STATE.PAUSED) {
+      victoryTimer = 0;
+      victoryParticles = [];
       loadLevel(level);
       gameState = STATE.PLAYING;
     }
-  }, 2000);
+  }, 2500);
 }
 
 function gameOver(won) {
   gameState = STATE.GAMEOVER;
-  document.getElementById('gameOverTitle').textContent = won ? '🏆 恭喜通关!' : '💥 游戏结束';
+  const titleEl = document.getElementById('gameOverTitle');
+  if (won) {
+    titleEl.textContent = '🏆 恭喜通关!';
+    titleEl.style.color = '#ffd700';
+    titleEl.style.fontSize = '48px';
+  } else {
+    titleEl.innerHTML = '💥 <span style="font-size:80px;color:#ff0000;text-shadow:0 0 40px #ff0000,0 0 80px #ff4500;display:block;animation:pulse 0.5s infinite;">菜</span>';
+    titleEl.style.color = '#ff4444';
+  }
   document.getElementById('finalScore').textContent = score;
   document.getElementById('finalKills').textContent = kills;
   document.getElementById('finalLevel').textContent = level;
@@ -2282,8 +2320,45 @@ function render() {
     }
   }
 
+  // 胜利动画
+  if (victoryTimer > 0) {
+    // 烟花粒子
+    for (const vp of victoryParticles) {
+      vp.x += vp.vx;
+      vp.y += vp.vy;
+      vp.vy += 0.02; // 重力
+      vp.life--;
+      const alpha = vp.life / vp.maxLife;
+      ctx.fillStyle = vp.color;
+      ctx.globalAlpha = alpha;
+      ctx.fillRect(vp.x - vp.size/2, vp.y - vp.size/2, vp.size, vp.size);
+    }
+    ctx.globalAlpha = 1;
+
+    // 胜利大字
+    const vt = 1 - victoryTimer / 120;
+    const vscale = 0.3 + vt * 0.7;
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2 - 20);
+    ctx.scale(vscale, vscale);
+    ctx.fillStyle = '#ffd700';
+    ctx.shadowColor = '#ff8c00';
+    ctx.shadowBlur = 30;
+    const vfs = Math.max(36, CELL * 1.6);
+    ctx.font = `bold ${vfs}px "Microsoft YaHei", Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillText('🎉 过 关 ! 🎉', 0, 0);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff';
+    const sfs = Math.max(16, CELL * 0.7);
+    ctx.font = `bold ${sfs}px "Microsoft YaHei", Arial`;
+    ctx.fillText(`第 ${level} 关 通过`, 0, vfs * 0.7);
+    ctx.restore();
+    victoryTimer--;
+  }
+
   // 关卡提示
-  if (gameState === STATE.PAUSED && level > 1 && enemiesRemaining > 0) {
+  if (gameState === STATE.PAUSED && level > 1 && enemiesRemaining > 0 && victoryTimer <= 0) {
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(0, canvas.height/2 - Math.max(20, CELL*1.2), canvas.width, Math.max(40, CELL*2.4));
     ctx.fillStyle = '#e94560';
