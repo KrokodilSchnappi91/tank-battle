@@ -90,32 +90,32 @@
     text-align: center;
   }
 
-  /* 游戏主区域：横屏布局 */
+  /* 游戏主区域：全屏画布 */
   .game-main {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    position: relative;
     flex: 1;
     width: 100%;
     min-height: 0;
+    overflow: hidden;
   }
 
   .canvas-container {
-    position: relative;
-    line-height: 0;
-    flex-shrink: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   canvas {
-    border: 3px solid #0f3460;
-    border-radius: 4px;
+    border: none;
+    border-radius: 0;
     background: #0a0a0a;
     image-rendering: pixelated;
-    box-shadow: 0 0 30px rgba(233,69,96,0.2), inset 0 0 60px rgba(0,0,0,0.3);
     display: block;
     cursor: crosshair;
+    max-width: 100%;
+    max-height: 100%;
   }
 
   .game-controls {
@@ -140,26 +140,32 @@
 
   .key-hint span { color: #e94560; font-weight: bold; }
 
-  /* ====== 双摇杆（左右两侧） ====== */
+  /* ====== 双摇杆（浮在画布上） ====== */
   .touch-controls {
     display: none;
-    gap: 0;
-    flex-shrink: 0;
+    position: absolute;
+    z-index: 5;
+    pointer-events: none;
   }
+  .touch-controls > * { pointer-events: auto; }
 
   .touch-side {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0;
+    position: absolute;
+    bottom: 12px;
   }
+  #touchMove { left: 12px; }
+  #touchAim { right: 12px; }
 
   .joystick-area {
     width: 100px;
     height: 100px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.06);
-    border: 2px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,255,255,0.25);
     position: relative;
     touch-action: none;
     -webkit-tap-highlight-color: transparent;
@@ -169,8 +175,8 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: rgba(233,69,96,0.6);
-    border: 2px solid #e94560;
+    background: rgba(233,69,96,0.5);
+    border: 2px solid rgba(233,69,96,0.7);
     position: absolute;
     top: 50%;
     left: 50%;
@@ -181,7 +187,7 @@
 
   .joystick-label {
     text-align: center;
-    color: #888;
+    color: rgba(255,255,255,0.5);
     font-size: 9px;
     margin-top: 2px;
     letter-spacing: 1px;
@@ -192,27 +198,28 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    margin-top: 6px;
   }
 
   .btn-pause-mobile, .btn-fullscreen {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     -webkit-tap-highlight-color: transparent;
-    font-size: 14px;
+    font-size: 13px;
   }
   .btn-pause-mobile {
-    background: rgba(255,255,255,0.1);
-    border: 2px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.12);
+    border: 1.5px solid rgba(255,255,255,0.3);
     color: #aaa;
   }
   .btn-fullscreen {
-    background: rgba(78,205,196,0.3);
-    border: 2px solid #4ecdc4;
+    background: rgba(78,205,196,0.25);
+    border: 1.5px solid rgba(78,205,196,0.5);
     color: #4ecdc4;
   }
 
@@ -453,13 +460,15 @@ let CELL = BASE_CELL;
 let scaleFactor = 1;
 
 function resizeCanvas() {
-  const maxWidth = Math.min(window.innerWidth - 16, 900);
-  const maxHeight = Math.min(window.innerHeight * 0.7, 600);
+  const headerH = document.querySelector('.game-header')?.offsetHeight || 40;
+  const footerH = document.querySelector('.game-controls.desktop-only')?.offsetHeight || 0;
+  const maxWidth = window.innerWidth;
+  const maxHeight = window.innerHeight - headerH - footerH - 12;
 
   const gameW = COLS * BASE_CELL;
   const gameH = ROWS * BASE_CELL;
 
-  scaleFactor = Math.min(maxWidth / gameW, maxHeight / gameH, 1.0);
+  scaleFactor = Math.min(maxWidth / gameW, maxHeight / gameH, 1.5);
   CELL = Math.floor(BASE_CELL * scaleFactor);
 
   canvas.width = COLS * CELL;
