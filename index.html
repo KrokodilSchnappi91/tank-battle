@@ -386,6 +386,21 @@
     <p style="margin-top:12px; color:#666;">🏗️ 棕色砖墙可被摧毁</p>
     <p style="color:#666;">🔩 灰色钢墙坚不可摧</p>
     <p style="color:#666;">🌲 草丛隐藏坦克行踪</p>
+    <!-- 关卡选择 -->
+    <p style="margin-top:14px;color:#aaa;">选择关卡</p>
+    <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;max-width:400px;margin:0 auto;">
+      <button class="lvl-btn" data-lvl="1" style="background:#e94560;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:bold;">1</button>
+      <button class="lvl-btn" data-lvl="2" style="background:#e94560;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">2</button>
+      <button class="lvl-btn" data-lvl="3" style="background:#e94560;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">3</button>
+      <button class="lvl-btn" data-lvl="4" style="background:#e94560;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">4</button>
+      <button class="lvl-btn" data-lvl="5" style="background:#e94560;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">5</button>
+      <button class="lvl-btn" data-lvl="6" style="background:#e94560;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">6</button>
+      <button class="lvl-btn" data-lvl="7" style="background:#e94560;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">7</button>
+      <button class="lvl-btn" data-lvl="8" style="background:#e94560;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">8</button>
+      <button class="lvl-btn" data-lvl="9" style="background:#e94560;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">9</button>
+      <button class="lvl-btn" data-lvl="10" style="background:#e94560;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">10</button>
+    </div>
+    <p style="color:#666;font-size:11px;margin-top:4px;" id="selectedLevelText">已选：第 1 关</p>
     <button class="btn" id="startBtn">🆕 新 游 戏</button>
     <div style="margin-top:12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;" id="saveSlotsContainer">
       <button class="btn save-slot-btn" data-slot="1" style="background:#4ecdc4;font-size:13px;padding:10px 16px;">存档 1</button>
@@ -2593,6 +2608,7 @@ function startGame(slot) {
   document.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
 
   resetGame();
+  level = selectedLevel; // 使用选择的关卡
   document.getElementById('startOverlay').classList.add('hidden');
   document.getElementById('pauseOverlay').classList.add('hidden');
   document.getElementById('gameOverOverlay').classList.add('hidden');
@@ -2613,6 +2629,7 @@ function continueGame(slot) {
   document.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
 
   resetGame();
+  selectedLevel = save.level; // 同步选择器
   level = save.level;
   score = save.score;
   kills = save.kills || 0;
@@ -2625,6 +2642,21 @@ function continueGame(slot) {
   resizeCanvas();
   loadLevel(level);
 }
+
+// 关卡选择按钮
+let selectedLevel = 1;
+document.querySelectorAll('.lvl-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedLevel = parseInt(btn.dataset.lvl);
+    document.querySelectorAll('.lvl-btn').forEach(b => b.style.background = '#e94560');
+    btn.style.background = '#ffd700';
+    btn.style.color = '#000';
+    document.getElementById('selectedLevelText').textContent = `已选：第 ${selectedLevel} 关`;
+  });
+});
+// 默认第一关高亮
+document.querySelector('.lvl-btn[data-lvl="1"]').style.background = '#ffd700';
+document.querySelector('.lvl-btn[data-lvl="1"]').style.color = '#000';
 
 // 初始加载：刷新存档槽按钮文字
 function refreshSaveSlotButtons() {
