@@ -1174,10 +1174,9 @@ class Tank {
         const total = dashState.maxTimer;
         const angle = (Math.PI * 2 / total) * idx;
         const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
-        const size = 0.3 + (idx / total) * 0.5;
         const fb = new Bullet(this.x + dir.x, this.y + dir.y, dir, true);
         fb.isMissile = true; fb.speed = 0.06;
-        fb.size = Math.max(8, CELL * size);
+        fb.size = Math.max(10, CELL * 0.4);
         fb.hp = 999; fb._fireball = true; fb._fuseTimer = 30;
         bullets.push(fb);
       }
