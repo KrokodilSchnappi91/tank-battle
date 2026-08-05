@@ -1369,7 +1369,17 @@ function update() {
 }
 
 function respawnPlayer() {
-  player = new Tank(12.5, 24, DIR.UP, '#2ecc71', 1.2, true);
+  const spawnX = 12.5, spawnY = 24;
+  // 清除重生点附近的敌人，确保不会出生就死
+  for (const enemy of enemies) {
+    const dx = enemy.x - spawnX;
+    const dy = enemy.y - spawnY;
+    if (Math.abs(dx) < 2 && Math.abs(dy) < 2) {
+      enemy.alive = false;
+      enemy.onDestroy();
+    }
+  }
+  player = new Tank(spawnX, spawnY, DIR.UP, '#2ecc71', 1.2, true);
   player.turretDir = DIR.UP;
   player.invincible = 120;
   updateUI();
