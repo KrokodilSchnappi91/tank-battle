@@ -375,6 +375,7 @@
     <p style="color:#666;">🔩 灰色钢墙坚不可摧</p>
     <p style="color:#666;">🌲 草丛隐藏坦克行踪</p>
     <button class="btn" id="startBtn">开 始 游 戏</button>
+    <button class="btn hidden" id="continueStartBtn" style="background:#4ecdc4;">继 续 游 戏</button>
   </div>
 </div>
 
@@ -394,7 +395,8 @@
     <p>最终得分: <span style="color:#e94560;font-size:24px;" id="finalScore">0</span></p>
     <p>击杀数: <span id="finalKills">0</span></p>
     <p>到达关卡: <span id="finalLevel">1</span></p>
-    <button class="btn" id="restartBtn">再 来 一 局</button>
+    <button class="btn" id="restartBtn">重 新 开 始</button>
+    <button class="btn hidden" id="continueBtn" style="background:#4ecdc4;">继续游戏</button>
   </div>
 </div>
 
@@ -1865,10 +1867,29 @@ function respawnPlayer() {
   updateUI();
 }
 
+// ==================== 存档系统 ====================
+function saveProgress() {
+  const save = { level, score, kills };
+  localStorage.setItem('tankBattle_save', JSON.stringify(save));
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem('tankBattle_save');
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return null;
+}
+
+function hasSave() {
+  return !!loadProgress();
+}
+
 function levelUp() {
   level++;
   score += 500;
   updateUI();
+  saveProgress(); // 过关自动存档
   gameState = STATE.PAUSED;
   setTimeout(() => {
     if (gameState === STATE.PAUSED) {
@@ -1884,6 +1905,15 @@ function gameOver(won) {
   document.getElementById('finalScore').textContent = score;
   document.getElementById('finalKills').textContent = kills;
   document.getElementById('finalLevel').textContent = level;
+  // 显示继续按钮（如果有存档）
+  const save = loadProgress();
+  const contBtn = document.getElementById('continueBtn');
+  if (save && !won) {
+    contBtn.classList.remove('hidden');
+    contBtn.textContent = `继续第 ${save.level} 关`;
+  } else {
+    contBtn.classList.add('hidden');
+  }
   document.getElementById('gameOverOverlay').classList.remove('hidden');
 }
 
@@ -2168,8 +2198,10 @@ function resumeGame() {
 }
 
 document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('continueStartBtn').addEventListener('click', continueGame);
 document.getElementById('resumeBtn').addEventListener('click', resumeGame);
 document.getElementById('restartBtn').addEventListener('click', startGame);
+document.getElementById('continueBtn').addEventListener('click', continueGame);
 
 function startGame() {
   // 释放所有触屏按键
@@ -2178,6 +2210,30 @@ function startGame() {
   document.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
 
   resetGame();
+  localStorage.removeItem('tankBattle_save'); // 新游戏清除存档
+  document.getElementById('startOverlay').classList.add('hidden');
+  document.getElementById('pauseOverlay').classList.add('hidden');
+  document.getElementById('gameOverOverlay').classList.add('hidden');
+  gameState = STATE.PLAYING;
+  resizeCanvas();
+  loadLevel(level);
+}
+
+function continueGame() {
+  const save = loadProgress();
+  if (!save) return;
+  // 释放按键
+  for (const k in touchKeys) touchKeys[k] = false;
+  for (const k in keys) keys[k] = false;
+  document.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
+
+  resetGame();
+  // 恢复存档数据
+  level = save.level;
+  score = save.score;
+  kills = save.kills || 0;
+  updateUI();
+
   document.getElementById('startOverlay').classList.add('hidden');
   document.getElementById('pauseOverlay').classList.add('hidden');
   document.getElementById('gameOverOverlay').classList.add('hidden');
@@ -2187,6 +2243,12 @@ function startGame() {
 }
 
 // 初始加载
+// 检查存档，显示继续按钮
+if (hasSave()) {
+  const save = loadProgress();
+  document.getElementById('continueStartBtn').classList.remove('hidden');
+  document.getElementById('continueStartBtn').textContent = `继续游戏 (第${save.level}关)`;
+}
 loadLevel(1);
 gameState = STATE.MENU;
 gameLoop();
