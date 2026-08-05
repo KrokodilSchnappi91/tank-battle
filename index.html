@@ -2262,27 +2262,22 @@ function update() {
   }
   nukes = nukes.filter(n => n.timer > -30); // 爆炸后保留30帧特效
 
-  // Boss被击败
+  // Boss/魔王被击败
   if (bossActive && (!bossTank || !bossTank.alive)) {
+    const wasDemonKing = demonKingActive;
     bossActive = false;
     bossTank = null;
     bossPhase = 1;
-    bossKillCount++;
-
-    // 每击杀2个Boss召唤魔王
-    if (bossKillCount % 2 === 0 && !demonKingActive) {
-      spawnDemonKing();
-    } else {
-      levelUp();
-    }
-    return;
-  }
-
-  // 魔王被击败 → 过关
-  if (demonKingActive && (!bossTank || !bossTank.alive)) {
     demonKingActive = false;
-    bossTank = null;
-    bossPhase = 1;
+
+    if (!wasDemonKing) {
+      bossKillCount++;
+      // 每击杀2个普通Boss召唤魔王
+      if (bossKillCount % 2 === 0) {
+        spawnDemonKing();
+        return;
+      }
+    }
     levelUp();
     return;
   }
