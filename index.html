@@ -3165,7 +3165,8 @@ function render() {
   ctx.fillRect(hpBarX - 1, hpBarY - 1, hpBarW + 2, hpBarH + 2);
   ctx.fillStyle = '#400';
   ctx.fillRect(hpBarX, hpBarY, hpBarW, hpBarH);
-  const hpRatio = Math.max(0, lives) / 10;
+  const maxHP = mythicMode ? 18 : 10;
+  const hpRatio = Math.max(0, lives) / maxHP;
   const hpColor = hpRatio > 0.5 ? '#ff4444' : hpRatio > 0.25 ? '#ff8800' : '#ff0000';
   ctx.fillStyle = hpColor;
   ctx.fillRect(hpBarX, hpBarY, hpBarW * hpRatio, hpBarH);
@@ -3310,6 +3311,7 @@ function activateMythic() {
   showFormChoice = false;
   player.invincible = 90;
   player._mythicAttacks = 0;
+  lives = Math.max(lives, 18); // 神话血量18
   document.getElementById('formChoiceOverlay').classList.add('hidden');
   gameState = STATE.PLAYING;
 }
