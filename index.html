@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="screen-orientation" content="landscape">
 <title>🎮 坦克大战 - Battle City</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -98,7 +99,7 @@
     image-rendering: pixelated;
     box-shadow: 0 0 30px rgba(233,69,96,0.2), inset 0 0 60px rgba(0,0,0,0.3);
     max-width: 100vw;
-    max-height: 60vh;
+    max-height: 100vh;
     display: block;
     cursor: crosshair;
   }
@@ -349,6 +350,15 @@
   </div>
 </div>
 
+<!-- 横屏提示（手机竖屏时显示） -->
+<div class="overlay hidden" id="rotatePrompt" style="background:rgba(0,0,0,0.9);z-index:100;">
+  <div class="overlay-content">
+    <h2 style="font-size:48px;">📱🔄</h2>
+    <p style="font-size:20px;color:#fff;">请旋转手机至横屏模式</p>
+    <p style="color:#888;">横屏体验更佳</p>
+  </div>
+</div>
+
 <!-- 开始界面 -->
 <div class="overlay" id="startOverlay">
   <div class="overlay-content">
@@ -413,15 +423,15 @@ const isSmallScreen = window.innerWidth <= 768;
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-const COLS = 26;
-const ROWS = 26;
+const COLS = 34;
+const ROWS = 20;
 const BASE_CELL = 24;  // 基础单元格大小
 let CELL = BASE_CELL;
 let scaleFactor = 1;
 
 function resizeCanvas() {
-  const maxWidth = Math.min(window.innerWidth - 16, 640);
-  const maxHeight = Math.min(window.innerHeight * 0.55, 640);
+  const maxWidth = Math.min(window.innerWidth - 16, 900);
+  const maxHeight = Math.min(window.innerHeight * 0.7, 600);
 
   const gameW = COLS * BASE_CELL;
   const gameH = ROWS * BASE_CELL;
@@ -967,8 +977,8 @@ let particles = [];
 let powerUps = [];
 let explosions = [];
 let spawnPoints = [
-  { x: 0, y: 0 },
-  { x: COLS - 2, y: 0 },
+  { x: 1, y: 1 },
+  { x: COLS - 2, y: 1 },
   { x: COLS - 2, y: ROWS - 2 },
 ];
 
@@ -1907,12 +1917,8 @@ class PowerUp {
 
 // ==================== 游戏逻辑 ====================
 
-// 随机地图生成器（关卡11起自动生成，1-10用手工地图）
+// 全部使用程序生成地图（种子保证同一关永远一样）
 function getMapTemplate(lvl) {
-  if (lvl <= MAP_TEMPLATES.length) {
-    return MAP_TEMPLATES[(lvl - 1) % MAP_TEMPLATES.length];
-  }
-  // 使用关卡号作为随机种子，确保同一关每次生成相同地图
   return generateMap(lvl);
 }
 
@@ -1937,8 +1943,8 @@ function generateMap(seed) {
     }
   };
 
-  // 出生区保护
-  clearZone(12, 24, 2);
+  // 出生区保护（横屏新坐标）
+  clearZone(17, 18, 2);
   clearZone(1, 1, 2);
   clearZone(COLS - 2, 1, 2);
   clearZone(COLS - 2, ROWS - 2, 2);
@@ -2061,7 +2067,7 @@ function loadLevel(lvl) {
   explosions = [];
   deathTimer = 0;
 
-  player = new Tank(12.5, 24, DIR.UP, '#2ecc71', 1.2, true);
+  player = new Tank(17, 18, DIR.UP, '#2ecc71', 1.2, true);
   player.turretDir = DIR.UP;
   player.invincible = 120;
 
@@ -2091,7 +2097,7 @@ function spawnDemonKing() {
   demonKingActive = true;
   bossActive = true; // 复用boss系统
   bossPhase = 1;
-  const bx = 12.5, by = 2;
+  const bx = 17, by = 2;
   bossTank = new Tank(bx, by, DIR.DOWN, '#000000', 0.6, false);
   bossTank.hp = Math.floor((80 + level * 50) * 1.5); // 比普通Boss多50%血
   bossTank._maxHp = bossTank.hp;
@@ -2129,7 +2135,7 @@ function spawnBoss() {
   demonKingActive = false;
   bossPhase = 1;
   // Boss出生在顶部中央
-  const bx = 12.5, by = 2;
+  const bx = 17, by = 2;
   bossTank = new Tank(bx, by, DIR.DOWN, '#8b00ff', 0.7, false);
   bossTank.hp = Math.floor((80 + level * 50) * 0.77); // L1=100, L2=138, L3=177...
   bossTank._maxHp = bossTank.hp;         // 记录最大血量
@@ -2376,8 +2382,8 @@ function update() {
 
 function respawnPlayer() {
   // 使用死亡位置原地复活
-  const sx = player._deathX || 12.5;
-  const sy = player._deathY || 24;
+  const sx = player._deathX || 17;
+  const sy = player._deathY || 18;
   // 清除复活点附近的敌人（不计入击杀）
   for (const enemy of enemies) {
     const dx = enemy.x - sx;
@@ -2906,6 +2912,20 @@ for (let l = 1; l <= 66; l++) {
 // 默认第一关高亮
 levelGrid.children[0].style.background = '#ffd700';
 levelGrid.children[0].style.color = '#000';
+
+// 横屏检测
+function checkOrientation() {
+  const isMobile = isTouchDevice || window.innerWidth < 768;
+  const isLandscape = window.innerWidth > window.innerHeight;
+  const prompt = document.getElementById('rotatePrompt');
+  if (isMobile && !isLandscape && gameState === STATE.PLAYING) {
+    prompt.classList.remove('hidden');
+  } else if (!isMobile || isLandscape) {
+    prompt.classList.add('hidden');
+  }
+}
+window.addEventListener('resize', checkOrientation);
+window.addEventListener('orientationchange', () => setTimeout(checkOrientation, 300));
 
 // 初始加载：刷新存档槽按钮文字
 function refreshSaveSlotButtons() {
