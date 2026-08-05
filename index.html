@@ -1366,7 +1366,7 @@ function spawnBoss() {
   // Boss出生在顶部中央
   const bx = 12.5, by = 2;
   bossTank = new Tank(bx, by, DIR.DOWN, '#8b00ff', 0.7, false);
-  bossTank.hp = 30 + level * 20;     // Boss血量：L1=50, L2=70, L3=90...
+  bossTank.hp = 80 + level * 50;     // Boss血量：L1=130, L2=180, L3=230...
   bossTank.size = 1.2;               // 体型更大
   bossTank.shootDelay = 30;          // 射击更快
   bossTank.type = 'boss';
@@ -1707,7 +1707,7 @@ function render() {
     const barY = 38;
     ctx.fillStyle = '#333';
     ctx.fillRect(barX, barY, barW, barH);
-    const hpRatio = bossTank.hp / (30 + level * 20);
+    const hpRatio = bossTank.hp / (80 + level * 50);
     ctx.fillStyle = hpRatio > 0.5 ? '#8b00ff' : hpRatio > 0.25 ? '#ff8c00' : '#ff0000';
     ctx.fillRect(barX, barY, barW * Math.max(0, hpRatio), barH);
   }
