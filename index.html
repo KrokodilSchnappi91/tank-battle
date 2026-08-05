@@ -404,6 +404,18 @@
   </div>
 </div>
 
+<!-- 存档选择界面 -->
+<div class="overlay hidden" id="savePromptOverlay">
+  <div class="overlay-content">
+    <h2>💾 是否存档？</h2>
+    <p>当前进度：第 <span id="savePromptLevel" style="color:#e94560;"></span> 关</p>
+    <div style="display:flex; gap:16px; justify-content:center; margin-top:16px;">
+      <button class="btn" id="saveYesBtn" style="background:#4ecdc4;">💾 存档</button>
+      <button class="btn" id="saveNoBtn" style="background:#666;">跳过</button>
+    </div>
+  </div>
+</div>
+
 <!-- 游戏结束界面 -->
 <div class="overlay hidden" id="gameOverOverlay">
   <div class="overlay-content">
@@ -2152,9 +2164,8 @@ function levelUp() {
   level++;
   score += 500;
   updateUI();
-  saveProgress();
   // 胜利特效
-  victoryTimer = 120; // 2秒胜利动画
+  victoryTimer = 120;
   for (let i = 0; i < 80; i++) {
     const a = Math.random() * Math.PI * 2;
     const spd = 1 + Math.random() * 3;
@@ -2170,14 +2181,21 @@ function levelUp() {
     });
   }
   gameState = STATE.PAUSED;
+  // 胜利动画结束后显示存档选择
   setTimeout(() => {
     if (gameState === STATE.PAUSED) {
       victoryTimer = 0;
       victoryParticles = [];
-      loadLevel(level);
-      gameState = STATE.PLAYING;
+      document.getElementById('savePromptLevel').textContent = level;
+      document.getElementById('savePromptOverlay').classList.remove('hidden');
     }
-  }, 2500);
+  }, 2000);
+}
+
+function proceedToNextLevel() {
+  document.getElementById('savePromptOverlay').classList.add('hidden');
+  loadLevel(level);
+  gameState = STATE.PLAYING;
 }
 
 function gameOver(won) {
@@ -2527,6 +2545,14 @@ document.getElementById('startBtn').addEventListener('click', () => startGame(1)
 document.getElementById('resumeBtn').addEventListener('click', resumeGame);
 document.getElementById('restartBtn').addEventListener('click', () => startGame(currentSaveSlot));
 document.getElementById('continueBtn').addEventListener('click', () => continueGame(currentSaveSlot));
+document.getElementById('saveYesBtn').addEventListener('click', () => {
+  saveProgress(currentSaveSlot);
+  refreshSaveSlotButtons();
+  proceedToNextLevel();
+});
+document.getElementById('saveNoBtn').addEventListener('click', () => {
+  proceedToNextLevel();
+});
 
 // 存档槽按钮
 document.querySelectorAll('.save-slot-btn').forEach(btn => {
