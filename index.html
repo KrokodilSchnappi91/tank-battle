@@ -2959,7 +2959,10 @@ window.addEventListener('keydown', function menuHandler(e) {
 
 document.getElementById('menuResumeBtn').addEventListener('click', closeMenu);
 document.getElementById('menuRestartBtn').addEventListener('click', () => {
-  closeMenu(); resetGame(); gameState = STATE.PLAYING; resizeCanvas(); loadLevel(level);
+  const curLvl = level;
+  closeMenu(); resetGame();
+  level = curLvl; selectedLevel = curLvl;
+  gameState = STATE.PLAYING; resizeCanvas(); loadLevel(level);
 });
 document.getElementById('menuLevelBtn').addEventListener('click', () => {
   document.getElementById('menuOverlay').classList.add('hidden');
@@ -3012,9 +3015,14 @@ function buildMenuLevelGrid() {
   }
 }
 document.getElementById('menuLevelStartBtn').addEventListener('click', () => {
-  level = menuSelectedLevel; selectedLevel = menuSelectedLevel;
+  const targetLvl = menuSelectedLevel;
   document.getElementById('levelSelectOverlay').classList.add('hidden');
-  resetGame(); gameState = STATE.PLAYING; resizeCanvas(); loadLevel(level);
+  resetGame();
+  level = targetLvl;
+  selectedLevel = targetLvl;
+  gameState = STATE.PLAYING;
+  resizeCanvas();
+  loadLevel(level);
 });
 document.getElementById('menuLevelCloseBtn').addEventListener('click', () => {
   document.getElementById('levelSelectOverlay').classList.add('hidden');
