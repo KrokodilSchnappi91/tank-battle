@@ -155,10 +155,10 @@
     align-items: center;
     gap: 0;
     position: absolute;
-    bottom: 12px;
+    bottom: 16px;
   }
-  #touchMove { left: 12px; }
-  #touchAim { right: 12px; }
+  #touchMove { left: 16px; bottom: 16px; }
+  #touchAim { right: 16px; bottom: 16px; }
 
   .joystick-area {
     width: 100px;
@@ -2926,16 +2926,22 @@ function startGame(slot) {
   resizeCanvas();
   loadLevel(level);
 
-  // 手机端自动横屏全屏
+  // 手机端强制横屏+全屏
   if (isTouchDevice || window.innerWidth < 768) {
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape').catch(() => {});
-    }
-    setTimeout(() => {
-      const el = document.documentElement;
+    // 先全屏
+    const el = document.documentElement;
+    const goFS = () => {
       if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
       else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    }, 500);
+    };
+    goFS();
+    // 再锁横屏
+    setTimeout(() => {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+      }
+      goFS(); // 再试一次
+    }, 300);
   }
 }
 
@@ -3017,6 +3023,22 @@ function checkOrientation() {
 checkOrientation();
 window.addEventListener('resize', checkOrientation);
 window.addEventListener('orientationchange', () => setTimeout(checkOrientation, 300));
+
+// 手机端：点击任意处触发全屏横屏
+if (isTouchDevice) {
+  const triggerFS = () => {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(() => {});
+    }
+    document.removeEventListener('click', triggerFS);
+    document.removeEventListener('touchstart', triggerFS);
+  };
+  document.addEventListener('click', triggerFS, { once: true });
+  document.addEventListener('touchstart', triggerFS, { once: true });
+}
 
 // 初始加载：刷新存档槽按钮文字
 function refreshSaveSlotButtons() {
