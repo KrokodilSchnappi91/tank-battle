@@ -486,7 +486,7 @@ window.addEventListener('keydown', e => {
 
   // 双击方向键检测（普通形态下触发冲刺，需体力足够）
   const dirKeys = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
-  if (!mythicMode && !dashState && dirKeys.includes(e.key) && player && player.alive && stamina >= DASH_COST) {
+  if (!dashState && dirKeys.includes(e.key) && player && player.alive && stamina >= DASH_COST) {
     const now = Date.now();
     if (lastKeyTime[e.key] && now - lastKeyTime[e.key] < 280) {
       // 双击触发冲刺
@@ -494,7 +494,14 @@ window.addEventListener('keydown', e => {
         : e.key === 'ArrowDown' ? DIR.DOWN
         : e.key === 'ArrowLeft' ? DIR.LEFT
         : DIR.RIGHT;
-      dashState = { dir: dashDir, timer: 13, maxTimer: 13 };
+      // 神话模式冲刺加强50%
+      const mythicBoost = mythicMode ? 1.5 : 1;
+      dashState = {
+        dir: dashDir,
+        timer: Math.floor(13 * mythicBoost),
+        maxTimer: Math.floor(13 * mythicBoost),
+        mythic: mythicMode
+      };
       stamina -= DASH_COST;
       lastKeyTime[e.key] = 0;
     } else {
@@ -738,7 +745,7 @@ class Tank {
     if (dashState && dashState.timer > 0) {
       dashState.timer--;
       // 冲刺移动（高速）
-      const dashSpd = 0.3; // 约8倍速
+      const dashSpd = dashState.mythic ? 0.45 : 0.3; // 神话1.5倍
       const nx = this.x + dashState.dir.x * dashSpd;
       const ny = this.y + dashState.dir.y * dashSpd;
       if (this.canMoveTo(nx, ny, dashState.dir)) {
@@ -754,7 +761,7 @@ class Tank {
           this.x * BASE_CELL, this.y * BASE_CELL,
           -dashState.dir.x * 2 + (Math.random()-0.5)*2,
           -dashState.dir.y * 2 + (Math.random()-0.5)*2,
-          '#4ecdc4', 8 + Math.random() * 8
+          dashState.mythic ? '#ffd700' : '#4ecdc4', 8 + Math.random() * 8
         ));
       }
       // 结束冲刺
@@ -780,8 +787,8 @@ class Tank {
       if (moveDx !== 0) this.dir = moveDx > 0 ? DIR.RIGHT : DIR.LEFT;
       else if (moveDy !== 0) this.dir = moveDy > 0 ? DIR.DOWN : DIR.UP;
 
-      // 移动车身（普通模式减半，神话模式全速）
-      const spd = this.speed * (mythicMode ? 0.035 : 0.018);
+      // 移动车身（普通半速，神话1.5倍速）
+      const spd = this.speed * (mythicMode ? 0.052 : 0.018);
       const nx = this.x + moveDx * spd;
       const ny = this.y + moveDy * spd;
 
@@ -1151,12 +1158,12 @@ class Tank {
     const isMythic = this.isPlayer && mythicMode;
     const isDashing = this.isPlayer && dashState && dashState.timer > 0;
 
-    // 冲刺：蓝色拖尾
+    // 冲刺：蓝色拖尾（神话金色）
     if (isDashing) {
       const alpha2 = dashState.timer / dashState.maxTimer;
       ctx.save();
       ctx.globalAlpha = alpha2 * 0.5;
-      ctx.fillStyle = '#4ecdc4';
+      ctx.fillStyle = dashState.mythic ? '#ffd700' : '#4ecdc4';
       for (let t = 1; t <= 3; t++) {
         const tx = cx - dashState.dir.x * CELL * t * 0.8;
         const ty = cy - dashState.dir.y * CELL * t * 0.8;
