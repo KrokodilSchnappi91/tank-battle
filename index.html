@@ -1928,43 +1928,34 @@ function generateMap(seed) {
   const rand = seededRandom(seed);
   const map = new Array(COLS * ROWS).fill(0);
 
-  // 确保玩家出生点和敌人出生点空旷
   const clearZone = (cx, cy, r) => {
     for (let dy = -r; dy <= r; dy++) {
       for (let dx = -r; dx <= r; dx++) {
         const tx = cx + dx, ty = cy + dy;
-        if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS) {
-          map[ty * COLS + tx] = 0;
-        }
+        if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS) map[ty * COLS + tx] = 0;
       }
     }
   };
 
-  // 玩家出生区
+  // 出生区保护
   clearZone(12, 24, 2);
-  // 敌人出生区
   clearZone(1, 1, 2);
   clearZone(COLS - 2, 1, 2);
   clearZone(COLS - 2, ROWS - 2, 2);
 
-  // 10-15关递增难度
-  const difficulty = Math.min(seed - 10, 50);
+  const difficulty = Math.min(seed, 80);
+  const brickDensity = 0.12 + difficulty * 0.004;
+  const steelDensity = 0.02 + difficulty * 0.002;
+  const grassDensity = 0.03 + difficulty * 0.001;
 
-  // 砖墙密度：15%-40%
-  const brickDensity = 0.15 + Math.min(difficulty * 0.005, 0.25);
-  // 钢墙密度：2%-15%
-  const steelDensity = 0.02 + Math.min(difficulty * 0.003, 0.13);
-  // 草丛密度：3%-10%
-  const grassDensity = 0.03 + Math.min(difficulty * 0.001, 0.07);
-
-  // 随机砖墙
+  // 砖墙
   for (let i = 0; i < COLS * ROWS * brickDensity; i++) {
     const x = Math.floor(rand() * (COLS - 4)) + 2;
     const y = Math.floor(rand() * (ROWS - 4)) + 2;
     if (map[y * COLS + x] === 0) map[y * COLS + x] = 1;
   }
 
-  // 钢墙（偏向中间和关键位置）
+  // 钢墙
   for (let i = 0; i < COLS * ROWS * steelDensity; i++) {
     const x = Math.floor(rand() * (COLS - 6)) + 3;
     const y = Math.floor(rand() * (ROWS - 10)) + 5;
@@ -1978,43 +1969,84 @@ function generateMap(seed) {
     if (map[y * COLS + x] === 0) map[y * COLS + x] = 4;
   }
 
-  // 每隔几关有特殊布局
-  if (seed % 5 === 0) {
-    // 环形钢墙
-    for (let x = 6; x < 20; x++) {
-      map[6 * COLS + x] = 2;
-      map[19 * COLS + x] = 2;
-    }
-    for (let y = 6; y < 20; y++) {
-      map[y * COLS + 6] = 2;
-      map[y * COLS + 19] = 2;
-    }
+  // === 多样化特殊布局（基于种子取模） ===
+  const pattern = seed % 12;
+
+  if (pattern === 0 || pattern === 6) {
+    // 环形钢墙堡垒
+    for (let x = 5; x < 21; x++) { map[5*COLS+x]=2; map[20*COLS+x]=2; }
+    for (let y = 5; y < 21; y++) { map[y*COLS+5]=2; map[y*COLS+20]=2; }
   }
 
-  if (seed % 7 === 0) {
-    // 十字通道
-    for (let y = 3; y < 23; y++) {
-      if (map[y * COLS + 13] === 0) map[y * COLS + 13] = 1;
-    }
-    for (let x = 3; x < 23; x++) {
-      if (map[13 * COLS + x] === 0) map[13 * COLS + x] = 1;
-    }
-  }
-
-  if (seed % 3 === 0) {
-    // 散落草丛区
-    for (let i = 0; i < 15; i++) {
-      const gx = 3 + Math.floor(rand() * 5) * 4;
-      const gy = 4 + Math.floor(rand() * 4) * 4;
-      for (let dy = 0; dy < 3; dy++) {
-        for (let dx = 0; dx < 3; dx++) {
-          const tx = gx + dx, ty = gy + dy;
-          if (tx < COLS && ty < ROWS && map[ty * COLS + tx] === 0) {
-            map[ty * COLS + tx] = 4;
-          }
-        }
+  if (pattern === 1 || pattern === 7) {
+    // 蛇形砖墙通道
+    for (let row = 3; row < 23; row += 4) {
+      const offset = (Math.floor(row/4) % 2) * 10;
+      for (let x = 2 + offset; x < 12 + offset && x < COLS - 1; x++) {
+        if (map[row * COLS + x] === 0) map[row * COLS + x] = 1;
       }
     }
+  }
+
+  if (pattern === 2 || pattern === 8) {
+    // 对角线钢墙
+    for (let i = 3; i < 20; i++) {
+      if (map[i * COLS + i + 3] === 0) map[i * COLS + i + 3] = 2;
+      if (map[i * COLS + (COLS - i - 4)] === 0) map[i * COLS + (COLS - i - 4)] = 2;
+    }
+  }
+
+  if (pattern === 3 || pattern === 9) {
+    // 四角草丛掩体
+    for (let dy = 0; dy < 4; dy++) {
+      for (let dx = 0; dx < 4; dx++) {
+        if (map[(3+dy)*COLS+(3+dx)]===0) map[(3+dy)*COLS+(3+dx)]=4;
+        if (map[(3+dy)*COLS+(COLS-4-dx)]===0) map[(3+dy)*COLS+(COLS-4-dx)]=4;
+        if (map[(ROWS-4-dy)*COLS+(3+dx)]===0) map[(ROWS-4-dy)*COLS+(3+dx)]=4;
+        if (map[(ROWS-4-dy)*COLS+(COLS-4-dx)]===0) map[(ROWS-4-dy)*COLS+(COLS-4-dx)]=4;
+      }
+    }
+  }
+
+  if (pattern === 4 || pattern === 10) {
+    // 中央十字钢墙阵
+    for (let y = 9; y < 17; y++) { if (map[y*COLS+13]===0) map[y*COLS+13]=2; }
+    for (let x = 7; x < 19; x++) { if (map[13*COLS+x]===0) map[13*COLS+x]=2; }
+    // 四周草丛
+    for (let i = 0; i < 20; i++) {
+      const gx = 2 + Math.floor(rand()*22), gy = 2 + Math.floor(rand()*6);
+      if (map[gy*COLS+gx]===0) map[gy*COLS+gx]=4;
+    }
+  }
+
+  if (pattern === 5 || pattern === 11) {
+    // 棋盘格钢墙+密集砖墙
+    for (let y = 4; y < 22; y += 3) {
+      for (let x = 3; x < 23; x += 3) {
+        if ((x + y) % 6 === 0 && map[y*COLS+x]===0) map[y*COLS+x]=2;
+        else if (map[y*COLS+x]===0) map[y*COLS+x]=1;
+      }
+    }
+  }
+
+  // 额外随机特色（每关不同组合）
+  if (seed % 8 < 3) {
+    // 横条草丛
+    for (let x = 2; x < 24; x++) {
+      const gy = 8 + Math.floor(rand()*10);
+      if (map[gy*COLS+x]===0) map[gy*COLS+x]=4;
+    }
+  }
+  if (seed % 6 === 0) {
+    // 竖条钢墙
+    for (let y = 4; y < 22; y++) {
+      const sx = 6 + Math.floor(rand()*14);
+      if (map[y*COLS+sx]===0) map[y*COLS+sx]=2;
+    }
+  }
+  if (seed % 9 < 2) {
+    // 地图中央开阔区
+    clearZone(13, 13, 4);
   }
 
   return map;
