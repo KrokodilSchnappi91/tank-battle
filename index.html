@@ -1288,7 +1288,7 @@ class Tank {
       const mby = this.y + pDir.y * 0.7;
       const missile = new Bullet(mbx, mby, pDir, false, true, 999);
       missile.isMissile = true;
-      missile.speed = 0.054;
+      missile.speed = 0.038;
       missile.size = Math.max(4, CELL * 0.22);
       bullets.push(missile);
 
@@ -1300,7 +1300,7 @@ class Tank {
         const rby = this.y + rDir.y * 0.7;
         const rMissile = new Bullet(rbx, rby, rDir, false, false, 999);
         rMissile.isMissile = true;
-        rMissile.speed = 0.042;
+        rMissile.speed = 0.03;
         rMissile.size = Math.max(4, CELL * 0.2);
         bullets.push(rMissile);
       }
@@ -1522,7 +1522,7 @@ class Bullet {
     this.homing = homing;     // 追踪弹
     this.hp = hp;             // 子弹生命值（Boss子弹需多枪抵消）
     this.isMissile = false;   // 是否为Boss导弹（不可抵消+范围爆炸）
-    this.speed = isPlayer ? 0.13 : 0.07; // 全子弹减速40%
+    this.speed = isPlayer ? 0.13 : 0.05; // 敌人子弹再减30%
     this.alive = true;
     this.size = Math.max(2, CELL * 0.12);
     this.life = 0;            // 存活帧数
