@@ -1981,10 +1981,11 @@ class PowerUp {
   apply() {
     if (this.type === 'speed') {
       player.speed = Math.min(player.speed + 0.3, 2.5);
-      setTimeout(() => { if (player) player.speed = 1.2; }, 10000);
+      player._speedBuffTimer = 600; // 10秒
       score += 200;
     } else if (this.type === 'shield') {
       player.invincible = 300;
+      player._shieldBuffTimer = 300;
       score += 200;
     } else if (this.type === 'health') {
       lives = Math.min(lives + 1, 10);
@@ -2305,9 +2306,20 @@ function spawnEnemy() {
 function update() {
   if (gameState !== STATE.PLAYING) return;
 
-  // 66关达到1万分解锁后续关卡
+  // 66关解锁
   if (!advancedUnlocked && level >= 66 && score >= 10000) {
     advancedUnlocked = true;
+  }
+
+  // Buff计时器
+  if (player && player.alive) {
+    if (player._speedBuffTimer > 0) {
+      player._speedBuffTimer--;
+      if (player._speedBuffTimer <= 0) player.speed = 1.2;
+    }
+    if (player._shieldBuffTimer > 0) {
+      player._shieldBuffTimer--;
+    }
   }
 
   // 体力回复
@@ -2891,6 +2903,36 @@ function render() {
   // 关卡
   ctx.fillStyle = '#4ecdc4';
   ctx.fillText(`🏆${level}`, hpBarX, hpBarY + hpBarH + 24);
+
+  // Buff条（血条下方右侧）
+  if (player && player.alive) {
+    let buffX = hpBarX + hpBarW + 4;
+    const buffY = hpBarY;
+    if (player._speedBuffTimer > 0) {
+      const sec = (player._speedBuffTimer / 60).toFixed(0);
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(buffX, buffY, 48, hpBarH + 2);
+      ctx.fillStyle = '#4ecdc4';
+      ctx.fillRect(buffX, buffY, 48 * player._speedBuffTimer / 600, hpBarH + 2);
+      ctx.fillStyle = '#fff';
+      const bfs = Math.max(8, CELL * 0.32);
+      ctx.font = `${bfs}px Arial`;
+      ctx.fillText(`⚡${sec}s`, buffX + 3, buffY + hpBarH);
+      buffX += 52;
+    }
+    if (player._shieldBuffTimer > 0) {
+      const sec = (player._shieldBuffTimer / 60).toFixed(0);
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(buffX, buffY, 48, hpBarH + 2);
+      ctx.fillStyle = '#ffd93d';
+      ctx.fillRect(buffX, buffY, 48 * player._shieldBuffTimer / 300, hpBarH + 2);
+      ctx.fillStyle = '#fff';
+      const bfs = Math.max(8, CELL * 0.32);
+      ctx.font = `${bfs}px Arial`;
+      ctx.fillText(`🛡${sec}s`, buffX + 3, buffY + hpBarH);
+      buffX += 52;
+    }
+  }
 
   // 体力条（左上血条下方）
   const stBarW = 80, stBarH = 4;
