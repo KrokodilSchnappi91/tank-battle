@@ -2504,9 +2504,14 @@ function spawnEnemy() {
 function update() {
   if (gameState !== STATE.PLAYING) return;
 
-  // 66关解锁
+  // 66关解锁 + 自动进入杀神形态
   if (!advancedUnlocked && level >= 66 && score >= 10000) {
     advancedUnlocked = true;
+  }
+  if (level >= 66 && !godSlayerMode && !mythicMode && player && player.alive) {
+    godSlayerMode = true;
+    player.invincible = 90;
+    player.color = '#cc0000';
   }
 
   // Buff计时器
