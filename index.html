@@ -522,42 +522,21 @@ window.addEventListener('keyup', e => {
   }
 });
 
-// ====== 双摇杆触屏控制 ======
-let moveJoy = { active: false, dx: 0, dy: 0 };
-let aimJoy = { active: false, dx: 0, dy: 0 };
+// ====== 双摇杆触屏控制（多点触控独立跟踪） ======
+let moveJoy = { active: false, dx: 0, dy: 0, touchId: null };
+let aimJoy = { active: false, dx: 0, dy: 0, touchId: null };
 
-function setupJoystick(areaId, knobId, stateObj, isAim) {
+function setupJoystick(areaId, knobId, stateObj) {
   const area = document.getElementById(areaId);
   const knob = document.getElementById(knobId);
   if (!area || !knob) return;
 
-  const getPos = (e) => {
-    const rect = area.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const maxR = rect.width / 2 - 22;
-    return { cx, cy, maxR, clientX: e.touches ? e.touches[0].clientX : e.clientX, clientY: e.touches ? e.touches[0].clientY : e.clientY };
-  };
-
-  const onStart = (e) => {
-    e.preventDefault();
-    const { cx, cy, maxR, clientX, clientY } = getPos(e);
-    stateObj.active = true;
-    updateKnob(clientX, clientY);
-  };
-
-  const onMove = (e) => {
-    if (!stateObj.active) return;
-    e.preventDefault();
-    const { clientX, clientY } = getPos(e);
-    updateKnob(clientX, clientY);
-  };
-
-  const onEnd = (e) => {
-    stateObj.active = false;
-    stateObj.dx = 0;
-    stateObj.dy = 0;
-    knob.style.transform = 'translate(-50%, -50%)';
+  const findTouch = (e) => {
+    if (stateObj.touchId === null) return null;
+    for (let i = 0; i < e.touches.length; i++) {
+      if (e.touches[i].identifier === stateObj.touchId) return e.touches[i];
+    }
+    return null;
   };
 
   const updateKnob = (clientX, clientY) => {
@@ -574,17 +553,73 @@ function setupJoystick(areaId, knobId, stateObj, isAim) {
     knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   };
 
-  area.addEventListener('touchstart', onStart, { passive: false });
-  area.addEventListener('touchmove', onMove, { passive: false });
-  area.addEventListener('touchend', onEnd);
-  area.addEventListener('touchcancel', onEnd);
-  area.addEventListener('mousedown', onStart);
-  window.addEventListener('mousemove', (e) => { if (stateObj.active) { updateKnob(e.clientX, e.clientY); } });
-  window.addEventListener('mouseup', onEnd);
+  area.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (stateObj.touchId !== null) return; // 已有手指
+    const t = e.changedTouches[0];
+    stateObj.touchId = t.identifier;
+    stateObj.active = true;
+    updateKnob(t.clientX, t.clientY);
+  }, { passive: false });
+
+  area.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    const t = findTouch(e);
+    if (!t) return;
+    updateKnob(t.clientX, t.clientY);
+  }, { passive: false });
+
+  area.addEventListener('touchend', (e) => {
+    const t = findTouch(e);
+    if (!t && e.changedTouches.length > 0) {
+      // 检查是否是我们的手指
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === stateObj.touchId) {
+          stateObj.touchId = null;
+          stateObj.active = false;
+          stateObj.dx = 0;
+          stateObj.dy = 0;
+          knob.style.transform = 'translate(-50%, -50%)';
+          return;
+        }
+      }
+      return;
+    }
+    stateObj.touchId = null;
+    stateObj.active = false;
+    stateObj.dx = 0;
+    stateObj.dy = 0;
+    knob.style.transform = 'translate(-50%, -50%)';
+  });
+
+  area.addEventListener('touchcancel', () => {
+    stateObj.touchId = null;
+    stateObj.active = false;
+    stateObj.dx = 0;
+    stateObj.dy = 0;
+    knob.style.transform = 'translate(-50%, -50%)';
+  });
+
+  // 桌面鼠标支持
+  area.addEventListener('mousedown', (e) => {
+    stateObj.active = true;
+    updateKnob(e.clientX, e.clientY);
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (stateObj.active && stateObj.touchId === null) updateKnob(e.clientX, e.clientY);
+  });
+  window.addEventListener('mouseup', () => {
+    if (stateObj.touchId === null) {
+      stateObj.active = false;
+      stateObj.dx = 0;
+      stateObj.dy = 0;
+      knob.style.transform = 'translate(-50%, -50%)';
+    }
+  });
 }
 
-setupJoystick('moveJoystick', 'moveKnob', moveJoy, false);
-setupJoystick('aimJoystick', 'aimKnob', aimJoy, true);
+setupJoystick('moveJoystick', 'moveKnob', moveJoy);
+setupJoystick('aimJoystick', 'aimKnob', aimJoy);
 
 // 暂停按钮
 document.getElementById('btnPause')?.addEventListener('click', () => {
