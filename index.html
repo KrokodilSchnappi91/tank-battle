@@ -1995,7 +1995,6 @@ class PowerUp {
 
   draw(ctx) {
     if (!this.alive) return;
-    if (this.blink % 30 < 15) return;
 
     const cx = (this.x + 0.5) * CELL;
     const cy = (this.y + 0.5) * CELL;
