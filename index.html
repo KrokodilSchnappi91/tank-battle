@@ -720,7 +720,7 @@ class Tank {
       else if (moveDy !== 0) this.dir = moveDy > 0 ? DIR.DOWN : DIR.UP;
 
       // 移动车身
-      const spd = this.speed * 0.06;
+      const spd = this.speed * 0.035;
       const nx = this.x + moveDx * spd;
       const ny = this.y + moveDy * spd;
 
