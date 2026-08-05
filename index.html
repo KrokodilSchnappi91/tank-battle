@@ -263,10 +263,6 @@
   }
 
   .hidden { display: none !important; }
-  .mobile-only { display: none; }
-  @media (max-width: 768px), (hover: none) and (pointer: coarse) {
-    .mobile-only { display: inline-block; }
-  }
 
   @keyframes pulse {
     0%, 100% { transform: scale(1); }
@@ -380,7 +376,7 @@
   <div class="overlay-content">
     <h1>🎮 坦克大战</h1>
     <p>消灭所有敌方坦克！手机请横屏游玩</p>
-    <button class="btn mobile-only" id="startFullscreenBtn" style="background:#4ecdc4;font-size:14px;padding:8px 20px;margin-top:4px;">📺 横屏全屏模式</button>
+    <button class="btn" id="startFullscreenBtn" style="background:#4ecdc4;font-size:14px;padding:8px 20px;margin-top:4px;">📺 横屏全屏模式</button>
     <p style="margin-top:12px; color:#666;">🏗️ 棕色砖墙可被摧毁</p>
     <p style="color:#666;">🔩 灰色钢墙坚不可摧</p>
     <p style="color:#666;">🌲 草丛隐藏坦克行踪</p>
