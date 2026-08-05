@@ -1132,7 +1132,7 @@ class Tank {
     if (dashState && dashState.timer > 0) {
       dashState.timer--;
       // 冲刺移动（高速）
-      const dashSpd = dashState.mythic ? 0.028 : 0.018;
+      const dashSpd = dashState.mythic ? 0.056 : 0.036;
       const nx = this.x + dashState.dir.x * dashSpd;
       const ny = this.y + dashState.dir.y * dashSpd;
       if (this.canMoveTo(nx, ny, dashState.dir)) {
@@ -1180,7 +1180,7 @@ class Tank {
       else if (moveDy !== 0) this.dir = moveDy > 0 ? DIR.DOWN : DIR.UP;
 
       // 移动车身（普通半速，神话1.5倍速）
-      const spd = this.speed * (mythicMode ? 0.003 : 0.001);
+      const spd = this.speed * (mythicMode ? 0.006 : 0.002);
       const nx = this.x + moveDx * spd;
       const ny = this.y + moveDy * spd;
 
@@ -1269,7 +1269,7 @@ class Tank {
     if (!this.targetDir) this.targetDir = this.dir;
 
     // Boss全速，小兵半速（全部减速40%）
-    const spd = this.speed * (this.type === 'boss' ? 0.002 : 0.001);
+    const spd = this.speed * (this.type === 'boss' ? 0.004 : 0.002);
     // 先尝试朝目标方向移动
     const tx = this.x + this.targetDir.x * spd;
     const ty = this.y + this.targetDir.y * spd;
@@ -1381,7 +1381,7 @@ class Tank {
           const by = this.y + dir.y * 0.7;
           const missile = new Bullet(bx, by, dir, true, true, 999);
           missile.isMissile = true;
-          missile.speed = 0.014;
+          missile.speed = 0.028;
           missile.size = Math.max(4, CELL * 0.2);
           bullets.push(missile);
         }
@@ -1457,7 +1457,7 @@ class Tank {
       const mby = this.y + pDir.y * 0.7;
       const missile = new Bullet(mbx, mby, pDir, false, true, 999);
       missile.isMissile = true;
-      missile.speed = 0.009;
+      missile.speed = 0.018;
       missile.size = Math.max(4, CELL * 0.22);
       bullets.push(missile);
 
@@ -1710,7 +1710,7 @@ class Bullet {
     this.homing = homing;     // 追踪弹
     this.hp = hp;             // 子弹生命值（Boss子弹需多枪抵消）
     this.isMissile = false;   // 是否为Boss导弹（不可抵消+范围爆炸）
-    this.speed = isPlayer ? 0.03 : 0.012; // 再减60%
+    this.speed = isPlayer ? 0.06 : 0.024; // ×2
     this.alive = true;
     this.size = Math.max(2, CELL * 0.12);
     this.life = 0;            // 存活帧数
