@@ -457,6 +457,7 @@ let deathTimer = 0;           // 死亡重生倒计时
 let bossActive = false;       // Boss 战中
 let bossTank = null;          // Boss 坦克引用
 let bossPhase = 1;            // Boss 当前阶段
+let nukes = [];               // 核弹列表
 let enemiesRemaining = 0;
 let enemiesOnScreen = 0;
 let maxEnemiesOnScreen = 4;
@@ -919,16 +920,31 @@ class Tank {
     const spread = isPhase2 ? 0.2 : 0.3;
     const baseDir = this.turretDir;
 
-    // 每第3次攻击：发射追踪导弹
-    if (this._attackCount % 3 === 0) {
-      // 1发追踪玩家的导弹
+    // 每第4次攻击：核弹预警
+    if (this._attackCount % 4 === 0) {
+      const nukeCount = isPhase2 ? 5 : 3;
+      for (let n = 0; n < nukeCount; n++) {
+        // 随机位置（避开边缘）
+        const nx = 2 + Math.random() * (COLS - 4);
+        const ny = 2 + Math.random() * (ROWS - 4);
+        nukes.push({
+          x: nx, y: ny,
+          timer: 120,        // 2秒后爆炸
+          maxTimer: 120,
+          radius: isPhase2 ? 5 : 4,  // 爆炸半径
+          warningRadius: isPhase2 ? 5 : 4
+        });
+      }
+      this.shootCooldown = this.shootDelay * 2; // 核弹攻击冷却更长
+    } else if (this._attackCount % 3 === 0) {
+      // 每第3次攻击：发射追踪导弹
       const pdx = player.x - this.x;
       const pdy = player.y - this.y;
       const pAngle = Math.atan2(pdy, pdx);
       const pDir = { x: Math.cos(pAngle), y: Math.sin(pAngle), angle: pAngle };
       const mbx = this.x + pDir.x * 0.7;
       const mby = this.y + pDir.y * 0.7;
-      const missile = new Bullet(mbx, mby, pDir, false, true, 999); // 追踪+无法抵消
+      const missile = new Bullet(mbx, mby, pDir, false, true, 999);
       missile.isMissile = true;
       missile.speed = 0.09;
       missile.size = Math.max(4, CELL * 0.22);
@@ -1475,6 +1491,7 @@ function loadLevel(lvl) {
   bossActive = false;
   bossTank = null;
   bossPhase = 1;
+  nukes = [];
   updateUI();
 }
 
@@ -1574,6 +1591,61 @@ function update() {
       }
     }
   }
+
+  // 更新核弹
+  for (const nuke of nukes) {
+    nuke.timer--;
+    if (nuke.timer <= 0 && !nuke._exploded) {
+      nuke._exploded = true;
+      // 核弹爆炸
+      const r = nuke.radius;
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          const tx = Math.floor(nuke.x) + dx;
+          const ty = Math.floor(nuke.y) + dy;
+          if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS) {
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist <= r) {
+              // 摧毁砖墙（钢墙保留）
+              if (mapData[ty * COLS + tx] === 1) {
+                mapData[ty * COLS + tx] = 0;
+              }
+            }
+          }
+        }
+      }
+      // 伤害范围内玩家
+      if (player && player.alive) {
+        const pdx = player.x - nuke.x;
+        const pdy = player.y - nuke.y;
+        if (Math.sqrt(pdx*pdx + pdy*pdy) < r) {
+          player.hit();
+        }
+      }
+      // 伤害范围内敌人
+      for (const enemy of enemies) {
+        if (!enemy.alive) continue;
+        const edx = enemy.x - nuke.x;
+        const edy = enemy.y - nuke.y;
+        if (Math.sqrt(edx*edx + edy*edy) < r) {
+          enemy.hit();
+        }
+      }
+      // 大爆炸特效
+      for (let i = 0; i < 40; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const dist = Math.random() * r * 0.8;
+        particles.push(new Particle(
+          nuke.x * BASE_CELL + Math.cos(a) * dist * BASE_CELL,
+          nuke.y * BASE_CELL + Math.sin(a) * dist * BASE_CELL,
+          (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4,
+          ['#ff4500', '#ff8c00', '#ffd700', '#ff0000'][Math.floor(Math.random()*4)],
+          25 + Math.random() * 35
+        ));
+      }
+    }
+  }
+  nukes = nukes.filter(n => n.timer > -30); // 爆炸后保留30帧特效
 
   // Boss被击败 → 过关
   if (bossActive && (!bossTank || !bossTank.alive)) {
@@ -1717,6 +1789,7 @@ function resetGame() {
   bossActive = false;
   bossTank = null;
   bossPhase = 1;
+  nukes = [];
   enemiesRemaining = 0;
   enemiesOnScreen = 0;
   maxEnemiesOnScreen = 4;
@@ -1831,6 +1904,44 @@ function render() {
       6 + row * (is + 2),
       is, is
     );
+  }
+
+  // 核弹警告圈
+  for (const nuke of nukes) {
+    if (nuke._exploded) continue;
+    const progress = 1 - nuke.timer / nuke.maxTimer; // 0→1
+    const pulse = 0.5 + Math.sin(Date.now() / 100) * 0.5;
+    const alpha = 0.3 + progress * 0.5 + pulse * 0.2;
+    const nx = nuke.x * CELL;
+    const ny = nuke.y * CELL;
+    const nr = nuke.radius * CELL;
+
+    // 填充
+    ctx.fillStyle = `rgba(255, 30, 0, ${alpha * 0.3})`;
+    ctx.beginPath();
+    ctx.arc(nx, ny, nr, 0, Math.PI * 2);
+    ctx.fill();
+    // 边框
+    ctx.strokeStyle = `rgba(255, 50, 0, ${alpha})`;
+    ctx.lineWidth = 2 + pulse * 2;
+    ctx.setLineDash([8, 4]);
+    ctx.beginPath();
+    ctx.arc(nx, ny, nr, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineWidth = 1;
+    // 倒计时文字
+    const secLeft = (nuke.timer / 60).toFixed(1);
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    const nfs = Math.max(13, CELL * 0.55);
+    ctx.font = `bold ${nfs}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillText(`☢ ${secLeft}s`, nx, ny + nfs * 0.35);
+    // 中心点
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.arc(nx, ny, Math.max(3, CELL * 0.15), 0, Math.PI * 2);
+    ctx.fill();
   }
 
   // Boss 警告
