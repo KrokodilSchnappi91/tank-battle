@@ -340,7 +340,8 @@
 
   <!-- 桌面键盘提示 -->
   <div class="game-controls desktop-only">
-    <div class="key-hint"><span>↑↓←→</span> 移动</div>
+    <div class="key-hint"><span>WASD</span> 移动</div>
+    <div class="key-hint"><span>↑↓←→</span> 瞄准</div>
     <div class="key-hint"><span>空格</span> 射击</div>
     <div class="key-hint"><span>P</span> 暂停</div>
   </div>
@@ -660,7 +661,8 @@ class Tank {
   constructor(x, y, dir, color, speed, isPlayer = false) {
     this.x = x;
     this.y = y;
-    this.dir = dir;
+    this.dir = dir;           // 车身朝向（移动方向）
+    this.turretDir = dir;     // 炮塔朝向（射击方向），玩家可独立控制
     this.color = color;
     this.speed = speed;
     this.isPlayer = isPlayer;
@@ -705,27 +707,24 @@ class Tank {
   }
 
   playerInput() {
-    // 读取方向输入
+    // ===== WASD：控制车身移动 =====
     let dx = 0, dy = 0;
-    if (isKeyDown('ArrowUp') || isKeyDown('KeyW')) dy = -1;
-    if (isKeyDown('ArrowDown') || isKeyDown('KeyS')) dy = 1;
-    if (isKeyDown('ArrowLeft') || isKeyDown('KeyA')) dx = -1;
-    if (isKeyDown('ArrowRight') || isKeyDown('KeyD')) dx = 1;
+    if (isKeyDown('KeyW')) dy = -1;
+    if (isKeyDown('KeyS')) dy = 1;
+    if (isKeyDown('KeyA')) dx = -1;
+    if (isKeyDown('KeyD')) dx = 1;
 
-    // 有方向输入时更新朝向并移动
     if (dx !== 0 || dy !== 0) {
-      // 优先新方向，否则保持原方向
+      // 更新车身朝向
       if (dx !== 0) this.dir = dx > 0 ? DIR.RIGHT : DIR.LEFT;
       else if (dy !== 0) this.dir = dy > 0 ? DIR.DOWN : DIR.UP;
 
-      // 直接移动（每帧 0.06 格 ≈ 3.6格/秒）
+      // 移动车身
       const spd = this.speed * 0.06;
       const nx = this.x + dx * spd;
       const ny = this.y + dy * spd;
 
-      // 尝试轴向移动
       if (dx !== 0 && dy !== 0) {
-        // 斜向：分别尝试
         if (this.canMoveTo(nx, this.y, this.dir)) this.x = nx;
         if (this.canMoveTo(this.x, ny, this.dir)) this.y = ny;
       } else if (dx !== 0) {
@@ -735,8 +734,34 @@ class Tank {
       }
     }
 
+    // ===== 方向键：控制炮塔朝向（不影响移动） =====
+    if (isKeyDown('ArrowUp'))    this.turretDir = DIR.UP;
+    if (isKeyDown('ArrowDown'))  this.turretDir = DIR.DOWN;
+    if (isKeyDown('ArrowLeft'))  this.turretDir = DIR.LEFT;
+    if (isKeyDown('ArrowRight')) this.turretDir = DIR.RIGHT;
+
+    // 触屏模拟：WASD 映射到方向键 → 同时移动和瞄准
+    if (isTouchDevice) {
+      if (isKeyDown('ArrowUp'))    { if (!isKeyDown('KeyW') && !isKeyDown('KeyS')) { this.dir = DIR.UP;    this.tryMoveBody(DIR.UP); } }
+      if (isKeyDown('ArrowDown'))  { if (!isKeyDown('KeyW') && !isKeyDown('KeyS')) { this.dir = DIR.DOWN;  this.tryMoveBody(DIR.DOWN); } }
+      if (isKeyDown('ArrowLeft'))  { if (!isKeyDown('KeyW') && !isKeyDown('KeyS') && !isKeyDown('KeyA') && !isKeyDown('KeyD')) { this.dir = DIR.LEFT;  this.tryMoveBody(DIR.LEFT); } }
+      if (isKeyDown('ArrowRight')) { if (!isKeyDown('KeyW') && !isKeyDown('KeyS') && !isKeyDown('KeyA') && !isKeyDown('KeyD')) { this.dir = DIR.RIGHT; this.tryMoveBody(DIR.RIGHT); } }
+    }
+
+    // ===== 射击 =====
     if (isKeyDown(' ') || isKeyDown('Space')) {
       this.shoot();
+    }
+  }
+
+  // 辅助：仅朝指定方向移动一步（触屏用）
+  tryMoveBody(moveDir) {
+    const spd = this.speed * 0.06;
+    const nx = this.x + moveDir.x * spd;
+    const ny = this.y + moveDir.y * spd;
+    if (this.canMoveTo(nx, ny, moveDir)) {
+      this.x = nx;
+      this.y = ny;
     }
   }
 
@@ -760,6 +785,7 @@ class Tank {
       } else {
         this.dir = dirs[Math.floor(Math.random() * 4)];
       }
+      this.turretDir = this.dir;
       this.changeDirTimer = this.changeDirDelay;
     }
 
@@ -813,9 +839,11 @@ class Tank {
   shoot() {
     if (this.shootCooldown > 0) return;
     this.shootCooldown = this.shootDelay;
-    const bx = this.x + this.dir.x * 0.5;
-    const by = this.y + this.dir.y * 0.5;
-    bullets.push(new Bullet(bx, by, this.dir, this.isPlayer));
+    // 玩家使用炮塔方向射击，AI 使用车身方向
+    const shootDir = this.isPlayer ? this.turretDir : this.dir;
+    const bx = this.x + shootDir.x * 0.5;
+    const by = this.y + shootDir.y * 0.5;
+    bullets.push(new Bullet(bx, by, shootDir, this.isPlayer));
   }
 
   hit() {
@@ -860,6 +888,7 @@ class Tank {
     const cy = this.y * CELL;
     const half = (this.size * CELL) / 2;
 
+    // ---- 车身（按移动方向旋转） ----
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(this.dir.angle);
@@ -881,8 +910,17 @@ class Tank {
       ctx.fillRect(half - trackW + 2, i, trackW, 2);
     }
 
-    // 炮塔
+    ctx.restore();
+
+    // ---- 炮塔（按炮塔方向旋转） ----
+    ctx.save();
+    ctx.translate(cx, cy);
+    const turretAngle = (this.isPlayer ? this.turretDir : this.dir).angle;
+    ctx.rotate(turretAngle);
+
     const turretColor = this.isPlayer ? '#4ecdc4' : '#ffd93d';
+
+    // 炮塔底座
     ctx.fillStyle = turretColor;
     ctx.beginPath();
     ctx.arc(0, 0, half * 0.55, 0, Math.PI * 2);
@@ -1200,6 +1238,7 @@ function update() {
 
 function respawnPlayer() {
   player = new Tank(12.5, 24, DIR.UP, '#2ecc71', 1.2, true);
+  player.turretDir = DIR.UP;
   player.invincible = 120;
   updateUI();
 }
