@@ -1169,21 +1169,16 @@ class Tank {
       // 冲刺全程无敌 + 结束后30帧缓冲
       this.invincible = dashState.timer + 30;
       // 杀神冲刺：神龙摆尾（每3帧释放弧形尾部火球）
-      if (godSlayerMode && dashState.timer % 15 === 0) {
-        const tailLen = 3;
-        const sweepAngle = Math.sin(dashState.timer * 0.2) * Math.PI * 0.5;
-        for (let t = 0; t < tailLen; t++) {
-          const tailX = this.x - dashState.dir.x * t * 0.5;
-          const tailY = this.y - dashState.dir.y * t * 0.5;
-          const spread = (t / tailLen) * sweepAngle;
-          const a = dashState.dir.angle + spread;
-          const dir = { x: Math.cos(a), y: Math.sin(a), angle: a };
-          const fb = new Bullet(tailX + dir.x * 0.5, tailY + dir.y * 0.5, dir, true);
-          fb.isMissile = true; fb.speed = 0.06;
-          fb.size = Math.max(8, CELL * 0.35);
-          fb.hp = 999; fb._fireball = true; fb._fuseTimer = 35;
-          bullets.push(fb);
-        }
+      // 杀神冲刺：神龙摆尾（每10帧1枚巨型火球）
+      if (godSlayerMode && dashState.timer % 10 === 0) {
+        const sweepAngle = Math.sin(dashState.timer * 0.2) * Math.PI * 0.4;
+        const a = dashState.dir.angle + sweepAngle;
+        const dir = { x: Math.cos(a), y: Math.sin(a), angle: a };
+        const fb = new Bullet(this.x + dir.x, this.y + dir.y, dir, true);
+        fb.isMissile = true; fb.speed = 0.15;
+        fb.size = Math.max(14, CELL * 0.6);
+        fb.hp = 999; fb._fireball = true; fb._fuseTimer = 20;
+        bullets.push(fb);
       }
 
       // 冲刺粒子
