@@ -1166,13 +1166,26 @@ class Tank {
       }
       // 冲刺全程无敌 + 结束后30帧缓冲
       this.invincible = dashState.timer + 30;
+      // 杀神形态冲刺：依次释放360°大火球
+      if (godSlayerMode && dashState.timer % 4 === 0) {
+        const idx = Math.floor((dashState.maxTimer - dashState.timer) / 4);
+        const total = Math.floor(dashState.maxTimer / 4);
+        const angle = (Math.PI * 2 / total) * idx;
+        const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
+        const fb = new Bullet(this.x + dir.x * 0.8, this.y + dir.y * 0.8, dir, true);
+        fb.isMissile = true; fb.speed = 0.1;
+        fb.size = Math.max(10, CELL * 0.5); // 更大
+        fb.hp = 999; fb._fireball = true; fb._fuseTimer = 30;
+        bullets.push(fb);
+      }
+
       // 冲刺粒子
       if (Math.random() < 0.6) {
         particles.push(new Particle(
           this.x * BASE_CELL, this.y * BASE_CELL,
           -dashState.dir.x * 2 + (Math.random()-0.5)*2,
           -dashState.dir.y * 2 + (Math.random()-0.5)*2,
-          dashState.mythic ? '#ffd700' : '#4ecdc4', 8 + Math.random() * 8
+          godSlayerMode ? '#ff4500' : (dashState.mythic ? '#ffd700' : '#4ecdc4'), 8 + Math.random() * 8
         ));
       }
       // 结束冲刺
