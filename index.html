@@ -263,6 +263,10 @@
   }
 
   .hidden { display: none !important; }
+  .mobile-only { display: none; }
+  @media (max-width: 768px), (hover: none) and (pointer: coarse) {
+    .mobile-only { display: inline-block; }
+  }
 
   @keyframes pulse {
     0%, 100% { transform: scale(1); }
@@ -375,7 +379,8 @@
 <div class="overlay" id="startOverlay">
   <div class="overlay-content">
     <h1>🎮 坦克大战</h1>
-    <p>消灭所有敌方坦克！</p>
+    <p>消灭所有敌方坦克！手机请横屏游玩</p>
+    <button class="btn mobile-only" id="startFullscreenBtn" style="background:#4ecdc4;font-size:14px;padding:8px 20px;margin-top:4px;">📺 横屏全屏模式</button>
     <p style="margin-top:12px; color:#666;">🏗️ 棕色砖墙可被摧毁</p>
     <p style="color:#666;">🔩 灰色钢墙坚不可摧</p>
     <p style="color:#666;">🌲 草丛隐藏坦克行踪</p>
@@ -2860,6 +2865,12 @@ function resumeGame() {
   document.getElementById('pauseOverlay').classList.add('hidden');
 }
 
+document.getElementById('startFullscreenBtn').addEventListener('click', () => {
+  if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+  const el = document.documentElement;
+  if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+});
 document.getElementById('startBtn').addEventListener('click', () => startGame(1));
 document.getElementById('resumeBtn').addEventListener('click', resumeGame);
 document.getElementById('restartBtn').addEventListener('click', () => startGame(currentSaveSlot));
@@ -2892,13 +2903,25 @@ function startGame(slot) {
   document.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
 
   resetGame();
-  level = selectedLevel; // 使用选择的关卡
+  level = selectedLevel;
   document.getElementById('startOverlay').classList.add('hidden');
   document.getElementById('pauseOverlay').classList.add('hidden');
   document.getElementById('gameOverOverlay').classList.add('hidden');
   gameState = STATE.PLAYING;
   resizeCanvas();
   loadLevel(level);
+
+  // 手机端自动横屏全屏
+  if (isTouchDevice || window.innerWidth < 768) {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(() => {});
+    }
+    setTimeout(() => {
+      const el = document.documentElement;
+      if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    }, 500);
+  }
 }
 
 function continueGame(slot) {
