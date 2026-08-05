@@ -1864,7 +1864,7 @@ function spawnBoss() {
   // Boss出生在顶部中央
   const bx = 12.5, by = 2;
   bossTank = new Tank(bx, by, DIR.DOWN, '#8b00ff', 0.7, false);
-  bossTank.hp = Math.floor((80 + level * 50) * 1.1); // L1=143, L2=198, L3=253...
+  bossTank.hp = Math.floor((80 + level * 50) * 0.77); // L1=100, L2=138, L3=177...
   bossTank._maxHp = bossTank.hp;         // 记录最大血量
   bossTank.size = 1.2;               // 体型更大
   bossTank.shootDelay = 30;          // 射击更快
