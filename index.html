@@ -679,7 +679,8 @@ class Tank {
     this.moveTimer = 0;
     this.moveDelay = isPlayer ? 0 : 35 + Math.floor(Math.random() * 50);
     this.changeDirTimer = 0;
-    this.changeDirDelay = 50 + Math.floor(Math.random() * 100);
+    this.changeDirDelay = 45 + Math.floor(Math.random() * 80);
+    this.targetDir = dir;     // AI 目标移动方向
     this.flashTimer = 0;
     this.invincible = isPlayer ? 120 : 0;
     this.hp = 1;
@@ -695,18 +696,8 @@ class Tank {
 
     if (!this.isPlayer) {
       this.aiUpdate();
-      // AI 移动（使用 moveTimer 控制节奏）
-      if (this.moveTimer <= 0) {
-        let moved = this.tryMove(this.dir);
-        if (moved) {
-          this.moveTimer = this.moveDelay;
-        }
-        if (!moved) {
-          this.changeDirTimer = 0;
-        }
-      } else {
-        this.moveTimer--;
-      }
+      // AI 连续自由移动
+      this.aiMove();
     } else {
       this.playerInput(); // 玩家在 playerInput 中直接移动
     }
@@ -760,36 +751,80 @@ class Tank {
   aiUpdate() {
     this.changeDirTimer--;
 
-    if (this.changeDirTimer <= 0 || Math.random() < 0.012) {
-      const dirs = [DIR.UP, DIR.DOWN, DIR.LEFT, DIR.RIGHT];
-      if (player && player.alive && Math.random() < 0.4) {
+    // 定时或随机更新目标方向
+    if (this.changeDirTimer <= 0 || Math.random() < 0.008) {
+      if (player && player.alive && Math.random() < 0.55) {
+        // 朝向玩家
         const dx = player.x - this.x;
         const dy = player.y - this.y;
-        const candidates = [];
         if (Math.abs(dx) > Math.abs(dy)) {
-          candidates.push(dx > 0 ? DIR.RIGHT : DIR.LEFT);
-          candidates.push(dy > 0 ? DIR.DOWN : DIR.UP);
+          this.targetDir = dx > 0 ? DIR.RIGHT : DIR.LEFT;
         } else {
-          candidates.push(dy > 0 ? DIR.DOWN : DIR.UP);
-          candidates.push(dx > 0 ? DIR.RIGHT : DIR.LEFT);
+          this.targetDir = dy > 0 ? DIR.DOWN : DIR.UP;
         }
-        this.dir = candidates[0];
       } else {
-        this.dir = dirs[Math.floor(Math.random() * 4)];
+        // 随机方向
+        const dirs = [DIR.UP, DIR.DOWN, DIR.LEFT, DIR.RIGHT];
+        // 排除当前方向的反方向（避免来回走）
+        const reverse = { x: -this.dir.x, y: -this.dir.y };
+        const filtered = dirs.filter(d => !(d.x === reverse.x && d.y === reverse.y));
+        this.targetDir = filtered[Math.floor(Math.random() * filtered.length)];
       }
-      this.turretDir = this.dir;
       this.changeDirTimer = this.changeDirDelay;
     }
 
-    if (this.shootCooldown <= 0 && Math.random() < 0.015) {
+    if (this.shootCooldown <= 0 && Math.random() < 0.012) {
       this.shoot();
     }
   }
 
-  tryMove(dir) {
-    const newX = this.x + dir.x * this.speed * 0.15;
-    const newY = this.y + dir.y * this.speed * 0.15;
-    return this.canMoveTo(newX, newY, dir);
+  aiMove() {
+    if (!this.targetDir) this.targetDir = this.dir;
+
+    const spd = this.speed * 0.035;
+    // 先尝试朝目标方向移动
+    const tx = this.x + this.targetDir.x * spd;
+    const ty = this.y + this.targetDir.y * spd;
+
+    if (this.canMoveTo(tx, ty, this.targetDir)) {
+      this.dir = this.targetDir;
+      this.x = tx;
+      this.y = ty;
+    } else if (this.canMoveTo(this.x + this.dir.x * spd, this.y + this.dir.y * spd, this.dir)) {
+      // 目标方向被挡，继续当前方向
+      this.x += this.dir.x * spd;
+      this.y += this.dir.y * spd;
+    } else {
+      // 当前方向也被挡，尝试垂直方向
+      const alts = this.dir.x === 0
+        ? [DIR.LEFT, DIR.RIGHT]
+        : [DIR.UP, DIR.DOWN];
+      let moved = false;
+      for (const alt of alts) {
+        const ax = this.x + alt.x * spd;
+        const ay = this.y + alt.y * spd;
+        if (this.canMoveTo(ax, ay, alt)) {
+          this.dir = alt;
+          this.x = ax;
+          this.y = ay;
+          moved = true;
+          break;
+        }
+      }
+      // 还是不行，尝试后退
+      if (!moved) {
+        const reverse = { x: -this.dir.x, y: -this.dir.y, angle: this.dir.angle + Math.PI };
+        const rx = this.x + reverse.x * spd;
+        const ry = this.y + reverse.y * spd;
+        if (this.canMoveTo(rx, ry, reverse)) {
+          this.dir = reverse;
+          this.x = rx;
+          this.y = ry;
+        }
+      }
+    }
+
+    this.turretDir = this.dir;
   }
 
   canMoveTo(nx, ny, dir) {
