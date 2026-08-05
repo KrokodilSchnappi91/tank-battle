@@ -374,8 +374,12 @@
     <p style="margin-top:12px; color:#666;">🏗️ 棕色砖墙可被摧毁</p>
     <p style="color:#666;">🔩 灰色钢墙坚不可摧</p>
     <p style="color:#666;">🌲 草丛隐藏坦克行踪</p>
-    <button class="btn" id="startBtn">开 始 游 戏</button>
-    <button class="btn" id="continueStartBtn" style="background:#4ecdc4;">读 取 存 档</button>
+    <button class="btn" id="startBtn">🆕 新 游 戏</button>
+    <div style="margin-top:12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;" id="saveSlotsContainer">
+      <button class="btn save-slot-btn" data-slot="1" style="background:#4ecdc4;font-size:13px;padding:10px 16px;">存档 1</button>
+      <button class="btn save-slot-btn" data-slot="2" style="background:#4ecdc4;font-size:13px;padding:10px 16px;">存档 2</button>
+      <button class="btn save-slot-btn" data-slot="3" style="background:#4ecdc4;font-size:13px;padding:10px 16px;">存档 3</button>
+    </div>
   </div>
 </div>
 
@@ -1867,22 +1871,36 @@ function respawnPlayer() {
   updateUI();
 }
 
-// ==================== 存档系统 ====================
-function saveProgress() {
-  const save = { level, score, kills };
-  localStorage.setItem('tankBattle_save', JSON.stringify(save));
+// ==================== 存档系统（3个槽位） ====================
+const SAVE_SLOTS = 3;
+let currentSaveSlot = 1; // 当前使用的存档槽
+
+function saveProgress(slot) {
+  slot = slot || currentSaveSlot;
+  const save = { level, score, kills, time: new Date().toLocaleString() };
+  localStorage.setItem(`tankBattle_save_${slot}`, JSON.stringify(save));
 }
 
-function loadProgress() {
+function loadProgress(slot) {
+  slot = slot || currentSaveSlot;
   try {
-    const raw = localStorage.getItem('tankBattle_save');
+    const raw = localStorage.getItem(`tankBattle_save_${slot}`);
     if (raw) return JSON.parse(raw);
   } catch(e) {}
   return null;
 }
 
-function hasSave() {
-  return !!loadProgress();
+function hasSave(slot) {
+  return !!loadProgress(slot || currentSaveSlot);
+}
+
+function getAllSaves() {
+  const saves = [];
+  for (let i = 1; i <= SAVE_SLOTS; i++) {
+    const s = loadProgress(i);
+    saves.push(s ? { slot: i, ...s } : null);
+  }
+  return saves;
 }
 
 function levelUp() {
@@ -1905,12 +1923,12 @@ function gameOver(won) {
   document.getElementById('finalScore').textContent = score;
   document.getElementById('finalKills').textContent = kills;
   document.getElementById('finalLevel').textContent = level;
-  // 显示继续按钮（如果有存档）
-  const save = loadProgress();
+  // 显示继续按钮
+  const save = loadProgress(currentSaveSlot);
   const contBtn = document.getElementById('continueBtn');
   if (save && !won) {
     contBtn.classList.remove('hidden');
-    contBtn.textContent = `继续第 ${save.level} 关`;
+    contBtn.textContent = `📂 继续存档${currentSaveSlot} (第${save.level}关)`;
   } else {
     contBtn.classList.add('hidden');
   }
@@ -2197,20 +2215,30 @@ function resumeGame() {
   document.getElementById('pauseOverlay').classList.add('hidden');
 }
 
-document.getElementById('startBtn').addEventListener('click', startGame);
-document.getElementById('continueStartBtn').addEventListener('click', continueGame);
+document.getElementById('startBtn').addEventListener('click', () => startGame(1));
 document.getElementById('resumeBtn').addEventListener('click', resumeGame);
-document.getElementById('restartBtn').addEventListener('click', startGame);
-document.getElementById('continueBtn').addEventListener('click', continueGame);
+document.getElementById('restartBtn').addEventListener('click', () => startGame(currentSaveSlot));
+document.getElementById('continueBtn').addEventListener('click', () => continueGame(currentSaveSlot));
 
-function startGame() {
-  // 释放所有触屏按键
+// 存档槽按钮
+document.querySelectorAll('.save-slot-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const slot = parseInt(btn.dataset.slot);
+    if (hasSave(slot)) {
+      continueGame(slot);
+    } else {
+      startGame(slot); // 空槽位开始新游戏
+    }
+  });
+});
+
+function startGame(slot) {
+  currentSaveSlot = slot || 1;
   for (const k in touchKeys) touchKeys[k] = false;
   for (const k in keys) keys[k] = false;
   document.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
 
   resetGame();
-  localStorage.removeItem('tankBattle_save'); // 新游戏清除存档
   document.getElementById('startOverlay').classList.add('hidden');
   document.getElementById('pauseOverlay').classList.add('hidden');
   document.getElementById('gameOverOverlay').classList.add('hidden');
@@ -2219,19 +2247,18 @@ function startGame() {
   loadLevel(level);
 }
 
-function continueGame() {
-  const save = loadProgress();
+function continueGame(slot) {
+  currentSaveSlot = slot || 1;
+  const save = loadProgress(currentSaveSlot);
   if (!save) {
-    alert('暂无存档，请先开始新游戏！');
+    alert('该存档为空！');
     return;
   }
-  // 释放按键
   for (const k in touchKeys) touchKeys[k] = false;
   for (const k in keys) keys[k] = false;
   document.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
 
   resetGame();
-  // 恢复存档数据
   level = save.level;
   score = save.score;
   kills = save.kills || 0;
@@ -2245,19 +2272,24 @@ function continueGame() {
   loadLevel(level);
 }
 
-// 初始加载
-// 根据存档状态设置按钮
-const saveBtn = document.getElementById('continueStartBtn');
-if (hasSave()) {
-  const save = loadProgress();
-  saveBtn.textContent = `📂 读取存档 (第${save.level}关)`;
-  saveBtn.style.opacity = '1';
-  saveBtn.style.cursor = 'pointer';
-} else {
-  saveBtn.textContent = '📂 暂无存档';
-  saveBtn.style.opacity = '0.5';
-  saveBtn.style.cursor = 'not-allowed';
+// 初始加载：刷新存档槽按钮文字
+function refreshSaveSlotButtons() {
+  const saves = getAllSaves();
+  document.querySelectorAll('.save-slot-btn').forEach(btn => {
+    const slot = parseInt(btn.dataset.slot);
+    const save = saves[slot - 1];
+    if (save) {
+      btn.textContent = `📂 存档${slot} (第${save.level}关)`;
+      btn.style.opacity = '1';
+      btn.style.background = '#4ecdc4';
+    } else {
+      btn.textContent = `💾 存档${slot} (空)`;
+      btn.style.opacity = '0.6';
+      btn.style.background = '#555';
+    }
+  });
 }
+refreshSaveSlotButtons();
 loadLevel(1);
 gameState = STATE.MENU;
 gameLoop();
