@@ -2232,22 +2232,25 @@ function spawnBoss() {
   demonKingActive = false;
   bossPhase = 1;
 
+  const margin = 3;
   const positions = [
-    { x: COLS/2 - 6, y: 2 },
-    { x: COLS/2, y: 2 },
-    { x: COLS/2 + 6, y: 2 }
+    { x: margin, y: margin, dir: DIR.DOWN },
+    { x: COLS - margin, y: margin, dir: DIR.DOWN },
+    { x: margin, y: ROWS - margin, dir: DIR.UP },
+    { x: COLS - margin, y: ROWS - margin, dir: DIR.UP }
   ];
-  const baseHP = Math.floor((80 + level * 50) * 0.77 / 3);
+  const baseHP = Math.floor((80 + level * 50) * 0.77 / 4);
 
   positions.forEach((pos, idx) => {
-    const b = new Tank(pos.x, pos.y, DIR.DOWN, '#8b00ff', 0.7, false);
+    const b = new Tank(pos.x, pos.y, pos.dir, '#8b00ff', 0.7, false);
     b.hp = baseHP;
     b._maxHp = baseHP;
     b.size = 1.0;
     b.shootDelay = 30;
     b.type = 'boss';
     b.invincible = 40;
-    b.turretDir = DIR.DOWN;
+    b.turretDir = pos.dir;
+    b.targetDir = pos.dir;
     if (idx === 0) bossTank = b;
 
     for (let dy = 0; dy < 3; dy++) {
