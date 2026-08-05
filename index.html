@@ -453,6 +453,7 @@ let lives = 3;
 let kills = 0;
 let killStreak = 0;           // 连续击杀数
 let mythicMode = false;       // 神话模式
+let deathTimer = 0;           // 死亡重生倒计时
 let enemiesRemaining = 0;
 let enemiesOnScreen = 0;
 let maxEnemiesOnScreen = 4;
@@ -1332,11 +1333,10 @@ function update() {
   if (player) {
     if (player.alive) {
       player.update();
-    } else {
-      // 玩家死亡 → 扣生命并重生
-      if (lives > 0) {
-        lives--;
-        updateUI();
+    } else if (deathTimer > 0) {
+      // 死亡动画播放中
+      deathTimer--;
+      if (deathTimer <= 0) {
         if (lives <= 0) {
           gameOver(false);
         } else {
@@ -1344,6 +1344,13 @@ function update() {
         }
       }
     }
+  }
+
+  // 首次检测到玩家死亡，启动死亡计时器
+  if (player && !player.alive && deathTimer <= 0 && lives > 0) {
+    lives--;
+    updateUI();
+    deathTimer = 45; // 0.75秒死亡动画
   }
 
   for (const enemy of enemies) {
@@ -1370,13 +1377,20 @@ function update() {
 
 function respawnPlayer() {
   const spawnX = 12.5, spawnY = 24;
-  // 清除重生点附近的敌人，确保不会出生就死
+  // 清除重生点附近的敌人（不计入击杀）
   for (const enemy of enemies) {
     const dx = enemy.x - spawnX;
     const dy = enemy.y - spawnY;
     if (Math.abs(dx) < 2 && Math.abs(dy) < 2) {
       enemy.alive = false;
-      enemy.onDestroy();
+      enemiesOnScreen--;
+      enemiesRemaining--;
+    }
+  }
+  // 清除重生点附近的敌方子弹
+  for (const b of bullets) {
+    if (!b.isPlayer && Math.abs(b.x - spawnX) < 2 && Math.abs(b.y - spawnY) < 2) {
+      b.alive = false;
     }
   }
   player = new Tank(spawnX, spawnY, DIR.UP, '#2ecc71', 1.2, true);
@@ -1428,6 +1442,7 @@ function resetGame() {
   kills = 0;
   killStreak = 0;
   mythicMode = false;
+  deathTimer = 0;
   enemiesRemaining = 0;
   enemiesOnScreen = 0;
   maxEnemiesOnScreen = 4;
