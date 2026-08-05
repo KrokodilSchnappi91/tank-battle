@@ -1158,7 +1158,7 @@ class Tank {
     if (dashState && dashState.timer > 0) {
       dashState.timer--;
       // 冲刺移动（高速）
-      const dashSpd = godSlayerMode ? 0.10 : (dashState.mythic ? 0.25 : 0.18);
+      const dashSpd = godSlayerMode ? 0.15 : (dashState.mythic ? 0.25 : 0.18);
       const nx = this.x + dashState.dir.x * dashSpd;
       const ny = this.y + dashState.dir.y * dashSpd;
       if (this.canMoveTo(nx, ny, dashState.dir)) {
