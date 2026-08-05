@@ -587,8 +587,9 @@ let bossKillCount = 0;        // Boss击杀总数（跨关卡）
 let demonKingActive = false;  // 魔王战中
 let advancedUnlocked = false;
 let victoryTimer = 0;
-let victoryParticles = [];     // 胜利烟花粒子
-let healthSpawnTimer = 0;      // 血包生成计时器
+let victoryParticles = [];
+let screenShake = 0;
+let healthSpawnTimer = 0;
 let enemiesRemaining = 0;
 let enemiesOnScreen = 0;
 let maxEnemiesOnScreen = 4;
@@ -1425,7 +1426,7 @@ class Tank {
         const by = this.y + fireDir.y * 0.8;
         const fb = new Bullet(bx, by, fireDir, true);
         fb.isMissile = true;
-        fb.speed = 0.12;
+        fb.speed = 0.22;
         fb.size = Math.max(8, CELL * 0.4);
         fb.hp = 999;
         fb._fireball = true;
@@ -1438,7 +1439,7 @@ class Tank {
         const a = baseAngle + s * 0.35;
         const sd = { x: Math.cos(a), y: Math.sin(a), angle: a };
         const sb = new Bullet(this.x + sd.x * 0.8, this.y + sd.y * 0.8, sd, true);
-        sb.isMissile = true; sb.speed = 0.1; sb.size = Math.max(6, CELL * 0.32);
+        sb.isMissile = true; sb.speed = 0.2; sb.size = Math.max(6, CELL * 0.32);
         sb.hp = 999; sb._fireball = true; sb._fuseTimer = 45;
         bullets.push(sb);
       }
@@ -1989,6 +1990,7 @@ class Bullet {
         '#ffffff', 8 + Math.random() * 12
       ));
     }
+    screenShake = Math.max(screenShake, 8); // 震动
     this.alive = false;
   }
 
@@ -2860,6 +2862,16 @@ function resetGame() {
 // ==================== 渲染 ====================
 
 function render() {
+  // 屏幕震动
+  if (screenShake > 0) {
+    const sx = (Math.random() - 0.5) * screenShake * 2;
+    const sy = (Math.random() - 0.5) * screenShake * 2;
+    ctx.save();
+    ctx.translate(sx, sy);
+    screenShake *= 0.85;
+    if (screenShake < 0.3) screenShake = 0;
+  }
+
   ctx.fillStyle = '#0a0a0a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -3164,6 +3176,8 @@ function render() {
     ctx.textAlign = 'right';
     ctx.fillText(`连杀: ${killStreak}`, canvas.width - 14, canvas.height - 24);
   }
+
+  if (screenShake > 0) ctx.restore();
 }
 
 // ==================== 游戏循环 ====================
