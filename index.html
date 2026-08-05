@@ -1168,18 +1168,18 @@ class Tank {
       }
       // 冲刺全程无敌 + 结束后30帧缓冲
       this.invincible = dashState.timer + 30;
-      // 杀神冲刺：360°环绕火球
-      if (godSlayerMode && dashState.timer % 4 === 0) {
-        const count = 12;
-        for (let i = 0; i < count; i++) {
-          const angle = (Math.PI * 2 / count) * i + dashState.timer * 0.12;
-          const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
-          const fb = new Bullet(this.x + dir.x, this.y + dir.y, dir, true);
-          fb.isMissile = true; fb.speed = 0.08;
-          fb.size = Math.max(8, CELL * 0.35);
-          fb.hp = 999; fb._fireball = true; fb._fuseTimer = 35;
-          bullets.push(fb);
-        }
+      // 杀神冲刺：360°依次释放超大火球
+      if (godSlayerMode && dashState.timer % 2 === 0) {
+        const idx = Math.floor((dashState.maxTimer - dashState.timer) / 2);
+        const total = Math.floor(dashState.maxTimer / 2);
+        const angle = (Math.PI * 2 / total) * idx;
+        const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
+        const size = 0.3 + (idx / total) * 0.5;
+        const fb = new Bullet(this.x + dir.x, this.y + dir.y, dir, true);
+        fb.isMissile = true; fb.speed = 0.06;
+        fb.size = Math.max(8, CELL * size);
+        fb.hp = 999; fb._fireball = true; fb._fuseTimer = 30;
+        bullets.push(fb);
       }
 
       // 冲刺粒子
