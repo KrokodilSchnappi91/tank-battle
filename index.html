@@ -1414,8 +1414,18 @@ class Tank {
         fb.size = Math.max(8, CELL * 0.4);
         fb.hp = 999;
         fb._fireball = true;
-        fb._fuseTimer = 90; // 1秒后爆炸
+        fb._fuseTimer = 45; // 0.5秒后爆炸
         bullets.push(fb);
+      }
+      // 杀神三方向射击
+      const baseAngle = fireDir.angle;
+      for (let s = -1; s <= 1; s += 2) {
+        const a = baseAngle + s * 0.35;
+        const sd = { x: Math.cos(a), y: Math.sin(a), angle: a };
+        const sb = new Bullet(this.x + sd.x * 0.8, this.y + sd.y * 0.8, sd, true);
+        sb.isMissile = true; sb.speed = 0.1; sb.size = Math.max(6, CELL * 0.32);
+        sb.hp = 999; sb._fireball = true; sb._fuseTimer = 45;
+        bullets.push(sb);
       }
     } else if (this.isPlayer && mythicMode) {
       // 追踪攻击次数
@@ -1944,16 +1954,24 @@ class Bullet {
       const edx = enemy.x - cx, edy = enemy.y - cy;
       if (Math.sqrt(edx*edx+edy*edy) < radius) enemy.hit();
     }
-    // 爆炸粒子
-    for (let i = 0; i < 35; i++) {
+    // 大爆炸粒子
+    for (let i = 0; i < 50; i++) {
       const a = Math.random() * Math.PI * 2;
-      const dist = Math.random() * radius * 0.7;
+      const dist = Math.random() * radius * 0.8;
       particles.push(new Particle(
         cx * BASE_CELL + Math.cos(a)*dist*BASE_CELL,
         cy * BASE_CELL + Math.sin(a)*dist*BASE_CELL,
-        (Math.random()-0.5)*5, (Math.random()-0.5)*5,
-        ['#ff4500','#ff8c00','#ffd700','#ff0000'][Math.floor(Math.random()*4)],
-        20 + Math.random() * 25
+        Math.cos(a)*(2+Math.random()*4), Math.sin(a)*(2+Math.random()*4),
+        ['#ff4500','#ff8c00','#ffd700','#ff0000','#ffff00'][Math.floor(Math.random()*5)],
+        25 + Math.random() * 35
+      ));
+    }
+    // 中心闪光
+    for (let i = 0; i < 15; i++) {
+      particles.push(new Particle(
+        cx * BASE_CELL, cy * BASE_CELL,
+        (Math.random()-0.5)*2, (Math.random()-0.5)*2,
+        '#ffffff', 8 + Math.random() * 12
       ));
     }
     this.alive = false;
