@@ -687,35 +687,52 @@ class Tank {
 
     if (!this.isPlayer) {
       this.aiUpdate();
-    } else {
-      this.playerInput();
-    }
-
-    if (this.moveTimer <= 0) {
-      let moved = this.tryMove(this.dir);
-      if (moved) {
-        this.moveTimer = this.isPlayer ? 2 : this.moveDelay;
+      // AI 移动（使用 moveTimer 控制节奏）
+      if (this.moveTimer <= 0) {
+        let moved = this.tryMove(this.dir);
+        if (moved) {
+          this.moveTimer = this.moveDelay;
+        }
+        if (!moved) {
+          this.changeDirTimer = 0;
+        }
+      } else {
+        this.moveTimer--;
       }
-      if (!moved && !this.isPlayer) {
-        this.changeDirTimer = 0;
-      }
     } else {
-      this.moveTimer--;
+      this.playerInput(); // 玩家在 playerInput 中直接移动
     }
   }
 
   playerInput() {
-    let newDir = null;
-    if (isKeyDown('ArrowUp') || isKeyDown('KeyW')) newDir = DIR.UP;
-    else if (isKeyDown('ArrowDown') || isKeyDown('KeyS')) newDir = DIR.DOWN;
-    else if (isKeyDown('ArrowLeft') || isKeyDown('KeyA')) newDir = DIR.LEFT;
-    else if (isKeyDown('ArrowRight') || isKeyDown('KeyD')) newDir = DIR.RIGHT;
+    // 读取方向输入
+    let dx = 0, dy = 0;
+    if (isKeyDown('ArrowUp') || isKeyDown('KeyW')) dy = -1;
+    if (isKeyDown('ArrowDown') || isKeyDown('KeyS')) dy = 1;
+    if (isKeyDown('ArrowLeft') || isKeyDown('KeyA')) dx = -1;
+    if (isKeyDown('ArrowRight') || isKeyDown('KeyD')) dx = 1;
 
-    if (newDir) {
-      this.dir = newDir;
-      this.moveTimer = 0; // 按住方向键时持续允许移动
-    } else {
-      this.moveTimer = 1; // 没按键时停止
+    // 有方向输入时更新朝向并移动
+    if (dx !== 0 || dy !== 0) {
+      // 优先新方向，否则保持原方向
+      if (dx !== 0) this.dir = dx > 0 ? DIR.RIGHT : DIR.LEFT;
+      else if (dy !== 0) this.dir = dy > 0 ? DIR.DOWN : DIR.UP;
+
+      // 直接移动（每帧 0.06 格 ≈ 3.6格/秒）
+      const spd = this.speed * 0.06;
+      const nx = this.x + dx * spd;
+      const ny = this.y + dy * spd;
+
+      // 尝试轴向移动
+      if (dx !== 0 && dy !== 0) {
+        // 斜向：分别尝试
+        if (this.canMoveTo(nx, this.y, this.dir)) this.x = nx;
+        if (this.canMoveTo(this.x, ny, this.dir)) this.y = ny;
+      } else if (dx !== 0) {
+        if (this.canMoveTo(nx, this.y, this.dir)) this.x = nx;
+      } else if (dy !== 0) {
+        if (this.canMoveTo(this.x, ny, this.dir)) this.y = ny;
+      }
     }
 
     if (isKeyDown(' ') || isKeyDown('Space')) {
