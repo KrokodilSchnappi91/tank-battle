@@ -1711,8 +1711,8 @@ class Bullet {
       const mx = this.x * CELL, my = this.y * CELL;
       const mpulse = this.size * 1.8 + Math.sin(Date.now() / 60) * this.size * 0.5;
       const mgrad = ctx.createRadialGradient(mx, my, this.size * 0.4, mx, my, mpulse);
-      const mcolor = this.isPlayer ? 'rgba(0,255,100,0.6)' : 'rgba(255,50,0,0.6)';
-      const mcolor2 = this.isPlayer ? 'rgba(0,255,100,0)' : 'rgba(255,50,0,0)';
+      const mcolor = this.isPlayer ? 'rgba(0,150,255,0.6)' : 'rgba(255,50,0,0.6)';
+      const mcolor2 = this.isPlayer ? 'rgba(0,150,255,0)' : 'rgba(255,50,0,0)';
       mgrad.addColorStop(0, mcolor);
       mgrad.addColorStop(1, mcolor2);
       ctx.fillStyle = mgrad;
@@ -1736,8 +1736,8 @@ class Bullet {
       }
     }
 
-    ctx.fillStyle = this.isMissile ? (this.isPlayer ? '#00ff66' : '#ff4500') : (this.homing ? '#ffd700' : (this.isPlayer ? '#fff' : '#ff6b6b'));
-    ctx.shadowColor = this.isMissile ? (this.isPlayer ? '#00ff00' : '#ff0000') : (this.homing ? '#ff8c00' : (this.isPlayer ? '#4ecdc4' : '#ff4444'));
+    ctx.fillStyle = this.isMissile ? (this.isPlayer ? '#00aaff' : '#ff4500') : (this.homing ? '#ffd700' : (this.isPlayer ? '#fff' : '#ff6b6b'));
+    ctx.shadowColor = this.isMissile ? (this.isPlayer ? '#0088ff' : '#ff0000') : (this.homing ? '#ff8c00' : (this.isPlayer ? '#4ecdc4' : '#ff4444'));
     ctx.shadowBlur = this.isMissile ? 14 : (this.homing ? 10 : 6);
     ctx.beginPath();
     ctx.arc(this.x * CELL, this.y * CELL, this.size, 0, Math.PI * 2);
@@ -1826,7 +1826,7 @@ class PowerUp {
     const cx = (this.x + 0.5) * CELL;
     const cy = (this.y + 0.5) * CELL;
 
-    const pcolor = this.type === 'speed' ? '#4ecdc4' : this.type === 'health' ? '#ff4444' : '#ffd93d';
+    const pcolor = this.type === 'speed' ? '#4ecdc4' : this.type === 'health' ? '#00ff66' : '#ffd93d';
     ctx.fillStyle = pcolor;
     ctx.shadowColor = pcolor;
     ctx.shadowBlur = 8;
@@ -1880,7 +1880,7 @@ function loadLevel(lvl) {
   dashState = null;
   mythicMode = false;
   killStreak = 0;
-  healthSpawnTimer = 600; // 10秒后开始生成血包
+  healthSpawnTimer = 180; // 3秒后开始
   updateUI();
 }
 
@@ -1968,9 +1968,9 @@ function update() {
     const hy = 2 + Math.random() * (ROWS - 4);
     const hp = new PowerUp(hx, hy);
     hp.type = 'health';
-    hp.timer = 450; // 7.5秒消失
+    hp.timer = 240; // 4秒消失
     powerUps.push(hp);
-    healthSpawnTimer = 700 + Math.floor(Math.random() * 400); // 12-18秒
+    healthSpawnTimer = 180; // 3秒
   }
 
   // 普通敌人全灭 → 召唤Boss
