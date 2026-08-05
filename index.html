@@ -1283,6 +1283,22 @@ class Tank {
   aiUpdate() {
     this.changeDirTimer--;
 
+    // 传送者：随机传送
+    if (this.type === 'teleporter' && Math.random() < 0.003) {
+      const tx = 3 + Math.floor(Math.random()*(COLS-6));
+      const ty = 3 + Math.floor(Math.random()*(ROWS-6));
+      if (mapData[ty*COLS+tx] === 0) { this.x = tx+0.5; this.y = ty+0.5; }
+    }
+    // 重量级：射击时发射3发子弹
+    if (this.type === 'heavy') this.shootDelay = 20;
+    // 狙击手：长射程（子弹更快）
+    // Swarmer：冲撞玩家造成伤害
+    if (this.type === 'swarmer' && player && player.alive) {
+      const pdx = player.x - this.x, pdy = player.y - this.y;
+      const pdist = Math.sqrt(pdx*pdx+pdy*pdy);
+      if (pdist < 1.0) { player.hit(); }
+    }
+
     // 炮塔始终锁定玩家
     if (player && player.alive) {
       const pdx = player.x - this.x;
@@ -1414,6 +1430,27 @@ class Tank {
   shoot() {
     if (this.shootCooldown > 0) return;
     this.shootCooldown = this.isPlayer && mythicMode ? 8 : this.shootDelay;
+    // 特殊敌人
+    if (!this.isPlayer) {
+      const shootDir = this.turretDir;
+      if (this.type === 'heavy') {
+        // 3发散射
+        for (let i = -1; i <= 1; i++) {
+          const a = shootDir.angle + i * 0.25;
+          const d = { x: Math.cos(a), y: Math.sin(a), angle: a };
+          const b = new Bullet(this.x+d.x*0.5, this.y+d.y*0.5, d, false);
+          if (i === 0) b.speed = 0.05; else b.speed = 0.04;
+          bullets.push(b);
+        }
+        return;
+      }
+      const bx = this.x + shootDir.x * 0.5;
+      const by = this.y + shootDir.y * 0.5;
+      const b = new Bullet(bx, by, shootDir, false);
+      if (this.type === 'sniper') b.speed = 0.12; // 狙击手快弹
+      bullets.push(b);
+      return;
+    }
 
     if (this.isPlayer && godSlayerMode) {
       if (!this._fireCount) this._fireCount = 0;
@@ -1635,8 +1672,12 @@ class Tank {
       const isBoss = this.type === 'boss';
       if (godSlayerMode) stamina = Math.min(stamina + (isBoss ? 66 : 20), 750);
       score += isBoss ? 2000 + level * 500
-             : this.type === 'fast' ? 300
-             : this.type === 'armored' ? 500 : 100;
+             : this.type === 'fast' ? 200
+             : this.type === 'armored' ? 400
+             : this.type === 'sniper' ? 350
+             : this.type === 'heavy' ? 500
+             : this.type === 'swarmer' ? 150
+             : this.type === 'teleporter' ? 300 : 100;
       enemiesOnScreen--;
       if (!isBoss) enemiesRemaining--;
       // Boss掉落必定道具
@@ -2497,22 +2538,25 @@ function spawnEnemy() {
   if (enemiesOnScreen >= maxEnemiesOnScreen || enemiesRemaining <= 0) return false;
 
   const sp = spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
-  const types = ['normal', 'normal', 'normal', 'fast', 'armored'];
-  const type = level >= 2 ? types[Math.floor(Math.random() * types.length)] : 'normal';
+  const allTypes = ['normal','normal','fast','armored','sniper','heavy','swarmer','teleporter'];
+  const type = level >= 3 ? allTypes[Math.floor(Math.random() * allTypes.length)] : (level >= 2 ? ['normal','normal','fast','armored'][Math.floor(Math.random()*4)] : 'normal');
 
-  let color, speed, hp;
+  let color, speed, hp, shootDly, size;
   switch (type) {
-    case 'fast':
-      color = '#f39c12'; speed = baseEnemySpeed * 1.6; hp = 1; break;
-    case 'armored':
-      color = '#e74c3c'; speed = baseEnemySpeed * 0.7; hp = 2; break;
-    default:
-      color = '#c0392b'; speed = baseEnemySpeed; hp = 1; break;
+    case 'fast':    color='#f39c12'; speed=baseEnemySpeed*1.6; hp=1; shootDly=40; size=0.85; break;
+    case 'armored': color='#e74c3c'; speed=baseEnemySpeed*0.7; hp=3; shootDly=50; size=0.95; break;
+    case 'sniper':  color='#3498db'; speed=baseEnemySpeed*0.5; hp=1; shootDly=25; size=0.80; break;
+    case 'heavy':   color='#8e44ad'; speed=baseEnemySpeed*0.4; hp=5; shootDly=20; size=1.1; break;
+    case 'swarmer': color='#1abc9c'; speed=baseEnemySpeed*2.0; hp=1; shootDly=60; size=0.7; break;
+    case 'teleporter': color='#e91e63'; speed=baseEnemySpeed*0.8; hp=1; shootDly=45; size=0.85; break;
+    default:        color='#c0392b'; speed=baseEnemySpeed; hp=1; shootDly=50; size=0.85; break;
   }
 
   const enemy = new Tank(sp.x + 1, sp.y + 1, DIR.DOWN, color, speed, false);
   enemy.hp = hp;
   enemy.type = type;
+  enemy.size = size;
+  enemy.shootDelay = shootDly;
   enemy.invincible = 40;
 
   if (!enemy.canMoveTo(enemy.x, enemy.y, enemy.dir)) {
