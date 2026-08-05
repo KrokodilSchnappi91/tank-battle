@@ -1861,26 +1861,11 @@ class Bullet {
   draw(ctx) {
     if (!this.alive) return;
 
-    // 导弹特殊外观：玩家绿色/敌人红色脉冲光环
-    if (this.isMissile) {
-      ctx.save();
-      const mx = this.x * CELL, my = this.y * CELL;
-      const mpulse = this.size * 1.8 + Math.sin(Date.now() / 60) * this.size * 0.5;
-      const mgrad = ctx.createRadialGradient(mx, my, this.size * 0.4, mx, my, mpulse);
-      const mcolor = this.isPlayer ? 'rgba(0,150,255,0.6)' : 'rgba(255,50,0,0.6)';
-      const mcolor2 = this.isPlayer ? 'rgba(0,150,255,0)' : 'rgba(255,50,0,0)';
-      mgrad.addColorStop(0, mcolor);
-      mgrad.addColorStop(1, mcolor2);
-      ctx.fillStyle = mgrad;
-      ctx.beginPath();
-      ctx.arc(mx, my, mpulse, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-    }
-
     ctx.fillStyle = this.isMissile ? (this.isPlayer ? '#00aaff' : '#ff4500') : (this.homing ? '#ffd700' : (this.isPlayer ? '#fff' : '#ff6b6b'));
-    ctx.shadowColor = this.isMissile ? (this.isPlayer ? '#0088ff' : '#ff0000') : (this.homing ? '#ff8c00' : (this.isPlayer ? '#4ecdc4' : '#ff4444'));
-    ctx.shadowBlur = this.isMissile ? 14 : (this.homing ? 10 : 6);
+    if (this.isMissile) {
+      ctx.shadowColor = this.isPlayer ? '#0088ff' : '#ff0000';
+      ctx.shadowBlur = 8;
+    }
     ctx.beginPath();
     ctx.arc(this.x * CELL, this.y * CELL, this.size, 0, Math.PI * 2);
     ctx.fill();
