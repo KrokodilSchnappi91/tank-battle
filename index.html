@@ -1333,6 +1333,9 @@ class Tank {
       this.changeDirTimer = this.changeDirDelay;
     }
 
+    // 快速型敌人不射击
+    if (this.type === 'fast' || this.type === 'swarmer') return;
+
     // 射击：Boss特殊模式，普通敌人锁定玩家
     if (this.type === 'boss') {
       if (this.shootCooldown <= 0 && Math.random() < 0.05) {
