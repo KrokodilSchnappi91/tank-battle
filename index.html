@@ -2574,10 +2574,7 @@ function spawnEnemy() {
 function update() {
   if (gameState !== STATE.PLAYING) return;
 
-  // 66关解锁 + 自动进入杀神形态
-  if (!advancedUnlocked && level >= 66 && score >= 10000) {
-    advancedUnlocked = true;
-  }
+  // 66关自动进入杀神形态
   if (level >= 66 && !godSlayerMode && !mythicMode && player && player.alive) {
     godSlayerMode = true;
     player.invincible = 90;
@@ -3372,7 +3369,7 @@ let menuSelectedLevel = level;
 function buildMenuLevelGrid() {
   const grid = document.getElementById('menuLevelGrid');
   grid.innerHTML = '';
-  const mIsLocked = (l) => l > 66 && !advancedUnlocked;
+  const mIsLocked = (l) => false;
   for (let l = 1; l <= 110; l++) {
     const btn = document.createElement('button');
     btn.textContent = mIsLocked(l) ? '🔒' : l;
@@ -3518,7 +3515,7 @@ function continueGame(slot) {
 // 关卡选择按钮（1-66）
 let selectedLevel = 1;
 const levelGrid = document.getElementById('levelGrid');
-const isLocked = (l) => l > 66 && !advancedUnlocked;
+const isLocked = (l) => false;
 for (let l = 1; l <= 110; l++) {
   const btn = document.createElement('button');
   btn.textContent = isLocked(l) ? '🔒' : l;
