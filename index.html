@@ -931,7 +931,7 @@ class Bullet {
     this.y = y;
     this.dir = dir;
     this.isPlayer = isPlayer;
-    this.speed = 0.22;
+    this.speed = isPlayer ? 0.22 : 0.12;
     this.alive = true;
     this.size = Math.max(2, CELL * 0.12);
   }
