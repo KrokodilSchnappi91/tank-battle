@@ -3154,7 +3154,7 @@ function render() {
   }
 
   // 血量条（左上角）
-  const hpBarX = 8, hpBarY = 8;
+  const hpBarX = 12, hpBarY = 16;
   const hpBarW = 180, hpBarH = 16;
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fillRect(hpBarX - 1, hpBarY - 1, hpBarW + 2, hpBarH + 2);
@@ -3170,17 +3170,17 @@ function render() {
   const hpfs = Math.max(18, CELL * 0.8);
   ctx.font = `bold ${hpfs}px Arial`;
   ctx.textAlign = 'left';
-  ctx.fillText(`❤️ ${Math.max(0, lives)}`, hpBarX, hpBarY - 4);
+  ctx.fillText(`❤️ ${Math.max(0, lives)}/${maxHP}`, hpBarX, hpBarY - 6);
 
-  // 得分和击杀
+  // 得分和击杀（血条下方22px）
   ctx.fillStyle = '#ffd700';
   const sfs = Math.max(16, CELL * 0.7);
   ctx.font = `bold ${sfs}px Arial`;
-  ctx.fillText(`⭐${score}`, hpBarX, hpBarY + hpBarH + 18);
+  ctx.fillText(`⭐${score}`, hpBarX, hpBarY + hpBarH + 22);
   ctx.fillStyle = '#fff';
-  ctx.fillText(`💀${kills}`, hpBarX + 90, hpBarY + hpBarH + 18);
+  ctx.fillText(`💀${kills}`, hpBarX + 90, hpBarY + hpBarH + 22);
   ctx.fillStyle = '#4ecdc4';
-  ctx.fillText(`🏆${level}`, hpBarX + 170, hpBarY + hpBarH + 18);
+  ctx.fillText(`🏆${level}`, hpBarX + 160, hpBarY + hpBarH + 22);
 
   // Buff条
   if (player && player.alive) {
@@ -3214,7 +3214,7 @@ function render() {
 
   // 体力条
   const stBarW = 100, stBarH = 6;
-  const stBarX = 8, stBarY = hpBarY + hpBarH + 34;
+  const stBarX = 12, stBarY = hpBarY + hpBarH + 46;
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fillRect(stBarX - 1, stBarY - 1, stBarW + 2, stBarH + 2);
   ctx.fillStyle = '#333';
