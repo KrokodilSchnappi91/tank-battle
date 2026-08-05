@@ -616,7 +616,7 @@ window.addEventListener('keydown', e => {
     // 使用当前车身方向冲刺
     const dashDir = player.dir;
     const mythicBoost = mythicMode ? 1.5 : 1;
-    const dashLen = godSlayerMode ? 117 : Math.floor(13 * mythicBoost);
+    const dashLen = godSlayerMode ? 91 : Math.floor(13 * mythicBoost);
     dashState = {
       dir: dashDir,
       timer: dashLen,
@@ -1157,7 +1157,23 @@ class Tank {
     // ===== 冲刺处理 =====
     if (dashState && dashState.timer > 0) {
       dashState.timer--;
-      // 冲刺移动（高速）
+      // 杀神模式：可调整方向（惯性）
+      if (godSlayerMode) {
+        let inputDx = 0, inputDy = 0;
+        if (isKeyDown('KeyW')) inputDy = -1;
+        if (isKeyDown('KeyS')) inputDy = 1;
+        if (isKeyDown('KeyA')) inputDx = -1;
+        if (isKeyDown('KeyD')) inputDx = 1;
+        if (inputDx !== 0 || inputDy !== 0) {
+          const inputAngle = Math.atan2(inputDy, inputDx);
+          let currentAngle = Math.atan2(dashState.dir.y, dashState.dir.x);
+          let diff = inputAngle - currentAngle;
+          while (diff > Math.PI) diff -= Math.PI*2;
+          while (diff < -Math.PI) diff += Math.PI*2;
+          currentAngle += diff * 0.08; // 惯性转向
+          dashState.dir = { x: Math.cos(currentAngle), y: Math.sin(currentAngle), angle: currentAngle };
+        }
+      }
       const dashSpd = godSlayerMode ? 0.22 : (dashState.mythic ? 0.25 : 0.18);
       const nx = this.x + dashState.dir.x * dashSpd;
       const ny = this.y + dashState.dir.y * dashSpd;
@@ -1170,8 +1186,8 @@ class Tank {
       this.invincible = dashState.timer + 30;
       // 杀神冲刺：360°依次释放火球
       // 杀神冲刺：每2帧360°同时释放火球
-      if (godSlayerMode && dashState.timer % 3 === 0) {
-        const count = 12;
+      if (godSlayerMode && dashState.timer % 2 === 0) {
+        const count = 4;
         for (let i = 0; i < count; i++) {
           const angle = (Math.PI * 2 / count) * i + dashState.timer * 0.1;
           const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
@@ -2525,9 +2541,10 @@ function update() {
     }
   }
 
-  // 体力回复
-  if (!dashState && stamina < MAX_STAMINA) {
-    stamina = Math.min(MAX_STAMINA, stamina + 0.15);
+  // 体力回复（杀神模式上限+50%）
+  const staminaCap = godSlayerMode ? 150 : MAX_STAMINA;
+  if (!dashState && stamina < staminaCap) {
+    stamina = Math.min(staminaCap, stamina + 0.15);
   }
 
   // 随机血包生成
@@ -3156,7 +3173,7 @@ function render() {
   ctx.fillRect(stBarX - 1, stBarY - 1, stBarW + 2, stBarH + 2);
   ctx.fillStyle = '#333';
   ctx.fillRect(stBarX, stBarY, stBarW, stBarH);
-  const stRatio = stamina / MAX_STAMINA;
+  const stRatio = stamina / (godSlayerMode ? 150 : MAX_STAMINA);
   ctx.fillStyle = stRatio > 0.5 ? '#4ecdc4' : stRatio > 0.25 ? '#ff8c00' : '#ff0000';
   ctx.fillRect(stBarX, stBarY, stBarW * stRatio, stBarH);
   ctx.fillStyle = '#aaa';
