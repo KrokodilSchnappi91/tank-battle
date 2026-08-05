@@ -577,7 +577,7 @@ let stamina = 100;            // 体力值
 let mouseX = 0, mouseY = 0;   // 鼠标在canvas上的坐标
 let mouseOnCanvas = false;    // 鼠标是否在canvas上
 const MAX_STAMINA = 100;
-const DASH_COST = 30;         // 冲刺消耗
+const DASH_COST = 30;
 let deathTimer = 0;           // 死亡重生倒计时
 let bossActive = false;       // Boss 战中
 let bossTank = null;          // Boss 坦克引用
@@ -1632,6 +1632,8 @@ class Tank {
     if (!this.isPlayer) {
       kills++;
       killStreak++;
+      // 杀神模式击杀回复20体力
+      if (godSlayerMode) stamina = Math.min(stamina + 20, 750);
       const isBoss = this.type === 'boss';
       score += isBoss ? 2000 + level * 500
              : this.type === 'fast' ? 300
@@ -2548,7 +2550,7 @@ function update() {
   }
 
   // 体力回复（杀神模式上限+50%）
-  const staminaCap = godSlayerMode ? 150 : MAX_STAMINA;
+  const staminaCap = godSlayerMode ? 750 : MAX_STAMINA;
   if (!dashState && stamina < staminaCap) {
     stamina = Math.min(staminaCap, stamina + 0.15);
   }
@@ -3179,7 +3181,7 @@ function render() {
   ctx.fillRect(stBarX - 1, stBarY - 1, stBarW + 2, stBarH + 2);
   ctx.fillStyle = '#333';
   ctx.fillRect(stBarX, stBarY, stBarW, stBarH);
-  const stRatio = stamina / (godSlayerMode ? 150 : MAX_STAMINA);
+  const stRatio = stamina / (godSlayerMode ? 750 : MAX_STAMINA);
   ctx.fillStyle = stRatio > 0.5 ? '#4ecdc4' : stRatio > 0.25 ? '#ff8c00' : '#ff0000';
   ctx.fillRect(stBarX, stBarY, stBarW * stRatio, stBarH);
   ctx.fillStyle = '#aaa';
