@@ -840,7 +840,7 @@ class Tank {
         const dir = { x: Math.cos(angle), y: Math.sin(angle), angle: angle };
         const bx = this.x + dir.x * 0.5;
         const by = this.y + dir.y * 0.5;
-        bullets.push(new Bullet(bx, by, dir, true));
+        bullets.push(new Bullet(bx, by, dir, true, true)); // homing=true
       }
     } else {
       // 普通射击
@@ -980,17 +980,49 @@ class Tank {
 }
 
 class Bullet {
-  constructor(x, y, dir, isPlayer) {
+  constructor(x, y, dir, isPlayer, homing = false) {
     this.x = x;
     this.y = y;
     this.dir = dir;
     this.isPlayer = isPlayer;
+    this.homing = homing;     // 追踪弹
     this.speed = isPlayer ? 0.22 : 0.12;
     this.alive = true;
     this.size = Math.max(2, CELL * 0.12);
+    this.life = 0;            // 存活帧数
   }
 
   update() {
+    this.life++;
+
+    // 追踪逻辑：寻找范围内最近的敌人
+    if (this.homing && this.isPlayer) {
+      const HOMING_RANGE = 8; // 追踪范围（格）
+      let nearest = null;
+      let nearestDist = HOMING_RANGE;
+      for (const enemy of enemies) {
+        if (!enemy.alive) continue;
+        const dx = enemy.x - this.x;
+        const dy = enemy.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearest = enemy;
+        }
+      }
+      if (nearest) {
+        // 逐渐转向目标
+        const targetAngle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+        let currentAngle = Math.atan2(this.dir.y, this.dir.x);
+        let diff = targetAngle - currentAngle;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        const turnRate = 0.08; // 转向速度
+        currentAngle += Math.sign(diff) * Math.min(Math.abs(diff), turnRate);
+        this.dir = { x: Math.cos(currentAngle), y: Math.sin(currentAngle), angle: currentAngle };
+      }
+    }
+
     this.x += this.dir.x * this.speed;
     this.y += this.dir.y * this.speed;
 
@@ -1061,9 +1093,24 @@ class Bullet {
 
   draw(ctx) {
     if (!this.alive) return;
-    ctx.fillStyle = this.isPlayer ? '#fff' : '#ff6b6b';
-    ctx.shadowColor = this.isPlayer ? '#4ecdc4' : '#ff4444';
-    ctx.shadowBlur = 6;
+
+    // 追踪弹金色拖尾
+    if (this.homing) {
+      const tailLen = 6;
+      for (let t = 0; t < tailLen; t++) {
+        const alpha = (1 - t / tailLen) * 0.5;
+        const tx = this.x - this.dir.x * this.speed * t;
+        const ty = this.y - this.dir.y * this.speed * t;
+        ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(tx * CELL, ty * CELL, this.size * (1 - t / tailLen), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.fillStyle = this.homing ? '#ffd700' : (this.isPlayer ? '#fff' : '#ff6b6b');
+    ctx.shadowColor = this.homing ? '#ff8c00' : (this.isPlayer ? '#4ecdc4' : '#ff4444');
+    ctx.shadowBlur = this.homing ? 10 : 6;
     ctx.beginPath();
     ctx.arc(this.x * CELL, this.y * CELL, this.size, 0, Math.PI * 2);
     ctx.fill();
