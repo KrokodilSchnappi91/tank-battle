@@ -471,6 +471,8 @@ let bossActive = false;       // Boss 战中
 let bossTank = null;          // Boss 坦克引用
 let bossPhase = 1;            // Boss 当前阶段
 let nukes = [];               // 核弹列表
+let bossKillCount = 0;        // Boss击杀总数（跨关卡）
+let demonKingActive = false;  // 魔王战中
 let victoryTimer = 0;          // 胜利动画计时器
 let victoryParticles = [];     // 胜利烟花粒子
 let healthSpawnTimer = 0;      // 血包生成计时器
@@ -1300,9 +1302,10 @@ class Tank {
     if (!this._attackCount) this._attackCount = 0;
     this._attackCount++;
 
+    const isDemon = this._isDemonKing;
     const isPhase2 = bossPhase === 2;
-    const count = isPhase2 ? 5 : 3;
-    const spread = isPhase2 ? 0.2 : 0.3;
+    const count = isDemon ? 7 : (isPhase2 ? 5 : 3);
+    const spread = isDemon ? 0.15 : (isPhase2 ? 0.2 : 0.3);
     const baseDir = this.turretDir;
 
     // 每第4次攻击：核弹预警
@@ -1477,16 +1480,24 @@ class Tank {
       ctx.restore();
     }
 
-    // Boss：紫色暗黑光环
+    // Boss：紫色暗黑光环，魔王：血红光环
     if (this.type === 'boss') {
       ctx.save();
       ctx.translate(cx, cy);
+      const isDemon = this._isDemonKing;
       const bglow = half * 1.8 + Math.sin(Date.now() / 100) * half * 0.3;
       const bgrad = ctx.createRadialGradient(0, 0, half * 0.4, 0, 0, bglow);
-      bgrad.addColorStop(0, 'rgba(139,0,255,0)');
-      bgrad.addColorStop(0.4, 'rgba(139,0,255,0.35)');
-      bgrad.addColorStop(0.7, 'rgba(200,0,255,0.2)');
-      bgrad.addColorStop(1, 'rgba(139,0,255,0)');
+      if (isDemon) {
+        bgrad.addColorStop(0, 'rgba(255,0,0,0)');
+        bgrad.addColorStop(0.3, 'rgba(255,0,0,0.45)');
+        bgrad.addColorStop(0.6, 'rgba(0,0,0,0.3)');
+        bgrad.addColorStop(1, 'rgba(255,0,0,0)');
+      } else {
+        bgrad.addColorStop(0, 'rgba(139,0,255,0)');
+        bgrad.addColorStop(0.4, 'rgba(139,0,255,0.35)');
+        bgrad.addColorStop(0.7, 'rgba(200,0,255,0.2)');
+        bgrad.addColorStop(1, 'rgba(139,0,255,0)');
+      }
       ctx.fillStyle = bgrad;
       ctx.beginPath();
       ctx.arc(0, 0, bglow, 0, Math.PI * 2);
@@ -1499,9 +1510,18 @@ class Tank {
     ctx.translate(cx, cy);
     ctx.rotate(this.dir.angle);
 
-    // 主体（神话模式金色）
-    ctx.fillStyle = isMythic ? '#ffd700' : this.color;
+    // 主体（神话金色/魔王黑红/普通）
+    const bodyColor = this._isDemonKing ? '#1a0000' : (isMythic ? '#ffd700' : this.color);
+    ctx.fillStyle = bodyColor;
     ctx.fillRect(-half, -half * 0.85, half * 2, half * 1.7);
+
+    // 魔王红色条纹
+    if (this._isDemonKing) {
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(-half, -half * 0.85, half * 2, 4);
+      ctx.fillRect(-half, half * 0.85 - 4, half * 2, 4);
+      ctx.fillRect(-half, -half * 0.3, half * 2, 3);
+    }
 
     // 神话条纹
     if (isMythic) {
@@ -1531,7 +1551,7 @@ class Tank {
     const turretAngle = this.turretDir.angle;
     ctx.rotate(turretAngle);
 
-    const turretColor = this.type === 'boss' ? '#cc00ff' : (isMythic ? '#ff6b00' : (this.isPlayer ? '#4ecdc4' : '#ffd93d'));
+    const turretColor = this._isDemonKing ? '#ff0000' : (this.type === 'boss' ? '#cc00ff' : (isMythic ? '#ff6b00' : (this.isPlayer ? '#4ecdc4' : '#ffd93d')));
 
     // 炮塔底座
     ctx.fillStyle = turretColor;
@@ -2024,6 +2044,7 @@ function loadLevel(lvl) {
   bossActive = false;
   bossTank = null;
   bossPhase = 1;
+  demonKingActive = false;
   nukes = [];
   stamina = MAX_STAMINA;
   dashState = null;
@@ -2033,8 +2054,47 @@ function loadLevel(lvl) {
   updateUI();
 }
 
+// 魔王坦克（每2个Boss后召唤）
+function spawnDemonKing() {
+  demonKingActive = true;
+  bossActive = true; // 复用boss系统
+  bossPhase = 1;
+  const bx = 12.5, by = 2;
+  bossTank = new Tank(bx, by, DIR.DOWN, '#000000', 0.6, false);
+  bossTank.hp = Math.floor((80 + level * 50) * 1.5); // 比普通Boss多50%血
+  bossTank._maxHp = bossTank.hp;
+  bossTank.size = 1.5;              // 巨型
+  bossTank.shootDelay = 18;         // 极快射速
+  bossTank.type = 'boss';
+  bossTank._isDemonKing = true;     // 标记魔王
+  bossTank.invincible = 90;
+  bossTank.turretDir = DIR.DOWN;
+  bossTank.speed = 0.6;
+
+  // 清除出生区
+  for (let dy = 0; dy < 4; dy++) {
+    for (let dx = -3; dx <= 3; dx++) {
+      const cx = Math.floor(bx) + dx, cy = Math.floor(by) + dy;
+      if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) mapData[cy * COLS + cx] = 0;
+    }
+  }
+  enemies.push(bossTank);
+  enemiesOnScreen++;
+
+  // 魔王出场特效
+  for (let i = 0; i < 50; i++) {
+    particles.push(new Particle(
+      bx * BASE_CELL, by * BASE_CELL,
+      (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8,
+      Math.random() < 0.5 ? '#ff0000' : '#000000',
+      40 + Math.random() * 40
+    ));
+  }
+}
+
 function spawnBoss() {
   bossActive = true;
+  demonKingActive = false;
   bossPhase = 1;
   // Boss出生在顶部中央
   const bx = 12.5, by = 2;
@@ -2202,9 +2262,25 @@ function update() {
   }
   nukes = nukes.filter(n => n.timer > -30); // 爆炸后保留30帧特效
 
-  // Boss被击败 → 过关
+  // Boss被击败
   if (bossActive && (!bossTank || !bossTank.alive)) {
     bossActive = false;
+    bossTank = null;
+    bossPhase = 1;
+    bossKillCount++;
+
+    // 每击杀2个Boss召唤魔王
+    if (bossKillCount % 2 === 0 && !demonKingActive) {
+      spawnDemonKing();
+    } else {
+      levelUp();
+    }
+    return;
+  }
+
+  // 魔王被击败 → 过关
+  if (demonKingActive && (!bossTank || !bossTank.alive)) {
+    demonKingActive = false;
     bossTank = null;
     bossPhase = 1;
     levelUp();
@@ -2420,6 +2496,8 @@ function resetGame() {
   bossActive = false;
   bossTank = null;
   bossPhase = 1;
+  demonKingActive = false;
+  bossKillCount = 0;
   nukes = [];
   enemiesRemaining = 0;
   enemiesOnScreen = 0;
@@ -2625,7 +2703,8 @@ function render() {
     const bfs = Math.max(20, CELL * 0.9);
     ctx.font = `bold ${bfs}px "Microsoft YaHei", Arial`;
     ctx.textAlign = 'center';
-    ctx.fillText(isP2 ? '⚠ BOSS · PHASE 2 ⚠' : '⚠ BOSS ⚠', canvas.width / 2, 30);
+    const dkLabel = bossTank._isDemonKing ? '👑 魔 王 👑' : (isP2 ? '⚠ BOSS · PHASE 2 ⚠' : '⚠ BOSS ⚠');
+    ctx.fillText(dkLabel, canvas.width / 2, 30);
     // Boss血条
     const barW = canvas.width * 0.4;
     const barH = 6;
