@@ -899,9 +899,10 @@ class Tank {
           const ny = 3 + Math.random() * (ROWS - 6);
           nukes.push({
             x: nx, y: ny,
-            timer: 90,       // 1.5秒引爆（比Boss快）
+            timer: 90,
             maxTimer: 90,
-            radius: 4
+            radius: 4,
+            isPlayerNuke: true  // 不伤玩家
           });
         }
         this.shootCooldown = 20;
@@ -1658,8 +1659,8 @@ function update() {
           }
         }
       }
-      // 伤害范围内玩家
-      if (player && player.alive) {
+      // 伤害范围内玩家（玩家自己的核弹不伤自己）
+      if (!nuke.isPlayerNuke && player && player.alive) {
         const pdx = player.x - nuke.x;
         const pdy = player.y - nuke.y;
         if (Math.sqrt(pdx*pdx + pdy*pdy) < r) {
@@ -1953,20 +1954,24 @@ function render() {
   // 核弹警告圈
   for (const nuke of nukes) {
     if (nuke._exploded) continue;
-    const progress = 1 - nuke.timer / nuke.maxTimer; // 0→1
+    const progress = 1 - nuke.timer / nuke.maxTimer;
     const pulse = 0.5 + Math.sin(Date.now() / 100) * 0.5;
     const alpha = 0.3 + progress * 0.5 + pulse * 0.2;
     const nx = nuke.x * CELL;
     const ny = nuke.y * CELL;
     const nr = nuke.radius * CELL;
+    // 玩家核弹蓝色，Boss核弹红色
+    const isPN = nuke.isPlayerNuke;
+    const fillColor = isPN ? `rgba(0, 180, 255, ${alpha * 0.3})` : `rgba(255, 30, 0, ${alpha * 0.3})`;
+    const strokeColor = isPN ? `rgba(0, 200, 255, ${alpha})` : `rgba(255, 50, 0, ${alpha})`;
 
     // 填充
-    ctx.fillStyle = `rgba(255, 30, 0, ${alpha * 0.3})`;
+    ctx.fillStyle = fillColor;
     ctx.beginPath();
     ctx.arc(nx, ny, nr, 0, Math.PI * 2);
     ctx.fill();
     // 边框
-    ctx.strokeStyle = `rgba(255, 50, 0, ${alpha})`;
+    ctx.strokeStyle = strokeColor;
     ctx.lineWidth = 2 + pulse * 2;
     ctx.setLineDash([8, 4]);
     ctx.beginPath();
