@@ -616,7 +616,7 @@ window.addEventListener('keydown', e => {
     // 使用当前车身方向冲刺
     const dashDir = player.dir;
     const mythicBoost = mythicMode ? 1.5 : 1;
-    const dashLen = Math.floor(13 * mythicBoost);
+    const dashLen = godSlayerMode ? 39 : Math.floor(13 * mythicBoost);
     dashState = {
       dir: dashDir,
       timer: dashLen,
@@ -1158,7 +1158,7 @@ class Tank {
     if (dashState && dashState.timer > 0) {
       dashState.timer--;
       // 冲刺移动（高速）
-      const dashSpd = dashState.mythic ? 0.25 : 0.18;
+      const dashSpd = godSlayerMode ? 0.06 : (dashState.mythic ? 0.25 : 0.18);
       const nx = this.x + dashState.dir.x * dashSpd;
       const ny = this.y + dashState.dir.y * dashSpd;
       if (this.canMoveTo(nx, ny, dashState.dir)) {
@@ -1169,9 +1169,9 @@ class Tank {
       // 冲刺全程无敌 + 结束后30帧缓冲
       this.invincible = dashState.timer + 30;
       // 杀神冲刺：360°依次释放火球
-      if (godSlayerMode && dashState.timer % 2 === 0) {
-        const idx = Math.floor((dashState.maxTimer - dashState.timer) / 2);
-        const total = Math.floor(dashState.maxTimer / 2);
+      if (godSlayerMode) {
+        const idx = dashState.maxTimer - dashState.timer;
+        const total = dashState.maxTimer;
         const angle = (Math.PI * 2 / total) * idx;
         const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
         const size = 0.3 + (idx / total) * 0.5;
