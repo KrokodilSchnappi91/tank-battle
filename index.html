@@ -1328,16 +1328,20 @@ function update() {
     enemySpawnTimer = enemySpawnDelay + Math.floor(Math.random() * 30);
   }
 
-  if (player && player.alive) {
-    player.update();
-  } else if (player && !player.alive && lives > 0) {
-    if (explosions.length === 0) {
-      lives--;
-      updateUI();
-      if (lives <= 0) {
-        gameOver(false);
-      } else {
-        respawnPlayer();
+  // 处理玩家
+  if (player) {
+    if (player.alive) {
+      player.update();
+    } else {
+      // 玩家死亡 → 扣生命并重生
+      if (lives > 0) {
+        lives--;
+        updateUI();
+        if (lives <= 0) {
+          gameOver(false);
+        } else {
+          respawnPlayer();
+        }
       }
     }
   }
@@ -1362,10 +1366,6 @@ function update() {
   enemies = enemies.filter(e => e.alive);
   particles = particles.filter(p => p.life > 0);
   powerUps = powerUps.filter(p => p.alive);
-
-  if (player && !player.alive && explosions.length === 0 && lives > 0) {
-    respawnPlayer();
-  }
 }
 
 function respawnPlayer() {
