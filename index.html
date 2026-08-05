@@ -1378,18 +1378,44 @@ class Tank {
     this.shootCooldown = this.isPlayer && mythicMode ? 8 : this.shootDelay;
 
     if (this.isPlayer && godSlayerMode) {
-      // 杀神形态：发射巨型火球
+      if (!this._fireCount) this._fireCount = 0;
+      this._fireCount++;
       const fireDir = this.turretDir;
-      const bx = this.x + fireDir.x * 0.8;
-      const by = this.y + fireDir.y * 0.8;
-      const fb = new Bullet(bx, by, fireDir, true);
-      fb.isMissile = true;
-      fb.speed = 0.12;
-      fb.size = Math.max(8, CELL * 0.4);
-      fb.hp = 999;
-      fb._fireball = true;
-      bullets.push(fb);
-      this.shootCooldown = 20;
+
+      // 每3发：炫酷飞龙
+      if (this._fireCount % 3 === 0) {
+        this.shootCooldown = 30;
+        // 飞龙由5个火球组成龙形
+        for (let s = 0; s < 5; s++) {
+          const stagger = s * 3;
+          setTimeout(() => {
+            if (!this.alive || !godSlayerMode) return;
+            const offset = (s - 2) * 0.5;
+            const perpX = -fireDir.y * offset;
+            const perpY = fireDir.x * offset;
+            const db = new Bullet(this.x + perpX + fireDir.x * 0.8, this.y + perpY + fireDir.y * 0.8, fireDir, true);
+            db.isMissile = true;
+            db.speed = 0.15;
+            db.size = Math.max(6, CELL * 0.3);
+            db.hp = 999;
+            db._fireball = true;
+            db._dragonPart = true;
+            bullets.push(db);
+          }, stagger * 40);
+        }
+      } else {
+        // 普通火球
+        this.shootCooldown = 20;
+        const bx = this.x + fireDir.x * 0.8;
+        const by = this.y + fireDir.y * 0.8;
+        const fb = new Bullet(bx, by, fireDir, true);
+        fb.isMissile = true;
+        fb.speed = 0.12;
+        fb.size = Math.max(8, CELL * 0.4);
+        fb.hp = 999;
+        fb._fireball = true;
+        bullets.push(fb);
+      }
     } else if (this.isPlayer && mythicMode) {
       // 追踪攻击次数
       if (!this._mythicAttacks) this._mythicAttacks = 0;
@@ -1538,6 +1564,7 @@ class Tank {
         mythicMode = false;
         godSlayerMode = false;
         player._mythicAttacks = 0;
+        player._fireCount = 0;
         player.color = '#2ecc71';
       }
     }
@@ -1655,8 +1682,8 @@ class Tank {
     ctx.translate(cx, cy);
     ctx.rotate(this.dir.angle);
 
-    // 主体（神话金色/魔王黑红/普通）
-    const bodyColor = this._isDemonKing ? '#1a0000' : (isMythic ? '#ffd700' : this.color);
+    // 主体（杀神大红/神话金色/魔王黑红/普通）
+    const bodyColor = (this.isPlayer && godSlayerMode) ? '#cc0000' : (this._isDemonKing ? '#1a0000' : (isMythic ? '#ffd700' : this.color));
     ctx.fillStyle = bodyColor;
     ctx.fillRect(-half, -half * 0.85, half * 2, half * 1.7);
 
