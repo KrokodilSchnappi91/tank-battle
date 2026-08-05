@@ -751,10 +751,21 @@ class Tank {
   aiUpdate() {
     this.changeDirTimer--;
 
-    // 定时或随机更新目标方向
+    // 炮塔始终锁定玩家
+    if (player && player.alive) {
+      const pdx = player.x - this.x;
+      const pdy = player.y - this.y;
+      if (Math.abs(pdx) > Math.abs(pdy)) {
+        this.turretDir = pdx > 0 ? DIR.RIGHT : DIR.LEFT;
+      } else {
+        this.turretDir = pdy > 0 ? DIR.DOWN : DIR.UP;
+      }
+    }
+
+    // 定时或随机更新移动目标方向
     if (this.changeDirTimer <= 0 || Math.random() < 0.008) {
       if (player && player.alive && Math.random() < 0.55) {
-        // 朝向玩家
+        // 朝向玩家移动
         const dx = player.x - this.x;
         const dy = player.y - this.y;
         if (Math.abs(dx) > Math.abs(dy)) {
@@ -765,7 +776,6 @@ class Tank {
       } else {
         // 随机方向
         const dirs = [DIR.UP, DIR.DOWN, DIR.LEFT, DIR.RIGHT];
-        // 排除当前方向的反方向（避免来回走）
         const reverse = { x: -this.dir.x, y: -this.dir.y };
         const filtered = dirs.filter(d => !(d.x === reverse.x && d.y === reverse.y));
         this.targetDir = filtered[Math.floor(Math.random() * filtered.length)];
@@ -773,7 +783,8 @@ class Tank {
       this.changeDirTimer = this.changeDirDelay;
     }
 
-    if (this.shootCooldown <= 0 && Math.random() < 0.012) {
+    // 锁定玩家后积极射击
+    if (this.shootCooldown <= 0 && Math.random() < 0.025) {
       this.shoot();
     }
   }
@@ -823,8 +834,6 @@ class Tank {
         }
       }
     }
-
-    this.turretDir = this.dir;
   }
 
   canMoveTo(nx, ny, dir) {
@@ -990,7 +999,7 @@ class Tank {
     // ---- 炮塔（按炮塔方向旋转） ----
     ctx.save();
     ctx.translate(cx, cy);
-    const turretAngle = (this.isPlayer ? this.turretDir : this.dir).angle;
+    const turretAngle = this.turretDir.angle;
     ctx.rotate(turretAngle);
 
     const turretColor = isMythic ? '#ff6b00' : (this.isPlayer ? '#4ecdc4' : '#ffd93d');
