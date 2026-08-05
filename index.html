@@ -3155,7 +3155,7 @@ function render() {
 
   // 血量条（左上角）
   const hpBarX = 8, hpBarY = 8;
-  const hpBarW = 120, hpBarH = 10;
+  const hpBarW = 180, hpBarH = 16;
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fillRect(hpBarX - 1, hpBarY - 1, hpBarW + 2, hpBarH + 2);
   ctx.fillStyle = '#400';
@@ -3167,55 +3167,54 @@ function render() {
   ctx.fillRect(hpBarX, hpBarY, hpBarW * hpRatio, hpBarH);
   // 血量文字和爱心
   ctx.fillStyle = '#fff';
-  const hpfs = Math.max(10, CELL * 0.42);
+  const hpfs = Math.max(18, CELL * 0.8);
   ctx.font = `bold ${hpfs}px Arial`;
   ctx.textAlign = 'left';
   ctx.fillText(`❤️ ${Math.max(0, lives)}`, hpBarX, hpBarY - 4);
 
-  // 得分和击杀（血条下方）
+  // 得分和击杀
   ctx.fillStyle = '#ffd700';
-  const sfs = Math.max(9, CELL * 0.38);
-  ctx.font = `${sfs}px Arial`;
-  ctx.fillText(`⭐${score}`, hpBarX, hpBarY + hpBarH + 12);
+  const sfs = Math.max(16, CELL * 0.7);
+  ctx.font = `bold ${sfs}px Arial`;
+  ctx.fillText(`⭐${score}`, hpBarX, hpBarY + hpBarH + 18);
   ctx.fillStyle = '#fff';
-  ctx.fillText(`💀${kills}`, hpBarX + 60, hpBarY + hpBarH + 12);
-  // 关卡
+  ctx.fillText(`💀${kills}`, hpBarX + 90, hpBarY + hpBarH + 18);
   ctx.fillStyle = '#4ecdc4';
-  ctx.fillText(`🏆${level}`, hpBarX, hpBarY + hpBarH + 24);
+  ctx.fillText(`🏆${level}`, hpBarX + 170, hpBarY + hpBarH + 18);
 
-  // Buff条（血条下方右侧）
+  // Buff条
   if (player && player.alive) {
-    let buffX = hpBarX + hpBarW + 4;
+    let buffX = hpBarX + hpBarW + 10;
     const buffY = hpBarY;
     if (player._speedBuffTimer > 0) {
       const sec = (player._speedBuffTimer / 60).toFixed(0);
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(buffX, buffY, 48, hpBarH + 2);
+      ctx.fillRect(buffX, buffY, 65, hpBarH + 2);
       ctx.fillStyle = '#4ecdc4';
-      ctx.fillRect(buffX, buffY, 48 * player._speedBuffTimer / 600, hpBarH + 2);
+      ctx.fillRect(buffX, buffY, 65 * player._speedBuffTimer / 600, hpBarH + 2);
       ctx.fillStyle = '#fff';
-      const bfs = Math.max(8, CELL * 0.32);
-      ctx.font = `${bfs}px Arial`;
-      ctx.fillText(`⚡${sec}s`, buffX + 3, buffY + hpBarH);
-      buffX += 52;
+      const bfs = Math.max(14, CELL * 0.6);
+      ctx.font = `bold ${bfs}px Arial`;
+      ctx.fillText(`⚡${sec}s`, buffX + 5, buffY + hpBarH - 1);
+      buffX += 72;
     }
     if (player._shieldBuffTimer > 0) {
       const sec = (player._shieldBuffTimer / 60).toFixed(0);
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(buffX, buffY, 48, hpBarH + 2);
+      ctx.fillRect(buffX, buffY, 65, hpBarH + 2);
       ctx.fillStyle = '#ffd93d';
-      ctx.fillRect(buffX, buffY, 48 * player._shieldBuffTimer / 300, hpBarH + 2);
+      ctx.fillRect(buffX, buffY, 65 * player._shieldBuffTimer / 300, hpBarH + 2);
       ctx.fillStyle = '#fff';
-      const bfs = Math.max(8, CELL * 0.32);
-      ctx.font = `${bfs}px Arial`;
-      ctx.fillText(`🛡${sec}s`, buffX + 3, buffY + hpBarH);
-      buffX += 52;
+      const bfs = Math.max(14, CELL * 0.6);
+      ctx.font = `bold ${bfs}px Arial`;
+      ctx.fillText(`🛡${sec}s`, buffX + 5, buffY + hpBarH - 1);
+      buffX += 72;
     }
   }
 
-  // 体力条（左上血条下方）
-  const stBarW = 80, stBarH = 4;
-  const stBarX = 8, stBarY = hpBarY + hpBarH + 36;
+  // 体力条
+  const stBarW = 100, stBarH = 6;
+  const stBarX = 8, stBarY = hpBarY + hpBarH + 34;
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fillRect(stBarX - 1, stBarY - 1, stBarW + 2, stBarH + 2);
   ctx.fillStyle = '#333';
@@ -3223,10 +3222,11 @@ function render() {
   const stRatio = stamina / (godSlayerMode ? 750 : MAX_STAMINA);
   ctx.fillStyle = stRatio > 0.5 ? '#4ecdc4' : stRatio > 0.25 ? '#ff8c00' : '#ff0000';
   ctx.fillRect(stBarX, stBarY, stBarW * stRatio, stBarH);
-  ctx.fillStyle = '#aaa';
-  const stfs = Math.max(8, CELL * 0.32);
-  ctx.font = `${stfs}px Arial`;
-  ctx.fillText(`⚡${Math.ceil(stamina)}`, stBarX + stBarW + 3, stBarY + stBarH);
+  ctx.fillStyle = '#fff';
+  const stfs = Math.max(14, CELL * 0.6);
+  ctx.font = `bold ${stfs}px Arial`;
+  ctx.textAlign = 'left';
+  ctx.fillText(`⚡${Math.ceil(stamina)}/${godSlayerMode?750:MAX_STAMINA}`, stBarX + stBarW + 5, stBarY + stBarH - 1);
 
   // 神话模式指示器
   if (mythicMode && player && player.alive) {
