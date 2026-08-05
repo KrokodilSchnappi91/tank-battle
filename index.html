@@ -2970,9 +2970,19 @@ function render() {
 
 // ==================== 游戏循环 ====================
 
-function gameLoop() {
-  update();
-  render();
+// 90fps 固定帧率
+const TARGET_FPS = 90;
+const FRAME_TIME = 1000 / TARGET_FPS;
+let lastFrameTime = 0;
+
+function gameLoop(timestamp) {
+  if (!lastFrameTime) lastFrameTime = timestamp;
+  const elapsed = timestamp - lastFrameTime;
+  if (elapsed >= FRAME_TIME) {
+    lastFrameTime = timestamp - (elapsed % FRAME_TIME);
+    update();
+    render();
+  }
   animationId = requestAnimationFrame(gameLoop);
 }
 
