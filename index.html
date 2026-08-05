@@ -453,6 +453,8 @@ let lives = 3;
 let kills = 0;
 let killStreak = 0;           // 连续击杀数
 let mythicMode = false;       // 神话模式
+// 冲刺系统
+let dashState = null;         // { dir, timer, maxTimer }
 let deathTimer = 0;           // 死亡重生倒计时
 let bossActive = false;       // Boss 战中
 let bossTank = null;          // Boss 坦克引用
@@ -469,6 +471,7 @@ let animationId = null;
 // 输入处理 - 键盘 + 触屏虚拟按键
 const keys = {};
 const touchKeys = {}; // 触屏模拟的按键
+const lastKeyTime = {}; // 双击检测
 
 function isKeyDown(key) {
   return !!(keys[key] || touchKeys[key]);
@@ -477,6 +480,24 @@ function isKeyDown(key) {
 window.addEventListener('keydown', e => {
   keys[e.key] = true;
   keys[e.code] = true;
+
+  // 双击方向键检测（普通形态下触发冲刺）
+  const dirKeys = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+  if (!mythicMode && !dashState && dirKeys.includes(e.key) && player && player.alive) {
+    const now = Date.now();
+    if (lastKeyTime[e.key] && now - lastKeyTime[e.key] < 280) {
+      // 双击触发冲刺
+      const dashDir = e.key === 'ArrowUp' ? DIR.UP
+        : e.key === 'ArrowDown' ? DIR.DOWN
+        : e.key === 'ArrowLeft' ? DIR.LEFT
+        : DIR.RIGHT;
+      dashState = { dir: dashDir, timer: 15, maxTimer: 15 }; // 0.25秒冲刺
+      lastKeyTime[e.key] = 0; // 防止连续触发
+    } else {
+      lastKeyTime[e.key] = now;
+    }
+  }
+
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key) ||
       ['Space'].includes(e.code)) {
     e.preventDefault();
@@ -709,6 +730,40 @@ class Tank {
   }
 
   playerInput() {
+    // ===== 冲刺处理 =====
+    if (dashState && dashState.timer > 0) {
+      dashState.timer--;
+      // 冲刺移动（高速）
+      const dashSpd = 0.18; // 约5倍速
+      const nx = this.x + dashState.dir.x * dashSpd;
+      const ny = this.y + dashState.dir.y * dashSpd;
+      if (this.canMoveTo(nx, ny, dashState.dir)) {
+        this.x = nx;
+        this.y = ny;
+        this.dir = dashState.dir;
+      }
+      // 冲刺无敌
+      this.invincible = Math.max(this.invincible, 3);
+      // 冲刺粒子
+      if (Math.random() < 0.6) {
+        particles.push(new Particle(
+          this.x * BASE_CELL, this.y * BASE_CELL,
+          -dashState.dir.x * 2 + (Math.random()-0.5)*2,
+          -dashState.dir.y * 2 + (Math.random()-0.5)*2,
+          '#4ecdc4', 8 + Math.random() * 8
+        ));
+      }
+      // 结束冲刺
+      if (dashState.timer <= 0) {
+        dashState = null;
+      }
+      // 冲刺期间仍可射击
+      if (isKeyDown(' ') || isKeyDown('Space')) {
+        this.shoot();
+      }
+      return;
+    }
+
     // ===== 移动输入：WASD（桌面）或触屏方向键（手机） =====
     let moveDx = 0, moveDy = 0;
     if (isKeyDown('KeyW') || isKeyDown('moveUp'))    moveDy = -1;
@@ -1090,6 +1145,24 @@ class Tank {
     const cy = this.y * CELL;
     const half = (this.size * CELL) / 2;
     const isMythic = this.isPlayer && mythicMode;
+    const isDashing = this.isPlayer && dashState && dashState.timer > 0;
+
+    // 冲刺：蓝色拖尾
+    if (isDashing) {
+      const alpha2 = dashState.timer / dashState.maxTimer;
+      ctx.save();
+      ctx.globalAlpha = alpha2 * 0.5;
+      ctx.fillStyle = '#4ecdc4';
+      for (let t = 1; t <= 3; t++) {
+        const tx = cx - dashState.dir.x * CELL * t * 0.6;
+        const ty = cy - dashState.dir.y * CELL * t * 0.6;
+        ctx.beginPath();
+        ctx.arc(tx, ty, half * (1 - t * 0.2), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
 
     // 神话模式：金色光环
     if (isMythic) {
@@ -1831,6 +1904,7 @@ function resetGame() {
   kills = 0;
   killStreak = 0;
   mythicMode = false;
+  dashState = null;
   deathTimer = 0;
   bossActive = false;
   bossTank = null;
