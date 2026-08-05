@@ -922,16 +922,26 @@ class Tank {
 
     // 每第4次攻击：核弹预警
     if (this._attackCount % 4 === 0) {
-      const nukeCount = isPhase2 ? 5 : 3;
+      const nukeCount = isPhase2 ? 6 : 4;
+      const nukePositions = []; // 跟踪位置用于限制重叠
       for (let n = 0; n < nukeCount; n++) {
-        // 随机位置（避开边缘）
-        const nx = 2 + Math.random() * (COLS - 4);
-        const ny = 2 + Math.random() * (ROWS - 4);
+        let nx, ny, overlaps;
+        // 最多重试10次找不重叠位置
+        for (let attempt = 0; attempt < 10; attempt++) {
+          nx = 3 + Math.random() * (COLS - 6);
+          ny = 3 + Math.random() * (ROWS - 6);
+          // 检查与已有核弹的重叠数
+          overlaps = nukePositions.filter(p =>
+            Math.abs(p.x - nx) < 4 && Math.abs(p.y - ny) < 4
+          ).length;
+          if (overlaps <= 1) break; // 最多与1个重叠（即2个重合）
+        }
+        nukePositions.push({ x: nx, y: ny });
         nukes.push({
           x: nx, y: ny,
-          timer: 120,        // 2秒后爆炸
+          timer: 120,
           maxTimer: 120,
-          radius: isPhase2 ? 5 : 4,  // 爆炸半径
+          radius: isPhase2 ? 5 : 4,
           warningRadius: isPhase2 ? 5 : 4
         });
       }
