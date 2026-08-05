@@ -497,6 +497,7 @@ let bossPhase = 1;            // Boss 当前阶段
 let nukes = [];               // 核弹列表
 let victoryTimer = 0;          // 胜利动画计时器
 let victoryParticles = [];     // 胜利烟花粒子
+let healthSpawnTimer = 0;      // 血包生成计时器
 let enemiesRemaining = 0;
 let enemiesOnScreen = 0;
 let maxEnemiesOnScreen = 4;
@@ -1782,7 +1783,8 @@ class PowerUp {
   constructor(x, y) {
     this.x = Math.floor(x);
     this.y = Math.floor(y);
-    this.type = Math.random() < 0.5 ? 'speed' : 'shield';
+    const r = Math.random();
+    this.type = r < 0.35 ? 'speed' : r < 0.7 ? 'shield' : 'health';
     this.alive = true;
     this.timer = 600;
     this.blink = 0;
@@ -1807,10 +1809,13 @@ class PowerUp {
     if (this.type === 'speed') {
       player.speed = Math.min(player.speed + 0.3, 2.5);
       setTimeout(() => { if (player) player.speed = 1.2; }, 10000);
-    } else {
+      score += 200;
+    } else if (this.type === 'shield') {
       player.invincible = 300;
+      score += 200;
+    } else if (this.type === 'health') {
+      lives = Math.min(lives + 1, 10);
     }
-    score += 200;
     updateUI();
   }
 
@@ -1821,8 +1826,9 @@ class PowerUp {
     const cx = (this.x + 0.5) * CELL;
     const cy = (this.y + 0.5) * CELL;
 
-    ctx.fillStyle = this.type === 'speed' ? '#4ecdc4' : '#ffd93d';
-    ctx.shadowColor = ctx.fillStyle;
+    const pcolor = this.type === 'speed' ? '#4ecdc4' : this.type === 'health' ? '#ff4444' : '#ffd93d';
+    ctx.fillStyle = pcolor;
+    ctx.shadowColor = pcolor;
     ctx.shadowBlur = 8;
     ctx.beginPath();
     ctx.arc(cx, cy, CELL * 0.3, 0, Math.PI * 2);
@@ -1834,7 +1840,8 @@ class PowerUp {
     ctx.font = `${fs}px Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(this.type === 'speed' ? '⚡' : '\u{1F6E1}️', cx, cy);
+    const icon = this.type === 'speed' ? '⚡' : this.type === 'health' ? '❤️' : '🛡️';
+    ctx.fillText(icon, cx, cy);
   }
 }
 
@@ -1873,6 +1880,7 @@ function loadLevel(lvl) {
   dashState = null;
   mythicMode = false;
   killStreak = 0;
+  healthSpawnTimer = 600; // 10秒后开始生成血包
   updateUI();
 }
 
@@ -1951,6 +1959,18 @@ function update() {
   // 体力回复
   if (!dashState && stamina < MAX_STAMINA) {
     stamina = Math.min(MAX_STAMINA, stamina + 0.15); // 约9/sec，11秒回满
+  }
+
+  // 随机血包生成（每15秒左右一个）
+  healthSpawnTimer--;
+  if (healthSpawnTimer <= 0 && player && player.alive) {
+    const hx = 2 + Math.random() * (COLS - 4);
+    const hy = 2 + Math.random() * (ROWS - 4);
+    const hp = new PowerUp(hx, hy);
+    hp.type = 'health';
+    hp.timer = 450; // 7.5秒消失
+    powerUps.push(hp);
+    healthSpawnTimer = 700 + Math.floor(Math.random() * 400); // 12-18秒
   }
 
   // 普通敌人全灭 → 召唤Boss
