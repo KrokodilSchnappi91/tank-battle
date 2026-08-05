@@ -721,8 +721,8 @@ class Tank {
       if (moveDx !== 0) this.dir = moveDx > 0 ? DIR.RIGHT : DIR.LEFT;
       else if (moveDy !== 0) this.dir = moveDy > 0 ? DIR.DOWN : DIR.UP;
 
-      // 移动车身
-      const spd = this.speed * 0.035;
+      // 移动车身（普通模式减半，神话模式全速）
+      const spd = this.speed * (mythicMode ? 0.035 : 0.018);
       const nx = this.x + moveDx * spd;
       const ny = this.y + moveDy * spd;
 
@@ -803,7 +803,8 @@ class Tank {
   aiMove() {
     if (!this.targetDir) this.targetDir = this.dir;
 
-    const spd = this.speed * 0.035;
+    // Boss全速，小兵半速
+    const spd = this.speed * (this.type === 'boss' ? 0.035 : 0.018);
     // 先尝试朝目标方向移动
     const tx = this.x + this.targetDir.x * spd;
     const ty = this.y + this.targetDir.y * spd;
