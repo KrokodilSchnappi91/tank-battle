@@ -2233,16 +2233,17 @@ function spawnBoss() {
   bossPhase = 1;
 
   const margin = 3;
+  const bossColors = ['#ff4444', '#44aaff', '#ffaa00', '#44ff44'];
   const positions = [
-    { x: margin, y: margin, dir: DIR.DOWN },
-    { x: COLS - margin, y: margin, dir: DIR.DOWN },
-    { x: margin, y: ROWS - margin, dir: DIR.UP },
-    { x: COLS - margin, y: ROWS - margin, dir: DIR.UP }
+    { x: margin, y: margin, dir: DIR.DOWN, color: bossColors[0] },
+    { x: COLS - margin, y: margin, dir: DIR.DOWN, color: bossColors[1] },
+    { x: margin, y: ROWS - margin, dir: DIR.UP, color: bossColors[2] },
+    { x: COLS - margin, y: ROWS - margin, dir: DIR.UP, color: bossColors[3] }
   ];
   const baseHP = Math.floor((80 + level * 50) * 0.77 / 4);
 
   positions.forEach((pos, idx) => {
-    const b = new Tank(pos.x, pos.y, pos.dir, '#8b00ff', 0.7, false);
+    const b = new Tank(pos.x, pos.y, pos.dir, pos.color, 0.7, false);
     b.hp = baseHP;
     b._maxHp = baseHP;
     b.size = 1.0;
@@ -2848,32 +2849,33 @@ function render() {
     ctx.fill();
   }
 
-  // Boss 警告
-  if (bossActive && bossTank && bossTank.alive) {
-    const isP2 = bossPhase === 2;
-    const bpulse = 0.5 + Math.sin(Date.now() / 150) * 0.5;
-    const bcolor = isP2 ? `rgba(255, 0, 64, ${0.5 + bpulse * 0.5})` : `rgba(139, 0, 255, ${0.4 + bpulse * 0.6})`;
-    ctx.fillStyle = bcolor;
-    const bfs = Math.max(20, CELL * 0.9);
-    ctx.font = `bold ${bfs}px "Microsoft YaHei", Arial`;
-    ctx.textAlign = 'center';
-    const dkLabel = bossTank._isDemonKing ? '👑 魔 王 👑' : (isP2 ? '⚠ BOSS · PHASE 2 ⚠' : '⚠ BOSS ⚠');
-    ctx.fillText(dkLabel, canvas.width / 2, 30);
-    // Boss血条
-    const barW = canvas.width * 0.4;
-    const barH = 6;
-    const barX = (canvas.width - barW) / 2;
-    const barY = 38;
-    ctx.fillStyle = '#333';
-    ctx.fillRect(barX, barY, barW, barH);
-    const hpRatio = bossTank.hp / bossTank._maxHp;
-    const hpColor = isP2 ? '#ff0040' : (hpRatio > 0.5 ? '#8b00ff' : hpRatio > 0.25 ? '#ff8c00' : '#ff0000');
-    ctx.fillStyle = hpColor;
-    ctx.fillRect(barX, barY, barW * Math.max(0, hpRatio), barH);
-    // 二阶段指示线
-    if (!isP2 && level % 2 === 0) {
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.fillRect(barX + barW * 0.5 - 1, barY, 2, barH);
+  // Boss 血条：每个Boss独立显示
+  if (bossActive) {
+    const bosses = enemies.filter(e => e.alive && e.type === 'boss');
+    if (bosses.length > 0) {
+      const isDemon = bosses[0]._isDemonKing;
+      ctx.fillStyle = '#fff';
+      const bfs = Math.max(14, CELL * 0.6);
+      ctx.font = `bold ${bfs}px "Microsoft YaHei", Arial`;
+      ctx.textAlign = 'center';
+      ctx.fillText(isDemon ? '👑 魔 王 👑' : '⚠ BOSS ⚠', canvas.width / 2, 18);
+
+      const barW = Math.min(180, canvas.width * 0.35);
+      const barH = 5;
+      const startX = (canvas.width - (bosses.length * barW + (bosses.length - 1) * 8)) / 2;
+      const barY = 24;
+
+      bosses.forEach((b, i) => {
+        const bx = startX + i * (barW + 8);
+        const ratio = Math.max(0, b.hp / b._maxHp);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(bx, barY, barW, barH);
+        ctx.fillStyle = b.color;
+        ctx.fillRect(bx, barY, barW * ratio, barH);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(bx, barY, barW, barH);
+      });
     }
   }
 
