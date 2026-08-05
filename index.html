@@ -2931,7 +2931,7 @@ function gameLoop() {
 
 // ====== ESC 菜单系统 ======
 function openMenu() {
-  if (gameState !== STATE.PLAYING && gameState !== STATE.PAUSED) return;
+  if (gameState === STATE.MENU || gameState === STATE.GAMEOVER) return;
   gameState = STATE.PAUSED;
   document.getElementById('menuOverlay').classList.remove('hidden');
 }
@@ -2944,14 +2944,16 @@ function closeMenu() {
 }
 
 window.addEventListener('keydown', function menuHandler(e) {
-  if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+  if (e.key === 'Escape' || e.key === 'Esc' || e.code === 'Escape' || e.key === 'p' || e.key === 'P') {
+    e.preventDefault();
+    e.stopPropagation();
     const menuO = !document.getElementById('menuOverlay').classList.contains('hidden');
     const ctrlO = !document.getElementById('controlsOverlay').classList.contains('hidden');
     const lvlO = !document.getElementById('levelSelectOverlay').classList.contains('hidden');
     const pauseO = !document.getElementById('pauseOverlay').classList.contains('hidden');
     if (menuO || ctrlO || lvlO || pauseO) {
       closeMenu();
-    } else if (gameState === STATE.PLAYING || gameState === STATE.PAUSED) {
+    } else {
       openMenu();
     }
   }
