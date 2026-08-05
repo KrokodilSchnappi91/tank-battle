@@ -2608,9 +2608,9 @@ function update() {
     const hy = 2 + Math.random() * (ROWS - 4);
     const hp = new PowerUp(hx, hy);
     hp.type = 'health';
-    hp.timer = 240; // 4秒消失
+    hp.timer = 3600; // 1分钟
     powerUps.push(hp);
-    healthSpawnTimer = 180; // 3秒
+    healthSpawnTimer = 60;
   }
 
   // 普通敌人全灭 → 召唤Boss
