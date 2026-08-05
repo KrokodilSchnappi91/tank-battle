@@ -1269,8 +1269,10 @@ function loadLevel(lvl) {
   particles = [];
   powerUps = [];
   explosions = [];
+  deathTimer = 0;
 
   player = new Tank(12.5, 24, DIR.UP, '#2ecc71', 1.2, true);
+  player.turretDir = DIR.UP;
   player.invincible = 120;
 
   // 每关敌人数量递增：L1=10, L2=15, L3=20, L4=28, L5=35...
@@ -1351,6 +1353,11 @@ function update() {
     lives--;
     updateUI();
     deathTimer = 45; // 0.75秒死亡动画
+    // 记录死亡位置，原地复活
+    if (!player._deathX) {
+      player._deathX = player.x;
+      player._deathY = player.y;
+    }
   }
 
   for (const enemy of enemies) {
@@ -1376,24 +1383,26 @@ function update() {
 }
 
 function respawnPlayer() {
-  const spawnX = 12.5, spawnY = 24;
-  // 清除重生点附近的敌人（不计入击杀）
+  // 使用死亡位置原地复活
+  const sx = player._deathX || 12.5;
+  const sy = player._deathY || 24;
+  // 清除复活点附近的敌人（不计入击杀）
   for (const enemy of enemies) {
-    const dx = enemy.x - spawnX;
-    const dy = enemy.y - spawnY;
+    const dx = enemy.x - sx;
+    const dy = enemy.y - sy;
     if (Math.abs(dx) < 2 && Math.abs(dy) < 2) {
       enemy.alive = false;
       enemiesOnScreen--;
       enemiesRemaining--;
     }
   }
-  // 清除重生点附近的敌方子弹
+  // 清除附近的敌方子弹
   for (const b of bullets) {
-    if (!b.isPlayer && Math.abs(b.x - spawnX) < 2 && Math.abs(b.y - spawnY) < 2) {
+    if (!b.isPlayer && Math.abs(b.x - sx) < 2 && Math.abs(b.y - sy) < 2) {
       b.alive = false;
     }
   }
-  player = new Tank(spawnX, spawnY, DIR.UP, '#2ecc71', 1.2, true);
+  player = new Tank(sx, sy, DIR.UP, '#2ecc71', 1.2, true);
   player.turretDir = DIR.UP;
   player.invincible = 120;
   updateUI();
