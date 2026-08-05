@@ -455,26 +455,22 @@
   </div>
 </div>
 
-<!-- 形态选择界面 -->
-<div class="overlay hidden" id="formChoiceOverlay" style="background:rgba(0,0,0,0.7);">
-  <div class="overlay-content">
-    <h2 style="font-size:24px;animation:pulse 0.8s infinite;">⚡ 选择进化形态 ⚡</h2>
-    <div style="display:flex;gap:20px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
-      <div id="choiceMythic" style="background:linear-gradient(135deg,#2a1a00,#4a3000);border:3px solid #ffd700;border-radius:12px;padding:20px;cursor:pointer;width:150px;text-align:center;">
-        <div style="font-size:40px;">🌟</div>
-        <div style="color:#ffd700;font-weight:bold;font-size:18px;">神话形态</div>
-        <div style="color:#ccc;font-size:11px;">360°追踪激光</div>
-        <div style="color:#ccc;font-size:11px;">高速移动</div>
-      </div>
-      <div id="choiceGodSlayer" style="background:linear-gradient(135deg,#1a0000,#4a0000);border:3px solid #ff4500;border-radius:12px;padding:20px;cursor:pointer;width:150px;text-align:center;">
-        <div style="font-size:40px;">🔥</div>
-        <div style="color:#ff4500;font-weight:bold;font-size:18px;">杀神形态</div>
-        <div style="color:#ccc;font-size:11px;">巨型火球</div>
-        <div style="color:#ccc;font-size:11px;">范围爆炸</div>
-      </div>
+<!-- 形态选择（不暂停游戏，右上角小窗） -->
+<div class="hidden" id="formChoiceOverlay" style="position:fixed;top:8px;right:8px;z-index:20;background:rgba(0,0,0,0.85);border:2px solid #ffd700;border-radius:10px;padding:12px;max-width:200px;text-align:center;">
+  <div style="color:#ffd700;font-size:13px;font-weight:bold;animation:pulse 0.8s infinite;">⚡ 选择形态</div>
+  <div style="display:flex;gap:6px;justify-content:center;margin-top:6px;">
+    <div id="choiceMythic" style="background:#2a1a00;border:2px solid #ffd700;border-radius:8px;padding:8px;cursor:pointer;text-align:center;flex:1;">
+      <div style="font-size:20px;">🌟</div>
+      <div style="color:#ffd700;font-size:10px;font-weight:bold;">神话</div>
+      <div style="color:#aaa;font-size:8px;">按 1</div>
     </div>
-    <p style="color:#666;font-size:11px;margin-top:12px;">点击选择，5秒后自动选择神话</p>
+    <div id="choiceGodSlayer" style="background:#1a0000;border:2px solid #ff4500;border-radius:8px;padding:8px;cursor:pointer;text-align:center;flex:1;">
+      <div style="font-size:20px;">🔥</div>
+      <div style="color:#ff4500;font-size:10px;font-weight:bold;">杀神</div>
+      <div style="color:#aaa;font-size:8px;">按 2</div>
+    </div>
   </div>
+  <div id="choiceSkip" style="color:#888;font-size:9px;margin-top:4px;cursor:pointer;">按 U 不变身</div>
 </div>
 
 <!-- 暂停界面（保留兼容） -->
@@ -1702,12 +1698,11 @@ class Tank {
       // 连续击杀3个弹出形态选择
       if (killStreak >= 3 && !mythicMode && !godSlayerMode && !showFormChoice) {
         showFormChoice = true;
-        gameState = STATE.PAUSED;
         document.getElementById('formChoiceOverlay').classList.remove('hidden');
-        // 5秒自动选神话
+        // 10秒自动选神话
         setTimeout(() => {
           if (showFormChoice) activateMythic();
-        }, 5000);
+        }, 10000);
       }
     }
 
@@ -3306,26 +3301,30 @@ window.addEventListener('keydown', function menuHandler(e) {
 
 // 形态选择
 function activateMythic() {
-  mythicMode = true;
-  godSlayerMode = false;
-  showFormChoice = false;
-  player.invincible = 90;
-  player._mythicAttacks = 0;
-  lives = Math.max(lives, 18); // 神话血量18
+  mythicMode = true; godSlayerMode = false; showFormChoice = false;
+  player.invincible = 90; player._mythicAttacks = 0;
+  lives = Math.max(lives, 18);
   document.getElementById('formChoiceOverlay').classList.add('hidden');
-  gameState = STATE.PLAYING;
 }
 function activateGodSlayer() {
-  godSlayerMode = true;
-  mythicMode = false;
-  showFormChoice = false;
-  player.invincible = 90;
-  player.color = '#ff4500';
+  godSlayerMode = true; mythicMode = false; showFormChoice = false;
+  player.invincible = 90; player.color = '#cc0000';
   document.getElementById('formChoiceOverlay').classList.add('hidden');
-  gameState = STATE.PLAYING;
+}
+function skipFormChoice() {
+  showFormChoice = false;
+  document.getElementById('formChoiceOverlay').classList.add('hidden');
 }
 document.getElementById('choiceMythic').addEventListener('click', activateMythic);
 document.getElementById('choiceGodSlayer').addEventListener('click', activateGodSlayer);
+document.getElementById('choiceSkip').addEventListener('click', skipFormChoice);
+
+window.addEventListener('keydown', function formKeyHandler(e) {
+  if (!showFormChoice) return;
+  if (e.key === '1') activateMythic();
+  else if (e.key === '2') activateGodSlayer();
+  else if (e.key === 'u' || e.key === 'U') skipFormChoice();
+});
 
 document.getElementById('menuResumeBtn').addEventListener('click', closeMenu);
 document.getElementById('menuRestartBtn').addEventListener('click', () => {
