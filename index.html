@@ -336,7 +336,7 @@
       </div>
       <div class="stat">
         <span class="stat-label">生命</span>
-        <span class="stat-value" id="lives">3</span>
+        <span class="stat-value" id="lives">10</span>
       </div>
       <div class="stat">
         <span class="stat-label">击杀</span>
@@ -479,7 +479,7 @@ const STATE = {
 let gameState = STATE.MENU;
 let score = 0;
 let level = 1;
-let lives = 3;
+let lives = 10;
 let kills = 0;
 let killStreak = 0;           // 连续击杀数
 let mythicMode = false;       // 神话模式
@@ -2241,7 +2241,7 @@ function updateUI() {
 function resetGame() {
   score = 0;
   level = 1;
-  lives = 3;
+  lives = 10;
   kills = 0;
   killStreak = 0;
   mythicMode = false;
