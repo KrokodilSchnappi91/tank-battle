@@ -616,7 +616,7 @@ window.addEventListener('keydown', e => {
     // 使用当前车身方向冲刺
     const dashDir = player.dir;
     const mythicBoost = mythicMode ? 1.5 : 1;
-    const dashLen = godSlayerMode ? 117 : Math.floor(13 * mythicBoost);
+    const dashLen = godSlayerMode ? 350 : Math.floor(13 * mythicBoost);
     dashState = {
       dir: dashDir,
       timer: dashLen,
@@ -1158,7 +1158,7 @@ class Tank {
     if (dashState && dashState.timer > 0) {
       dashState.timer--;
       // 冲刺移动（高速）
-      const dashSpd = godSlayerMode ? 0.06 : (dashState.mythic ? 0.25 : 0.18);
+      const dashSpd = godSlayerMode ? 0.10 : (dashState.mythic ? 0.25 : 0.18);
       const nx = this.x + dashState.dir.x * dashSpd;
       const ny = this.y + dashState.dir.y * dashSpd;
       if (this.canMoveTo(nx, ny, dashState.dir)) {
