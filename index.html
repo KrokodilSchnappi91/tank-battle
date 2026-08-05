@@ -454,6 +454,8 @@ let kills = 0;
 let killStreak = 0;           // 连续击杀数
 let mythicMode = false;       // 神话模式
 let deathTimer = 0;           // 死亡重生倒计时
+let bossActive = false;       // Boss 战中
+let bossTank = null;          // Boss 坦克引用
 let enemiesRemaining = 0;
 let enemiesOnScreen = 0;
 let maxEnemiesOnScreen = 4;
@@ -765,7 +767,9 @@ class Tank {
 
     // 定时或随机更新移动目标方向
     if (this.changeDirTimer <= 0 || Math.random() < 0.008) {
-      if (player && player.alive && Math.random() < 0.55) {
+      // Boss 始终追击玩家
+      const pursueChance = this.type === 'boss' ? 0.9 : 0.55;
+      if (player && player.alive && Math.random() < pursueChance) {
         // 朝向玩家移动
         const dx = player.x - this.x;
         const dy = player.y - this.y;
@@ -784,8 +788,12 @@ class Tank {
       this.changeDirTimer = this.changeDirDelay;
     }
 
-    // 锁定玩家后积极射击
-    if (this.shootCooldown <= 0 && Math.random() < 0.025) {
+    // 射击：Boss特殊模式，普通敌人锁定玩家
+    if (this.type === 'boss') {
+      if (this.shootCooldown <= 0 && Math.random() < 0.05) {
+        this.bossShoot();
+      }
+    } else if (this.shootCooldown <= 0 && Math.random() < 0.025) {
       this.shoot();
     }
   }
@@ -896,6 +904,22 @@ class Tank {
     }
   }
 
+  // Boss 专属：扇形散射
+  bossShoot() {
+    if (this.shootCooldown > 0) return;
+    this.shootCooldown = this.shootDelay;
+    // 3 发扇形子弹，朝向玩家方向
+    const baseDir = this.turretDir;
+    const spread = 0.3; // 散射角度（弧度）
+    for (let i = -1; i <= 1; i++) {
+      const angle = baseDir.angle + i * spread;
+      const dir = { x: Math.cos(angle), y: Math.sin(angle), angle: angle };
+      const bx = this.x + dir.x * 0.5;
+      const by = this.y + dir.y * 0.5;
+      bullets.push(new Bullet(bx, by, dir, false));
+    }
+  }
+
   hit() {
     this.hp--;
     if (this.hp <= 0) {
@@ -924,16 +948,32 @@ class Tank {
     if (!this.isPlayer) {
       kills++;
       killStreak++;
-      score += this.type === 'fast' ? 300 : this.type === 'armored' ? 500 : 100;
+      const isBoss = this.type === 'boss';
+      score += isBoss ? 2000 + level * 500
+             : this.type === 'fast' ? 300
+             : this.type === 'armored' ? 500 : 100;
       enemiesOnScreen--;
-      enemiesRemaining--;
-      if (Math.random() < 0.15) {
+      if (!isBoss) enemiesRemaining--;
+      // Boss掉落必定道具
+      if (isBoss || Math.random() < 0.15) {
         powerUps.push(new PowerUp(this.x, this.y));
+        if (isBoss) powerUps.push(new PowerUp(this.x + 0.5, this.y));
+      }
+      // Boss爆炸更大
+      if (isBoss) {
+        for (let i = 0; i < 30; i++) {
+          particles.push(new Particle(
+            this.x * BASE_CELL, this.y * BASE_CELL,
+            (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8,
+            Math.random() < 0.5 ? '#8b00ff' : '#ff00ff',
+            30 + Math.random() * 40
+          ));
+        }
       }
       // 连续击杀3个进入神话模式
       if (killStreak >= 3 && !mythicMode) {
         mythicMode = true;
-        player.invincible = 90; // 短暂无敌
+        player.invincible = 90;
       }
     }
 
@@ -962,6 +1002,23 @@ class Tank {
       ctx.fillStyle = gradient;
       ctx.beginPath();
       ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Boss：紫色暗黑光环
+    if (this.type === 'boss') {
+      ctx.save();
+      ctx.translate(cx, cy);
+      const bglow = half * 1.8 + Math.sin(Date.now() / 100) * half * 0.3;
+      const bgrad = ctx.createRadialGradient(0, 0, half * 0.4, 0, 0, bglow);
+      bgrad.addColorStop(0, 'rgba(139,0,255,0)');
+      bgrad.addColorStop(0.4, 'rgba(139,0,255,0.35)');
+      bgrad.addColorStop(0.7, 'rgba(200,0,255,0.2)');
+      bgrad.addColorStop(1, 'rgba(139,0,255,0)');
+      ctx.fillStyle = bgrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, bglow, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
@@ -1003,7 +1060,7 @@ class Tank {
     const turretAngle = this.turretDir.angle;
     ctx.rotate(turretAngle);
 
-    const turretColor = isMythic ? '#ff6b00' : (this.isPlayer ? '#4ecdc4' : '#ffd93d');
+    const turretColor = this.type === 'boss' ? '#cc00ff' : (isMythic ? '#ff6b00' : (this.isPlayer ? '#4ecdc4' : '#ffd93d'));
 
     // 炮塔底座
     ctx.fillStyle = turretColor;
@@ -1019,6 +1076,22 @@ class Tank {
     // 炮管尖端（神话模式亮金色）
     ctx.fillStyle = isMythic ? '#ffd700' : '#fff';
     ctx.fillRect(-1, -half * 0.85 - 2, 3, Math.max(3, CELL * 0.18));
+
+    // Boss 王冠标记
+    if (this.type === 'boss') {
+      ctx.fillStyle = '#ffd700';
+      const crownY = -half * 0.55;
+      ctx.beginPath();
+      ctx.moveTo(-5, crownY);
+      ctx.lineTo(-5, crownY - 5);
+      ctx.lineTo(-2, crownY - 3);
+      ctx.lineTo(0, crownY - 7);
+      ctx.lineTo(2, crownY - 3);
+      ctx.lineTo(5, crownY - 5);
+      ctx.lineTo(5, crownY);
+      ctx.closePath();
+      ctx.fill();
+    }
 
     ctx.restore();
   }
@@ -1283,7 +1356,45 @@ function loadLevel(lvl) {
   baseEnemySpeed = 0.7 + lvl * 0.1;
   enemySpawnTimer = 60;
 
+  bossActive = false;
+  bossTank = null;
   updateUI();
+}
+
+function spawnBoss() {
+  bossActive = true;
+  // Boss出生在顶部中央
+  const bx = 12.5, by = 2;
+  bossTank = new Tank(bx, by, DIR.DOWN, '#8b00ff', 0.7, false);
+  bossTank.hp = 8 + level * 3;       // Boss血量随关卡增长
+  bossTank.size = 1.2;               // 体型更大
+  bossTank.shootDelay = 30;          // 射击更快
+  bossTank.type = 'boss';
+  bossTank.invincible = 60;          // 短暂无敌
+  bossTank.turretDir = DIR.DOWN;
+
+  // 清除出生点障碍
+  for (let dy = 0; dy < 3; dy++) {
+    for (let dx = -2; dx <= 2; dx++) {
+      const cx = Math.floor(bx) + dx;
+      const cy = Math.floor(by) + dy;
+      if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
+        mapData[cy * COLS + cx] = 0;
+      }
+    }
+  }
+
+  enemies.push(bossTank);
+  enemiesOnScreen++;
+
+  // Boss出场特效
+  for (let i = 0; i < 30; i++) {
+    particles.push(new Particle(
+      bx * BASE_CELL, by * BASE_CELL,
+      (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6,
+      '#8b00ff', 30 + Math.random() * 30
+    ));
+  }
 }
 
 function spawnEnemy() {
@@ -1320,15 +1431,26 @@ function spawnEnemy() {
 function update() {
   if (gameState !== STATE.PLAYING) return;
 
-  if (enemiesRemaining <= 0 && enemies.length === 0) {
+  // 普通敌人全灭 → 召唤Boss
+  if (!bossActive && enemiesRemaining <= 0 && enemies.length === 0 && player && player.alive) {
+    spawnBoss();
+  }
+
+  // Boss被击败 → 过关
+  if (bossActive && (!bossTank || !bossTank.alive)) {
+    bossActive = false;
+    bossTank = null;
     levelUp();
     return;
   }
 
-  enemySpawnTimer--;
-  if (enemySpawnTimer <= 0 && enemiesRemaining > 0) {
-    spawnEnemy();
-    enemySpawnTimer = enemySpawnDelay + Math.floor(Math.random() * 30);
+  // Boss 在场时不刷小兵
+  if (!bossActive) {
+    enemySpawnTimer--;
+    if (enemySpawnTimer <= 0 && enemiesRemaining > 0) {
+      spawnEnemy();
+      enemySpawnTimer = enemySpawnDelay + Math.floor(Math.random() * 30);
+    }
   }
 
   // 处理玩家
@@ -1452,6 +1574,8 @@ function resetGame() {
   killStreak = 0;
   mythicMode = false;
   deathTimer = 0;
+  bossActive = false;
+  bossTank = null;
   enemiesRemaining = 0;
   enemiesOnScreen = 0;
   maxEnemiesOnScreen = 4;
@@ -1566,6 +1690,26 @@ function render() {
       6 + row * (is + 2),
       is, is
     );
+  }
+
+  // Boss 警告
+  if (bossActive && bossTank && bossTank.alive) {
+    const bpulse = 0.5 + Math.sin(Date.now() / 150) * 0.5;
+    ctx.fillStyle = `rgba(139, 0, 255, ${0.4 + bpulse * 0.6})`;
+    const bfs = Math.max(20, CELL * 0.9);
+    ctx.font = `bold ${bfs}px "Microsoft YaHei", Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillText('⚠ BOSS ⚠', canvas.width / 2, 30);
+    // Boss血条
+    const barW = canvas.width * 0.4;
+    const barH = 6;
+    const barX = (canvas.width - barW) / 2;
+    const barY = 38;
+    ctx.fillStyle = '#333';
+    ctx.fillRect(barX, barY, barW, barH);
+    const hpRatio = bossTank.hp / (8 + level * 3);
+    ctx.fillStyle = hpRatio > 0.5 ? '#8b00ff' : hpRatio > 0.25 ? '#ff8c00' : '#ff0000';
+    ctx.fillRect(barX, barY, barW * Math.max(0, hpRatio), barH);
   }
 
   // 神话模式指示器
