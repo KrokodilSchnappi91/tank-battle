@@ -491,7 +491,7 @@ window.addEventListener('keydown', e => {
         : e.key === 'ArrowDown' ? DIR.DOWN
         : e.key === 'ArrowLeft' ? DIR.LEFT
         : DIR.RIGHT;
-      dashState = { dir: dashDir, timer: 15, maxTimer: 15 }; // 0.25秒冲刺
+      dashState = { dir: dashDir, timer: 22, maxTimer: 22 }; // 0.37秒冲刺
       lastKeyTime[e.key] = 0; // 防止连续触发
     } else {
       lastKeyTime[e.key] = now;
@@ -734,7 +734,7 @@ class Tank {
     if (dashState && dashState.timer > 0) {
       dashState.timer--;
       // 冲刺移动（高速）
-      const dashSpd = 0.18; // 约5倍速
+      const dashSpd = 0.3; // 约8倍速
       const nx = this.x + dashState.dir.x * dashSpd;
       const ny = this.y + dashState.dir.y * dashSpd;
       if (this.canMoveTo(nx, ny, dashState.dir)) {
@@ -1154,8 +1154,8 @@ class Tank {
       ctx.globalAlpha = alpha2 * 0.5;
       ctx.fillStyle = '#4ecdc4';
       for (let t = 1; t <= 3; t++) {
-        const tx = cx - dashState.dir.x * CELL * t * 0.6;
-        const ty = cy - dashState.dir.y * CELL * t * 0.6;
+        const tx = cx - dashState.dir.x * CELL * t * 0.8;
+        const ty = cy - dashState.dir.y * CELL * t * 0.8;
         ctx.beginPath();
         ctx.arc(tx, ty, half * (1 - t * 0.2), 0, Math.PI * 2);
         ctx.fill();
