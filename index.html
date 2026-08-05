@@ -1170,7 +1170,7 @@ class Tank {
       this.invincible = dashState.timer + 30;
       // 杀神冲刺：360°环绕火球
       if (godSlayerMode && dashState.timer % 4 === 0) {
-        const count = 6;
+        const count = 12;
         for (let i = 0; i < count; i++) {
           const angle = (Math.PI * 2 / count) * i + dashState.timer * 0.12;
           const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
