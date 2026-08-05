@@ -1632,9 +1632,8 @@ class Tank {
     if (!this.isPlayer) {
       kills++;
       killStreak++;
-      // 杀神模式击杀回复20体力
-      if (godSlayerMode) stamina = Math.min(stamina + 20, 750);
       const isBoss = this.type === 'boss';
+      if (godSlayerMode) stamina = Math.min(stamina + (isBoss ? 66 : 20), 750);
       score += isBoss ? 2000 + level * 500
              : this.type === 'fast' ? 300
              : this.type === 'armored' ? 500 : 100;
