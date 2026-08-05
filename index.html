@@ -611,19 +611,20 @@ window.addEventListener('keydown', e => {
   keys[e.key] = true;
   keys[e.code] = true;
 
-  // 空格键触发冲刺（需体力足够，朝当前移动方向冲刺）
-  if (e.code === 'Space' && !dashState && player && player.alive && stamina >= DASH_COST) {
-    // 使用当前车身方向冲刺
-    const dashDir = player.dir;
-    const mythicBoost = mythicMode ? 1.5 : 1;
-    const dashLen = godSlayerMode ? 91 : Math.floor(13 * mythicBoost);
-    dashState = {
-      dir: dashDir,
-      timer: dashLen,
-      maxTimer: dashLen,
-      mythic: mythicMode
-    };
-    stamina -= DASH_COST;
+  // 空格键触发冲刺
+  if (e.code === 'Space' && player && player.alive) {
+    // 杀神模式：长按持续冲刺
+    if (godSlayerMode && isKeyDown(' ') && !dashState && stamina >= DASH_COST) {
+      const dashDir = player.dir;
+      dashState = { dir: dashDir, timer: 30, maxTimer: 30, mythic: false };
+      stamina -= DASH_COST;
+    } else if (!godSlayerMode && !dashState && stamina >= DASH_COST) {
+      const dashDir = player.dir;
+      const mythicBoost = mythicMode ? 1.5 : 1;
+      const dashLen = Math.floor(13 * mythicBoost);
+      dashState = { dir: dashDir, timer: dashLen, maxTimer: dashLen, mythic: mythicMode };
+      stamina -= DASH_COST;
+    }
   }
 
   if (['KeyW','KeyA','KeyS','KeyD','Space','KeyJ'].includes(e.code)) {
@@ -1207,9 +1208,14 @@ class Tank {
           godSlayerMode ? '#ff4500' : (dashState.mythic ? '#ffd700' : '#4ecdc4'), 8 + Math.random() * 8
         ));
       }
-      // 结束冲刺
+      // 结束冲刺（杀神模式长按空格自动续冲）
       if (dashState.timer <= 0) {
         dashState = null;
+        if (godSlayerMode && (isKeyDown(' ') || isKeyDown('Space')) && stamina >= DASH_COST) {
+          const dir = this.dir;
+          dashState = { dir, timer: 30, maxTimer: 30, mythic: false };
+          stamina -= DASH_COST;
+        }
       }
       // 冲刺期间仍可射击
       if (isKeyDown('j') || isKeyDown('KeyJ')) {
