@@ -1614,7 +1614,7 @@ class Bullet {
       }
     }
 
-    // 导弹接近玩家时也爆炸（范围伤害）
+    // 敌人导弹接近玩家时爆炸（玩家导弹不伤自己）
     if (this.isMissile && !this.isPlayer && player && player.alive) {
       const pdx = this.x - player.x;
       const pdy = this.y - player.y;
@@ -1668,8 +1668,8 @@ class Bullet {
         }
       }
     }
-    // 伤害范围内的玩家
-    if (player && player.alive) {
+    // 伤害范围内的玩家（玩家自己的导弹不伤自己）
+    if (!this.isPlayer && player && player.alive) {
       const pdx = player.x - cx;
       const pdy = player.y - cy;
       if (Math.sqrt(pdx * pdx + pdy * pdy) < 2.5) {
@@ -1690,14 +1690,16 @@ class Bullet {
   draw(ctx) {
     if (!this.alive) return;
 
-    // 导弹特殊外观：红色脉冲光环
+    // 导弹特殊外观：玩家绿色/敌人红色脉冲光环
     if (this.isMissile) {
       ctx.save();
       const mx = this.x * CELL, my = this.y * CELL;
       const mpulse = this.size * 1.8 + Math.sin(Date.now() / 60) * this.size * 0.5;
       const mgrad = ctx.createRadialGradient(mx, my, this.size * 0.4, mx, my, mpulse);
-      mgrad.addColorStop(0, 'rgba(255,50,0,0.6)');
-      mgrad.addColorStop(1, 'rgba(255,50,0,0)');
+      const mcolor = this.isPlayer ? 'rgba(0,255,100,0.6)' : 'rgba(255,50,0,0.6)';
+      const mcolor2 = this.isPlayer ? 'rgba(0,255,100,0)' : 'rgba(255,50,0,0)';
+      mgrad.addColorStop(0, mcolor);
+      mgrad.addColorStop(1, mcolor2);
       ctx.fillStyle = mgrad;
       ctx.beginPath();
       ctx.arc(mx, my, mpulse, 0, Math.PI*2);
@@ -1719,8 +1721,8 @@ class Bullet {
       }
     }
 
-    ctx.fillStyle = this.isMissile ? '#ff4500' : (this.homing ? '#ffd700' : (this.isPlayer ? '#fff' : '#ff6b6b'));
-    ctx.shadowColor = this.isMissile ? '#ff0000' : (this.homing ? '#ff8c00' : (this.isPlayer ? '#4ecdc4' : '#ff4444'));
+    ctx.fillStyle = this.isMissile ? (this.isPlayer ? '#00ff66' : '#ff4500') : (this.homing ? '#ffd700' : (this.isPlayer ? '#fff' : '#ff6b6b'));
+    ctx.shadowColor = this.isMissile ? (this.isPlayer ? '#00ff00' : '#ff0000') : (this.homing ? '#ff8c00' : (this.isPlayer ? '#4ecdc4' : '#ff4444'));
     ctx.shadowBlur = this.isMissile ? 14 : (this.homing ? 10 : 6);
     ctx.beginPath();
     ctx.arc(this.x * CELL, this.y * CELL, this.size, 0, Math.PI * 2);
