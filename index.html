@@ -1272,7 +1272,8 @@ function loadLevel(lvl) {
   player = new Tank(12.5, 24, DIR.UP, '#2ecc71', 1.2, true);
   player.invincible = 120;
 
-  enemiesRemaining = 10 + lvl * 2;
+  // 每关敌人数量递增：L1=10, L2=15, L3=20, L4=28, L5=35...
+  enemiesRemaining = 8 + lvl * 2 + Math.floor(lvl * lvl / 3);
   enemiesOnScreen = 0;
   maxEnemiesOnScreen = Math.min(4 + lvl, 8);
   enemySpawnDelay = Math.max(30, 90 - lvl * 5);
