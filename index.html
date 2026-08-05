@@ -920,7 +920,7 @@ class Tank {
       const dir = { x: Math.cos(angle), y: Math.sin(angle), angle: angle };
       const bx = this.x + dir.x * 0.5;
       const by = this.y + dir.y * 0.5;
-      bullets.push(new Bullet(bx, by, dir, false));
+      bullets.push(new Bullet(bx, by, dir, false, false, 2)); // Boss子弹hp=2
     }
   }
 
@@ -1102,12 +1102,13 @@ class Tank {
 }
 
 class Bullet {
-  constructor(x, y, dir, isPlayer, homing = false) {
+  constructor(x, y, dir, isPlayer, homing = false, hp = 1) {
     this.x = x;
     this.y = y;
     this.dir = dir;
     this.isPlayer = isPlayer;
     this.homing = homing;     // 追踪弹
+    this.hp = hp;             // 子弹生命值（Boss子弹需多枪抵消）
     this.speed = isPlayer ? 0.22 : 0.12;
     this.alive = true;
     this.size = Math.max(2, CELL * 0.12);
@@ -1195,8 +1196,12 @@ class Bullet {
         const dx = this.x - bullet.x;
         const dy = this.y - bullet.y;
         if (Math.abs(dx) < 0.25 && Math.abs(dy) < 0.25) {
-          this.alive = false;
-          bullet.alive = false;
+          this.alive = false;         // 玩家子弹消失
+          bullet.hp--;                // 敌方子弹扣血
+          if (bullet.hp <= 0) {
+            bullet.alive = false;     // hp归零才销毁
+            bullet.spark();
+          }
           return;
         }
       }
