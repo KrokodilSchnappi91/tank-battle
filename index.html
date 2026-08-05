@@ -532,8 +532,8 @@ function resizeCanvas() {
   const gameW = COLS * BASE_CELL;
   const gameH = ROWS * BASE_CELL;
 
-  scaleFactor = Math.min(maxWidth / gameW, maxHeight / gameH, 1.5);
-  CELL = Math.floor(BASE_CELL * scaleFactor);
+  scaleFactor = Math.min(maxWidth / gameW, maxHeight / gameH, 2.0);
+  CELL = Math.max(20, Math.floor(BASE_CELL * scaleFactor));
 
   canvas.width = COLS * CELL;
   canvas.height = ROWS * CELL;
