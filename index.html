@@ -455,6 +455,9 @@ let killStreak = 0;           // 连续击杀数
 let mythicMode = false;       // 神话模式
 // 冲刺系统
 let dashState = null;         // { dir, timer, maxTimer }
+let stamina = 100;            // 体力值
+const MAX_STAMINA = 100;
+const DASH_COST = 30;         // 冲刺消耗
 let deathTimer = 0;           // 死亡重生倒计时
 let bossActive = false;       // Boss 战中
 let bossTank = null;          // Boss 坦克引用
@@ -481,9 +484,9 @@ window.addEventListener('keydown', e => {
   keys[e.key] = true;
   keys[e.code] = true;
 
-  // 双击方向键检测（普通形态下触发冲刺）
+  // 双击方向键检测（普通形态下触发冲刺，需体力足够）
   const dirKeys = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
-  if (!mythicMode && !dashState && dirKeys.includes(e.key) && player && player.alive) {
+  if (!mythicMode && !dashState && dirKeys.includes(e.key) && player && player.alive && stamina >= DASH_COST) {
     const now = Date.now();
     if (lastKeyTime[e.key] && now - lastKeyTime[e.key] < 280) {
       // 双击触发冲刺
@@ -491,8 +494,9 @@ window.addEventListener('keydown', e => {
         : e.key === 'ArrowDown' ? DIR.DOWN
         : e.key === 'ArrowLeft' ? DIR.LEFT
         : DIR.RIGHT;
-      dashState = { dir: dashDir, timer: 13, maxTimer: 13 }; // ≈4格冲刺
-      lastKeyTime[e.key] = 0; // 防止连续触发
+      dashState = { dir: dashDir, timer: 13, maxTimer: 13 };
+      stamina -= DASH_COST;
+      lastKeyTime[e.key] = 0;
     } else {
       lastKeyTime[e.key] = now;
     }
@@ -1611,6 +1615,8 @@ function loadLevel(lvl) {
   bossTank = null;
   bossPhase = 1;
   nukes = [];
+  stamina = MAX_STAMINA;
+  dashState = null;
   updateUI();
 }
 
@@ -1685,6 +1691,11 @@ function spawnEnemy() {
 
 function update() {
   if (gameState !== STATE.PLAYING) return;
+
+  // 体力回复
+  if (!dashState && stamina < MAX_STAMINA) {
+    stamina = Math.min(MAX_STAMINA, stamina + 0.15); // 约9/sec，11秒回满
+  }
 
   // 普通敌人全灭 → 召唤Boss
   if (!bossActive && enemiesRemaining <= 0 && enemies.length === 0 && player && player.alive) {
@@ -1905,6 +1916,7 @@ function resetGame() {
   killStreak = 0;
   mythicMode = false;
   dashState = null;
+  stamina = MAX_STAMINA;
   deathTimer = 0;
   bossActive = false;
   bossTank = null;
@@ -2095,6 +2107,24 @@ function render() {
       ctx.fillRect(barX + barW * 0.5 - 1, barY, 2, barH);
     }
   }
+
+  // 体力条
+  const stBarW = 80;
+  const stBarH = 5;
+  const stBarX = 10;
+  const stBarY = canvas.height - 18;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(stBarX - 1, stBarY - 1, stBarW + 2, stBarH + 2);
+  ctx.fillStyle = '#333';
+  ctx.fillRect(stBarX, stBarY, stBarW, stBarH);
+  const stRatio = stamina / MAX_STAMINA;
+  ctx.fillStyle = stRatio > 0.5 ? '#4ecdc4' : stRatio > 0.25 ? '#ff8c00' : '#ff0000';
+  ctx.fillRect(stBarX, stBarY, stBarW * stRatio, stBarH);
+  ctx.fillStyle = '#aaa';
+  const stfs = Math.max(9, CELL * 0.38);
+  ctx.font = `${stfs}px Arial`;
+  ctx.textAlign = 'left';
+  ctx.fillText(`体力 ${Math.ceil(stamina)}`, stBarX + stBarW + 4, stBarY + stBarH);
 
   // 神话模式指示器
   if (mythicMode && player && player.alive) {
