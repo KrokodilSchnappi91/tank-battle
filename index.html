@@ -616,7 +616,7 @@ window.addEventListener('keydown', e => {
     // 使用当前车身方向冲刺
     const dashDir = player.dir;
     const mythicBoost = mythicMode ? 1.5 : 1;
-    const dashLen = godSlayerMode ? 59 : Math.floor(13 * mythicBoost);
+    const dashLen = godSlayerMode ? 89 : Math.floor(13 * mythicBoost);
     dashState = {
       dir: dashDir,
       timer: dashLen,
@@ -1169,8 +1169,8 @@ class Tank {
       // 冲刺全程无敌 + 结束后30帧缓冲
       this.invincible = dashState.timer + 30;
       // 杀神形态冲刺：每2帧释放4枚火球
-      if (godSlayerMode && dashState.timer % 4 === 0) {
-        const count = 4;
+      if (godSlayerMode && dashState.timer % 6 === 0) {
+        const count = 3;
         for (let i = 0; i < count; i++) {
           const angle = (Math.PI * 2 / count) * i + dashState.timer * 0.15;
           const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
