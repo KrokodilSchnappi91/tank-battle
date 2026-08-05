@@ -491,7 +491,7 @@ window.addEventListener('keydown', e => {
         : e.key === 'ArrowDown' ? DIR.DOWN
         : e.key === 'ArrowLeft' ? DIR.LEFT
         : DIR.RIGHT;
-      dashState = { dir: dashDir, timer: 22, maxTimer: 22 }; // 0.37秒冲刺
+      dashState = { dir: dashDir, timer: 13, maxTimer: 13 }; // ≈4格冲刺
       lastKeyTime[e.key] = 0; // 防止连续触发
     } else {
       lastKeyTime[e.key] = now;
