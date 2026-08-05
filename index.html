@@ -386,6 +386,7 @@
     <h1>🎮 坦克大战</h1>
     <p>消灭所有敌方坦克！手机请横屏游玩</p>
     <button class="btn" id="startFullscreenBtn" style="background:#4ecdc4;font-size:14px;padding:8px 20px;margin-top:4px;">📺 横屏全屏模式</button>
+    <button class="btn" id="openWorldBtn" style="background:#ff8c00;font-size:14px;padding:8px 20px;margin-top:4px;">🌍 开放世界模式</button>
     <p style="margin-top:12px; color:#666;">🏗️ 棕色砖墙可被摧毁</p>
     <p style="color:#666;">🔩 灰色钢墙坚不可摧</p>
     <p style="color:#666;">🌲 草丛隐藏坦克行踪</p>
@@ -496,8 +497,10 @@ const isSmallScreen = window.innerWidth <= 768;
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-const COLS = 34;
-const ROWS = 20;
+let COLS = 34;
+let ROWS = 20;
+const BASE_COLS = 34;
+const BASE_ROWS = 20;
 const BASE_CELL = 24;  // 基础单元格大小
 let CELL = BASE_CELL;
 let scaleFactor = 1;
@@ -557,7 +560,8 @@ let bossPhase = 1;            // Boss 当前阶段
 let nukes = [];               // 核弹列表
 let bossKillCount = 0;        // Boss击杀总数（跨关卡）
 let demonKingActive = false;  // 魔王战中
-let advancedUnlocked = false; // 66关后是否解锁（需66关达1万分）
+let advancedUnlocked = false; // 66关后是否解锁
+let openWorldMode = false;   // 开放世界模式
 let victoryTimer = 0;          // 胜利动画计时器
 let victoryParticles = [];     // 胜利烟花粒子
 let healthSpawnTimer = 0;      // 血包生成计时器
@@ -1079,11 +1083,7 @@ let enemies = [];
 let particles = [];
 let powerUps = [];
 let explosions = [];
-let spawnPoints = [
-  { x: 1, y: 1 },
-  { x: COLS - 2, y: 1 },
-  { x: COLS - 2, y: ROWS - 2 },
-];
+let spawnPoints = [];
 
 // ==================== 类定义 ====================
 
@@ -1991,6 +1991,39 @@ function generateMap(seed) {
   const rand = seededRandom(seed);
   const map = new Array(COLS * ROWS).fill(0);
 
+  // 开放世界模式：大地图+稀疏障碍
+  if (openWorldMode) {
+    const clearZone = (cx, cy, r) => {
+      for (let dy = -r; dy <= r; dy++)
+        for (let dx = -r; dx <= r; dx++) {
+          const tx = cx + dx, ty = cy + dy;
+          if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS) map[ty * COLS + tx] = 0;
+        }
+    };
+    clearZone(30, 34, 3); clearZone(1, 1, 2); clearZone(COLS-2, 1, 2);
+    // 稀疏砖墙（5%覆盖）
+    for (let i = 0; i < COLS * ROWS * 0.05; i++) {
+      const x = Math.floor(rand() * (COLS - 4)) + 2;
+      const y = Math.floor(rand() * (ROWS - 4)) + 2;
+      if (map[y * COLS + x] === 0) map[y * COLS + x] = 1;
+    }
+    // 少量钢墙
+    for (let i = 0; i < COLS * ROWS * 0.01; i++) {
+      const x = Math.floor(rand() * (COLS - 6)) + 3;
+      const y = Math.floor(rand() * (ROWS - 6)) + 3;
+      if (map[y * COLS + x] === 0) map[y * COLS + x] = 2;
+    }
+    // 草丛点缀
+    for (let i = 0; i < 20; i++) {
+      const gx = 3 + Math.floor(rand() * (COLS - 6));
+      const gy = 3 + Math.floor(rand() * (ROWS - 6));
+      for (let dy = 0; dy < 2; dy++)
+        for (let dx = 0; dx < 2; dx++)
+          if (map[(gy+dy) * COLS + (gx+dx)] === 0) map[(gy+dy) * COLS + (gx+dx)] = 4;
+    }
+    return map;
+  }
+
   const clearZone = (cx, cy, r) => {
     for (let dy = -r; dy <= r; dy++) {
       for (let dx = -r; dx <= r; dx++) {
@@ -2122,13 +2155,21 @@ function loadLevel(lvl) {
   explosions = [];
   deathTimer = 0;
 
-  player = new Tank(17, 18, DIR.UP, '#2ecc71', 1.2, true);
+  const px = openWorldMode ? COLS/2 : 17;
+  const py = openWorldMode ? ROWS - 2 : 18;
+  spawnPoints = [
+    { x: 1, y: 1 },
+    { x: Math.floor(COLS/2), y: 1 },
+    { x: COLS - 2, y: 1 },
+    { x: COLS - 2, y: ROWS - 2 },
+  ];
+  player = new Tank(px, py, DIR.UP, '#2ecc71', 1.2, true);
   player.turretDir = DIR.UP;
   player.invincible = 120;
 
   // 每关敌人数量递增：L1=10, L2=15, L3=20, L4=28, L5=35...
-  // 敌人数量：10-30个，随关卡缓慢增长
-  enemiesRemaining = Math.min(8 + lvl, 30);
+  // 敌人数量
+  enemiesRemaining = openWorldMode ? Math.min(15 + lvl * 2, 60) : Math.min(8 + lvl, 30);
   enemiesOnScreen = 0;
   maxEnemiesOnScreen = Math.min(4 + lvl, 8);
   enemySpawnDelay = Math.max(30, 90 - lvl * 5);
@@ -2153,7 +2194,7 @@ function spawnDemonKing() {
   demonKingActive = true;
   bossActive = true; // 复用boss系统
   bossPhase = 1;
-  const bx = 17, by = 2;
+  const bx = COLS/2, by = 2;
   bossTank = new Tank(bx, by, DIR.DOWN, '#000000', 0.6, false);
   bossTank.hp = Math.floor((80 + level * 50) * 1.5); // 比普通Boss多50%血
   bossTank._maxHp = bossTank.hp;
@@ -2191,7 +2232,7 @@ function spawnBoss() {
   demonKingActive = false;
   bossPhase = 1;
   // Boss出生在顶部中央
-  const bx = 17, by = 2;
+  const bx = COLS/2, by = 2;
   bossTank = new Tank(bx, by, DIR.DOWN, '#8b00ff', 0.7, false);
   bossTank.hp = Math.floor((80 + level * 50) * 0.77); // L1=100, L2=138, L3=177...
   bossTank._maxHp = bossTank.hp;         // 记录最大血量
@@ -3049,6 +3090,22 @@ document.getElementById('menuLevelCloseBtn').addEventListener('click', () => {
 
 function pauseGame() { openMenu(); }
 function resumeGame() { closeMenu(); }
+
+// 开放世界模式按钮
+document.getElementById('openWorldBtn').addEventListener('click', () => {
+  openWorldMode = !openWorldMode;
+  const btn = document.getElementById('openWorldBtn');
+  if (openWorldMode) {
+    btn.style.background = '#ff0000';
+    btn.textContent = '🌍 开放世界 (开启)';
+    COLS = 60; ROWS = 36;
+  } else {
+    btn.style.background = '#ff8c00';
+    btn.textContent = '🌍 开放世界模式';
+    COLS = BASE_COLS; ROWS = BASE_ROWS;
+  }
+  resizeCanvas();
+});
 
 document.getElementById('startFullscreenBtn').addEventListener('click', () => {
   if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
