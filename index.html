@@ -497,8 +497,9 @@ const isSmallScreen = window.innerWidth <= 768;
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-let COLS = 34;
-let ROWS = 20;
+let openWorldMode = true;    // 默认开放世界
+let COLS = openWorldMode ? 60 : 34;
+let ROWS = openWorldMode ? 36 : 20;
 const BASE_COLS = 34;
 const BASE_ROWS = 20;
 const BASE_CELL = 24;  // 基础单元格大小
@@ -560,9 +561,8 @@ let bossPhase = 1;            // Boss 当前阶段
 let nukes = [];               // 核弹列表
 let bossKillCount = 0;        // Boss击杀总数（跨关卡）
 let demonKingActive = false;  // 魔王战中
-let advancedUnlocked = false; // 66关后是否解锁
-let openWorldMode = true;    // 默认开放世界
-let victoryTimer = 0;          // 胜利动画计时器
+let advancedUnlocked = false;
+let victoryTimer = 0;
 let victoryParticles = [];     // 胜利烟花粒子
 let healthSpawnTimer = 0;      // 血包生成计时器
 let enemiesRemaining = 0;
