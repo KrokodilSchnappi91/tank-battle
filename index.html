@@ -1560,23 +1560,6 @@ class Tank {
     const isMythic = this.isPlayer && mythicMode;
     const isDashing = this.isPlayer && dashState && dashState.timer > 0;
 
-    // 冲刺：蓝色拖尾（神话金色）
-    if (isDashing) {
-      const alpha2 = dashState.timer / dashState.maxTimer;
-      ctx.save();
-      ctx.globalAlpha = alpha2 * 0.5;
-      ctx.fillStyle = dashState.mythic ? '#ffd700' : '#4ecdc4';
-      for (let t = 1; t <= 3; t++) {
-        const tx = cx - dashState.dir.x * CELL * t * 0.8;
-        const ty = cy - dashState.dir.y * CELL * t * 0.8;
-        ctx.beginPath();
-        ctx.arc(tx, ty, half * (1 - t * 0.2), 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      ctx.restore();
-    }
-
     // 神话模式：金色光环
     if (isMythic) {
       ctx.save();
@@ -1893,20 +1876,6 @@ class Bullet {
       ctx.arc(mx, my, mpulse, 0, Math.PI*2);
       ctx.fill();
       ctx.restore();
-    }
-
-    // 追踪弹金色拖尾
-    if (this.homing) {
-      const tailLen = 6;
-      for (let t = 0; t < tailLen; t++) {
-        const alpha = (1 - t / tailLen) * 0.5;
-        const tx = this.x - this.dir.x * this.speed * t;
-        const ty = this.y - this.dir.y * this.speed * t;
-        ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
-        ctx.beginPath();
-        ctx.arc(tx * CELL, ty * CELL, this.size * (1 - t / tailLen), 0, Math.PI * 2);
-        ctx.fill();
-      }
     }
 
     ctx.fillStyle = this.isMissile ? (this.isPlayer ? '#00aaff' : '#ff4500') : (this.homing ? '#ffd700' : (this.isPlayer ? '#fff' : '#ff6b6b'));
