@@ -2231,39 +2231,43 @@ function spawnBoss() {
   bossActive = true;
   demonKingActive = false;
   bossPhase = 1;
-  // Boss出生在顶部中央
-  const bx = COLS/2, by = 2;
-  bossTank = new Tank(bx, by, DIR.DOWN, '#8b00ff', 0.7, false);
-  bossTank.hp = Math.floor((80 + level * 50) * 0.77); // L1=100, L2=138, L3=177...
-  bossTank._maxHp = bossTank.hp;         // 记录最大血量
-  bossTank.size = 1.2;               // 体型更大
-  bossTank.shootDelay = 30;          // 射击更快
-  bossTank.type = 'boss';
-  bossTank.invincible = 60;          // 短暂无敌
-  bossTank.turretDir = DIR.DOWN;
 
-  // 清除出生点障碍
-  for (let dy = 0; dy < 3; dy++) {
-    for (let dx = -2; dx <= 2; dx++) {
-      const cx = Math.floor(bx) + dx;
-      const cy = Math.floor(by) + dy;
-      if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
-        mapData[cy * COLS + cx] = 0;
+  const positions = [
+    { x: COLS/2 - 6, y: 2 },
+    { x: COLS/2, y: 2 },
+    { x: COLS/2 + 6, y: 2 }
+  ];
+  const baseHP = Math.floor((80 + level * 50) * 0.77 / 3);
+
+  positions.forEach((pos, idx) => {
+    const b = new Tank(pos.x, pos.y, DIR.DOWN, '#8b00ff', 0.7, false);
+    b.hp = baseHP;
+    b._maxHp = baseHP;
+    b.size = 1.0;
+    b.shootDelay = 30;
+    b.type = 'boss';
+    b.invincible = 40;
+    b.turretDir = DIR.DOWN;
+    if (idx === 0) bossTank = b;
+
+    for (let dy = 0; dy < 3; dy++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        const cx = Math.floor(pos.x) + dx, cy = Math.floor(pos.y) + dy;
+        if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) mapData[cy * COLS + cx] = 0;
       }
     }
-  }
 
-  enemies.push(bossTank);
-  enemiesOnScreen++;
+    enemies.push(b);
+    enemiesOnScreen++;
 
-  // Boss出场特效
-  for (let i = 0; i < 30; i++) {
-    particles.push(new Particle(
-      bx * BASE_CELL, by * BASE_CELL,
-      (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6,
-      '#8b00ff', 30 + Math.random() * 30
-    ));
-  }
+    for (let i = 0; i < 12; i++) {
+      particles.push(new Particle(
+        pos.x * BASE_CELL, pos.y * BASE_CELL,
+        (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5,
+        '#8b00ff', 20 + Math.random() * 20
+      ));
+    }
+  });
 }
 
 function spawnEnemy() {
@@ -2413,8 +2417,9 @@ function update() {
   }
   nukes = nukes.filter(n => n.timer > -30); // 爆炸后保留30帧特效
 
-  // Boss/魔王被击败
-  if (bossActive && (!bossTank || !bossTank.alive)) {
+  // Boss/魔王全灭才过关
+  const bossAlive = enemies.filter(e => e.alive && e.type === 'boss').length;
+  if (bossActive && bossAlive === 0) {
     const wasDemonKing = demonKingActive;
     bossActive = false;
     bossTank = null;
