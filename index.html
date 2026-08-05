@@ -345,8 +345,8 @@
   <!-- 桌面键盘提示 -->
   <div class="game-controls desktop-only">
     <div class="key-hint"><span>WASD</span> 移动+瞄准</div>
-    <div class="key-hint"><span>双击WASD</span> 冲刺</div>
-    <div class="key-hint"><span>空格</span> 射击</div>
+    <div class="key-hint"><span>空格</span> 冲刺</div>
+    <div class="key-hint"><span>J</span> 射击</div>
     <div class="key-hint"><span>P</span> 暂停</div>
   </div>
 
@@ -484,30 +484,21 @@ window.addEventListener('keydown', e => {
   keys[e.key] = true;
   keys[e.code] = true;
 
-  // 双击WASD检测（触发冲刺，需体力足够）
-  const dashKeyMap = { 'KeyW': DIR.UP, 'KeyA': DIR.LEFT, 'KeyS': DIR.DOWN, 'KeyD': DIR.RIGHT };
-  if (!dashState && dashKeyMap[e.code] && player && player.alive && stamina >= DASH_COST) {
-    const now = Date.now();
-    if (lastKeyTime[e.code] && now - lastKeyTime[e.code] < 280) {
-      // 双击触发冲刺
-      const dashDir = dashKeyMap[e.code];
-      // 神话模式冲刺加强50%
-      const mythicBoost = mythicMode ? 1.5 : 1;
-      dashState = {
-        dir: dashDir,
-        timer: Math.floor(13 * mythicBoost),
-        maxTimer: Math.floor(13 * mythicBoost),
-        mythic: mythicMode
-      };
-      stamina -= DASH_COST;
-      lastKeyTime[e.code] = 0;
-    } else {
-      lastKeyTime[e.code] = now;
-    }
+  // 空格键触发冲刺（需体力足够，朝当前移动方向冲刺）
+  if (e.code === 'Space' && !dashState && player && player.alive && stamina >= DASH_COST) {
+    // 使用当前车身方向冲刺
+    const dashDir = player.dir;
+    const mythicBoost = mythicMode ? 1.5 : 1;
+    dashState = {
+      dir: dashDir,
+      timer: Math.floor(13 * mythicBoost),
+      maxTimer: Math.floor(13 * mythicBoost),
+      mythic: mythicMode
+    };
+    stamina -= DASH_COST;
   }
 
-  if (['KeyW','KeyA','KeyS','KeyD',' '].includes(e.code) ||
-      ['Space'].includes(e.code)) {
+  if (['KeyW','KeyA','KeyS','KeyD','Space','KeyJ'].includes(e.code)) {
     e.preventDefault();
   }
 });
@@ -515,8 +506,7 @@ window.addEventListener('keydown', e => {
 window.addEventListener('keyup', e => {
   keys[e.key] = false;
   keys[e.code] = false;
-  if (['KeyW','KeyA','KeyS','KeyD',' '].includes(e.code) ||
-      ['Space'].includes(e.code)) {
+  if (['KeyW','KeyA','KeyS','KeyD','Space','KeyJ'].includes(e.code)) {
     e.preventDefault();
   }
 });
@@ -566,7 +556,7 @@ setupTouchButton('btnUp', 'moveUp');
 setupTouchButton('btnDown', 'moveDown');
 setupTouchButton('btnLeft', 'moveLeft');
 setupTouchButton('btnRight', 'moveRight');
-setupTouchButton('btnFire', ' ');
+setupTouchButton('btnFire', 'j');
 
 // D-pad 中心按钮和暂停按钮 = 暂停
 document.getElementById('btnPause')?.addEventListener('click', () => {
@@ -766,7 +756,7 @@ class Tank {
         dashState = null;
       }
       // 冲刺期间仍可射击
-      if (isKeyDown(' ') || isKeyDown('Space')) {
+      if (isKeyDown('j') || isKeyDown('KeyJ')) {
         this.shoot();
       }
       return;
@@ -810,7 +800,7 @@ class Tank {
     }
 
     // ===== 射击 =====
-    if (isKeyDown(' ') || isKeyDown('Space')) {
+    if (isKeyDown('j') || isKeyDown('KeyJ')) {
       this.shoot();
     }
   }
