@@ -982,8 +982,8 @@ class Tank {
         this.y = ny;
         this.dir = dashState.dir;
       }
-      // 冲刺无敌
-      this.invincible = Math.max(this.invincible, 3);
+      // 冲刺全程无敌
+      this.invincible = dashState.timer + 10;
       // 冲刺粒子
       if (Math.random() < 0.6) {
         particles.push(new Particle(
@@ -1318,6 +1318,8 @@ class Tank {
   }
 
   hit() {
+    // 无敌时不受伤
+    if (this.invincible > 0) return;
     this.hp--;
     if (this.hp <= 0) {
       this.alive = false;
