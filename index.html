@@ -386,7 +386,7 @@
     <h1>🎮 坦克大战</h1>
     <p>消灭所有敌方坦克！手机请横屏游玩</p>
     <button class="btn" id="startFullscreenBtn" style="background:#4ecdc4;font-size:14px;padding:8px 20px;margin-top:4px;">📺 横屏全屏模式</button>
-    <button class="btn" id="openWorldBtn" style="background:#ff8c00;font-size:14px;padding:8px 20px;margin-top:4px;">🌍 开放世界模式</button>
+    <button class="btn" id="openWorldBtn" style="background:#ff0000;font-size:14px;padding:8px 20px;margin-top:4px;">🌍 开放世界 (开启)</button>
     <p style="margin-top:12px; color:#666;">🏗️ 棕色砖墙可被摧毁</p>
     <p style="color:#666;">🔩 灰色钢墙坚不可摧</p>
     <p style="color:#666;">🌲 草丛隐藏坦克行踪</p>
@@ -561,7 +561,7 @@ let nukes = [];               // 核弹列表
 let bossKillCount = 0;        // Boss击杀总数（跨关卡）
 let demonKingActive = false;  // 魔王战中
 let advancedUnlocked = false; // 66关后是否解锁
-let openWorldMode = false;   // 开放世界模式
+let openWorldMode = true;    // 默认开放世界
 let victoryTimer = 0;          // 胜利动画计时器
 let victoryParticles = [];     // 胜利烟花粒子
 let healthSpawnTimer = 0;      // 血包生成计时器
