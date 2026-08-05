@@ -1551,8 +1551,10 @@ class Tank {
 
   draw(ctx) {
     if (!this.alive) return;
-    if (this.invincible > 0 && Math.floor(this.invincible / 4) % 2 === 0) return;
-    if (this.flashTimer > 0 && Math.floor(this.flashTimer / 3) % 2 === 0) return;
+    // 无敌/受伤时半透明（平滑），不闪烁
+    let alpha = 1;
+    if (this.invincible > 0) alpha = 0.4 + (this.invincible / 120) * 0.6;
+    if (this.flashTimer > 0) alpha = 0.5;
 
     const cx = this.x * CELL;
     const cy = this.y * CELL;
@@ -1600,6 +1602,9 @@ class Tank {
       ctx.fill();
       ctx.restore();
     }
+
+    // 无敌/受伤半透明
+    ctx.globalAlpha = alpha;
 
     // ---- 车身（按移动方向旋转） ----
     ctx.save();
@@ -1681,6 +1686,7 @@ class Tank {
     }
 
     ctx.restore();
+    ctx.globalAlpha = 1;
   }
 }
 
