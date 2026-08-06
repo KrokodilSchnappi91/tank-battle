@@ -1590,9 +1590,9 @@ class Tank {
       if (!this._mythicAttacks) this._mythicAttacks = 0;
       this._mythicAttacks++;
 
-      // 每20次攻击：6枚核弹
+      // 每20次攻击：12枚核弹（翻倍）
       if (this._mythicAttacks % 20 === 0) {
-        for (let n = 0; n < 6; n++) {
+        for (let n = 0; n < 12; n++) {
           const nx = 3 + Math.random() * (COLS - 6);
           const ny = 3 + Math.random() * (ROWS - 6);
           nukes.push({
@@ -1605,9 +1605,9 @@ class Tank {
         }
         this.shootCooldown = 20;
       } else if (this._mythicAttacks % 5 === 0) {
-        // 每5次攻击：4发追踪导弹
-        for (let m = 0; m < 4; m++) {
-          const a = (Math.PI * 2 / 4) * m + Math.random() * 0.5;
+        // 每5次攻击：8发追踪导弹（翻倍）
+        for (let m = 0; m < 8; m++) {
+          const a = (Math.PI * 2 / 8) * m + Math.random() * 0.5;
           const dir = { x: Math.cos(a), y: Math.sin(a), angle: a };
           const bx = this.x + dir.x * 0.7;
           const by = this.y + dir.y * 0.7;
@@ -1619,8 +1619,8 @@ class Tank {
         }
         this.shootCooldown = 14;
       } else {
-        // 神话模式：360度环形发射
-        const count = 16;
+        // 神话模式：360度环形发射（32发翻倍）
+        const count = 32;
         for (let i = 0; i < count; i++) {
           const angle = (Math.PI * 2 / count) * i;
           const dir = { x: Math.cos(angle), y: Math.sin(angle), angle: angle };
@@ -1733,6 +1733,7 @@ class Tank {
         mythicMode = false;
         godSlayerMode = false;
         player._mythicAttacks = 0;
+        player._mythicNukeTimer = 0;
         player._fireCount = 0;
         player.color = '#2ecc71';
       }
@@ -2677,6 +2678,27 @@ function update() {
     stamina = Math.min(staminaCap, stamina + 0.15);
   }
 
+  // 神话模式：每0.5秒随机释放3枚核弹
+  if (mythicMode && player && player.alive) {
+    if (!player._mythicNukeTimer) player._mythicNukeTimer = 0;
+    player._mythicNukeTimer++;
+    if (player._mythicNukeTimer >= 45) { // 0.5秒 = 45帧(90fps)
+      player._mythicNukeTimer = 0;
+      for (let n = 0; n < 3; n++) {
+        nukes.push({
+          x: 3 + Math.random() * (COLS - 6),
+          y: 3 + Math.random() * (ROWS - 6),
+          timer: 90,
+          maxTimer: 90,
+          radius: 4,
+          isPlayerNuke: true
+        });
+      }
+    }
+  } else {
+    if (player) player._mythicNukeTimer = 0;
+  }
+
   // 随机血包生成
   healthSpawnTimer--;
   if (healthSpawnTimer <= 0 && player && player.alive) {
@@ -3392,7 +3414,7 @@ window.addEventListener('keydown', function menuHandler(e) {
 // 形态选择
 function activateMythic() {
   mythicMode = true; godSlayerMode = false; showFormChoice = false;
-  player.invincible = 90; player._mythicAttacks = 0;
+  player.invincible = 90; player._mythicAttacks = 0; player._mythicNukeTimer = 0;
   lives = Math.max(lives, 18);
   document.getElementById('formChoiceOverlay').classList.add('hidden');
 }
