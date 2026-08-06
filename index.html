@@ -3293,7 +3293,7 @@ function update() {
         const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
         const bolt = new Bullet(q.x + dir.x * 0.6, q.y + dir.y * 0.6, dir, true, false, 99);
         bolt.isMissile = true;
-        bolt.speed = 1.3;
+        bolt.speed = 0.9;
         bolt.size = Math.max(16, CELL*0.9);
         bolt.hp = 99;
         bolt._goldLightning = !q._reverseSpin;
