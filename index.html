@@ -2223,13 +2223,13 @@ class Bullet {
   update() {
     this.life++;
 
-    // 金色闪电：短程高速+摧毁障碍+终点范围伤害
-    if (this._goldLightning) {
+    // 金色/蓝色闪电：飞行+摧毁障碍+范围伤害
+    if (this._goldLightning || this._blueLightning) {
       this._boltLife--;
       if (this._boltLife <= 0) {
         // 终点范围伤害
         const ecx = Math.floor(this.x), ecy = Math.floor(this.y);
-        const radius = 2;
+        const radius = 3;
         for (let dy = -radius; dy <= radius; dy++) {
           for (let dx = -radius; dx <= radius; dx++) {
             const tx = ecx + dx, ty = ecy + dy;
@@ -2240,7 +2240,7 @@ class Bullet {
             }
           }
         }
-        // 伤害范围内敌人 + 回复体力
+        // 终点范围伤害 + 回体
         for (const enemy of enemies) {
           if (!enemy.alive) continue;
           const edx = enemy.x - this.x, edy = enemy.y - this.y;
@@ -2269,13 +2269,12 @@ class Bullet {
         const tile = mapData[cy * COLS + cx];
         if (tile === 1 || tile === 2) { mapData[cy * COLS + cx] = 0; }
       }
-      // 伤害敌人 + 回复体力
+      // 飞行中范围伤害 + 回体
       for (const enemy of enemies) {
         if (!enemy.alive) continue;
-        const edx = enemy.x - this.x, edy = enemy.y - this.y;
-        if (Math.abs(edx) < 0.6 && Math.abs(edy) < 0.6) {
+        const ed = Math.hypot(enemy.x - this.x, enemy.y - this.y);
+        if (ed < 1.2) {
           enemy.hit();
-          // 金色闪电命中回复体力
           const cap = godSlayerMode ? 750 : (mythicMode ? 250 : (thunderMode ? 300 : MAX_STAMINA));
           stamina = Math.min(cap, stamina + 150);
         }
