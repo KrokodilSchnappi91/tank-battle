@@ -877,11 +877,11 @@ function triggerDash() {
   if (dashState) return; // 已在冲刺中
   if (stamina < DASH_COST) return;
 
-  // 雷公形态：闪烁瞬移
+  // 雷公形态：高速冲刺（瞬移效果）
   if (thunderMode) {
     const dashDir = player.dir;
-    dashState = { dir: dashDir, thunder: true };
-    stamina -= DASH_COST * 2; // 消耗双倍体力
+    dashState = { dir: dashDir, timer: 5, maxTimer: 5, thunder: true };
+    stamina -= DASH_COST * 2;
     return;
   }
 
@@ -1326,45 +1326,11 @@ class Tank {
 
   playerInput() {
     // ===== 冲刺处理 =====
-    // ===== 雷公冲刺：闪烁瞬移 =====
-    if (dashState && dashState.thunder) {
-      const startX = this.x, startY = this.y;
-      const blinkDist = 7;
-      // 搜索可达最远空地
-      let bestX = this.x, bestY = this.y;
-      for (let d = blinkDist; d >= 1; d--) {
-        const tx = Math.round(this.x + dashState.dir.x * d);
-        const ty = Math.round(this.y + dashState.dir.y * d);
-        if (tx > 1 && tx < COLS - 1 && ty > 1 && ty < ROWS - 1) {
-          // 检查目标格及周围是否可行
-          let blocked = false;
-          for (let ody = -1; ody <= 1 && !blocked; ody++) {
-            for (let odx = -1; odx <= 1 && !blocked; odx++) {
-              const tcx = tx + odx, tcy = ty + ody;
-              if (tcx >= 0 && tcx < COLS && tcy >= 0 && tcy < ROWS) {
-                const t = mapData[tcy * COLS + tcx];
-                if (t === 1 || t === 2 || t === 3) blocked = true;
-              }
-            }
-          }
-          if (!blocked) { bestX = tx + 0.5; bestY = ty + 0.5; break; }
-        }
-      }
-      // 执行瞬移
-      const oldX = this.x, oldY = this.y;
-      this.x = bestX; this.y = bestY;
-      this.dir = dashState.dir;
-      this.invincible = 30;
-      dashState = null;
-      screenShake = Math.max(screenShake, 10);
-      haptic('boss');
-      return;
-    }
-
     if (dashState && dashState.timer > 0) {
+      const isThunderDash = dashState.thunder;
       dashState.timer--;
-      // 杀神模式：可调整方向（惯性）
-      if (godSlayerMode) {
+      // 杀神模式：可调整方向（惯性），雷公跳过
+      if (godSlayerMode && !isThunderDash) {
         let inputDx = 0, inputDy = 0;
         if (isKeyDown('KeyW')) inputDy = -1;
         if (isKeyDown('KeyS')) inputDy = 1;
@@ -1376,11 +1342,11 @@ class Tank {
           let diff = inputAngle - currentAngle;
           while (diff > Math.PI) diff -= Math.PI*2;
           while (diff < -Math.PI) diff += Math.PI*2;
-          currentAngle += diff * 0.08; // 惯性转向
+          currentAngle += diff * 0.08;
           dashState.dir = { x: Math.cos(currentAngle), y: Math.sin(currentAngle), angle: currentAngle };
         }
       }
-      const dashSpd = godSlayerMode ? 0.22 : (dashState.mythic ? 0.25 : 0.18);
+      const dashSpd = isThunderDash ? 1.5 : (godSlayerMode ? 0.22 : (dashState.mythic ? 0.25 : 0.18));
       const nx = this.x + dashState.dir.x * dashSpd;
       const ny = this.y + dashState.dir.y * dashSpd;
       if (this.canMoveTo(nx, ny, dashState.dir)) {
@@ -1388,11 +1354,10 @@ class Tank {
         this.y = ny;
         this.dir = dashState.dir;
       }
-      // 冲刺全程无敌 + 结束后30帧缓冲
+      // 冲刺全程无敌
       this.invincible = dashState.timer + 30;
-      // 杀神冲刺：360°依次释放火球
-      // 杀神冲刺：每2帧360°同时释放火球
-      if (godSlayerMode && dashState.timer % 2 === 0) {
+      // 杀神冲刺火球（雷公跳过）
+      if (godSlayerMode && !isThunderDash && dashState.timer % 2 === 0) {
         const count = 4;
         for (let i = 0; i < count; i++) {
           const angle = (Math.PI * 2 / count) * i + dashState.timer * 0.1;
@@ -1410,13 +1375,24 @@ class Tank {
           this.x * BASE_CELL, this.y * BASE_CELL,
           -dashState.dir.x * 2 + (Math.random()-0.5)*2,
           -dashState.dir.y * 2 + (Math.random()-0.5)*2,
-          godSlayerMode ? '#ff4500' : (dashState.mythic ? '#ffd700' : '#4ecdc4'), 8 + Math.random() * 8
+          isThunderDash ? '#00bfff' : (godSlayerMode ? '#ff4500' : (dashState.mythic ? '#ffd700' : '#4ecdc4')), 8 + Math.random() * 8
         ));
       }
-      // 结束冲刺（杀神模式长按空格自动续冲）
+      // 雷公冲刺：每帧额外蓝色闪电粒子
+      if (isThunderDash) {
+        for (let i = 0; i < 5; i++) {
+          particles.push(new Particle(
+            this.x * BASE_CELL, this.y * BASE_CELL,
+            -dashState.dir.x * 4 + (Math.random()-0.5)*3,
+            -dashState.dir.y * 4 + (Math.random()-0.5)*3,
+            '#00bfff', 6 + Math.random() * 8
+          ));
+        }
+      }
+      // 结束冲刺
       if (dashState.timer <= 0) {
         dashState = null;
-        if (godSlayerMode && (isKeyDown(' ') || isKeyDown('Space')) && stamina >= DASH_COST) {
+        if (godSlayerMode && !isThunderDash && (isKeyDown(' ') || isKeyDown('Space')) && stamina >= DASH_COST) {
           const dir = this.dir;
           dashState = { dir, timer: 30, maxTimer: 30, mythic: false };
           stamina -= DASH_COST;
