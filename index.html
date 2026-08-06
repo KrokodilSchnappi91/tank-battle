@@ -3625,26 +3625,38 @@ function render() {
   for (const p of lightningPillars) {
     const alpha = p.life / p.maxLife;
     const px = p.x, py = p.y;
-    const R = CELL * p.radius; // 圆柱半径
-    const r = R * 1.2; // 半径+20%
-    const H = r * 1.6; // 更短的光柱
-    // 底部椭圆（3D地面）
-    ctx.fillStyle = `rgba(255,0,0,${alpha*0.35})`;
+    const R = CELL * p.radius;
+    const r = R * 1.2;
+    const H = r * 2.2; // 光柱更高增强透视
+    const topR = r * 0.2; // 顶部收窄到20%（强透视）
+    // 底部大椭圆
+    ctx.fillStyle = `rgba(255,0,0,${alpha*0.3})`;
     ctx.beginPath();
-    ctx.ellipse(px, py, r, r*0.35, 0, 0, Math.PI*2);
+    ctx.ellipse(px, py, r, r*0.45, 0, 0, Math.PI*2);
     ctx.fill();
-    ctx.strokeStyle = `rgba(255,80,0,${alpha*0.5})`;
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255,100,0,${alpha*0.5})`;
+    ctx.lineWidth = 3;
     ctx.stroke();
-    // 圆柱体内闪电束（密集）
+    // 四条透视辅助线（底部→顶部）
+    for (let i = 0; i < 4; i++) {
+      const a = i * Math.PI/2;
+      ctx.strokeStyle = `rgba(255,50,0,${alpha*0.2})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px+Math.cos(a)*r, py+Math.sin(a)*r*0.45);
+      ctx.lineTo(px+Math.cos(a)*topR, py-H+Math.sin(a)*topR*0.3);
+      ctx.stroke();
+    }
+    // 圆柱体内闪电束
     for (let bolt = 0; bolt < 48; bolt++) {
-      const angle = (bolt / 36) * Math.PI * 2 + p.life * 0.03;
-      const baseR = r * (0.2 + Math.random() * 0.8);
+      const angle = (bolt / 48) * Math.PI * 2 + p.life * 0.03;
+      const baseR = r * (0.15 + Math.random() * 0.85);
       const baseX = px + Math.cos(angle) * baseR;
-      const baseY = py + Math.sin(angle) * baseR * 0.35;
-      const topR = baseR * (0.3 + Math.random() * 0.5);
-      const topX = px + Math.cos(angle + p.life*0.04) * topR;
-      const topY = py - H + Math.sin(angle + p.life*0.04) * topR * 0.28;
+      const baseY = py + Math.sin(angle) * baseR * 0.45;
+      const tRX = baseR * 0.2;
+      const tRY = baseR * 0.2 * 0.35;
+      const topX = px + Math.cos(angle + p.life*0.04) * tRX;
+      const topY = py - H + Math.sin(angle + p.life*0.04) * tRY;
       const isCore = bolt % 8 === 0; // 6条纯白
       const isGold = bolt % 4 === 1; // 12条金色
       const isRed = !isCore && !isGold; // 30条血红
@@ -3666,13 +3678,13 @@ function render() {
     }
     ctx.shadowBlur = 0;
     ctx.lineWidth = 1;
-    // 顶部光圈
-    ctx.strokeStyle = `rgba(255,80,0,${alpha*0.8})`;
-    ctx.lineWidth = 3;
+    // 顶部小光圈（透视收窄）
+    ctx.strokeStyle = `rgba(255,120,0,${alpha*0.8})`;
+    ctx.lineWidth = 2;
     ctx.shadowColor = '#ff4400';
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = 6;
     ctx.beginPath();
-    ctx.ellipse(px, py - H, r, r*0.35, 0, 0, Math.PI*2);
+    ctx.ellipse(px, py - H, topR, topR*0.35, 0, 0, Math.PI*2);
     ctx.stroke();
     ctx.shadowBlur = 0;
     // 中心光球（更亮）
