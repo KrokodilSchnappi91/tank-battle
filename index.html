@@ -3647,15 +3647,15 @@ function render() {
       const tRY = baseR * 0.7 * 0.35;
       const topX = px + Math.cos(angle + p.life*0.04) * tRX;
       const topY = py - H + Math.sin(angle + p.life*0.04) * tRY;
-      const isCore = bolt % 8 === 0; // 6条纯白
-      const isGold = bolt % 4 === 1; // 12条金色
-      const isRed = !isCore && !isGold; // 30条血红
+      const isCore = bolt % 7 === 0; // 7条纯白
+      const isGold = bolt % 3 === 0; // 16条金色
+      const isRed = !isCore && !isGold; // 25条血红
       ctx.strokeStyle = isCore
         ? `rgba(255,255,255,${alpha})`
-        : (isGold ? `rgba(255,220,30,${alpha*0.75})` : `rgba(255,${10+bolt*2},0,${alpha*0.9})`);
-      ctx.lineWidth = isCore ? 6 : (isGold ? 7 : 8);
-      ctx.shadowColor = isCore ? '#fff' : (isGold ? '#ffcc00' : '#ff0000');
-      ctx.shadowBlur = isCore ? 12 : (isGold ? 16 : 24);
+        : (isGold ? `rgba(255,240,50,${alpha*0.8})` : `rgba(255,${10+bolt*2},0,${alpha*0.9})`);
+      ctx.lineWidth = isCore ? 7 : (isGold ? 8 : 9);
+      ctx.shadowColor = isCore ? '#fff' : (isGold ? '#ffdd00' : '#ff0000');
+      ctx.shadowBlur = isCore ? 14 : (isGold ? 18 : 26);
       ctx.beginPath();
       ctx.moveTo(baseX, baseY);
       for (let s = 1; s <= 6; s++) {
