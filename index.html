@@ -3351,34 +3351,34 @@ function render() {
     ctx.fill();
   }
 
-  // Boss 血条：每个Boss独立显示
+  // Boss 头顶血条（渲染在地图上方）
   if (bossActive) {
     const bosses = enemies.filter(e => e.alive && e.type === 'boss');
-    if (bosses.length > 0) {
-      const isDemon = bosses[0]._isDemonKing;
+    bosses.forEach((b) => {
+      const ratio = Math.max(0, b.hp / b._maxHp);
+      const bx = b.x * CELL;
+      const by = b.y * CELL;
+      const barW = Math.max(30, CELL * 1.2);
+      const barH = Math.max(3, CELL * 0.15);
+      const barX = bx - barW / 2;
+      const barY = by - b.size * CELL / 2 - barH - 5;
+      // 背景
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+      // 血量
+      ctx.fillStyle = b._isDemonKing ? '#ff0000' : b.color;
+      ctx.fillRect(barX, barY, barW * ratio, barH);
+      // 边框
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(barX, barY, barW, barH);
+      // Boss标签
       ctx.fillStyle = '#fff';
-      const bfs = Math.max(14, CELL * 0.6);
-      ctx.font = `bold ${bfs}px "Microsoft YaHei", Arial`;
+      const bfs = Math.max(9, CELL * 0.4);
+      ctx.font = `bold ${bfs}px Arial`;
       ctx.textAlign = 'center';
-      ctx.fillText(isDemon ? '👑 魔 王 👑' : '⚠ BOSS ⚠', canvas.width / 2, 18);
-
-      const barW = Math.min(180, canvas.width * 0.35);
-      const barH = 5;
-      const startX = (canvas.width - (bosses.length * barW + (bosses.length - 1) * 8)) / 2;
-      const barY = 24;
-
-      bosses.forEach((b, i) => {
-        const bx = startX + i * (barW + 8);
-        const ratio = Math.max(0, b.hp / b._maxHp);
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        ctx.fillRect(bx, barY, barW, barH);
-        ctx.fillStyle = b.color;
-        ctx.fillRect(bx, barY, barW * ratio, barH);
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(bx, barY, barW, barH);
-      });
-    }
+      ctx.fillText(b._isDemonKing ? '👑魔王' : 'BOSS', bx, barY - 2);
+    });
   }
 
   // 血量条（左上角）
