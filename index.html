@@ -2673,7 +2673,7 @@ function update() {
   }
 
   // 体力回复（杀神模式上限+50%）
-  const staminaCap = godSlayerMode ? 750 : MAX_STAMINA;
+  const staminaCap = godSlayerMode ? 750 : (mythicMode ? 250 : MAX_STAMINA);
   if (!dashState && stamina < staminaCap) {
     stamina = Math.min(staminaCap, stamina + 0.15);
   }
@@ -3266,7 +3266,7 @@ function render() {
   ctx.fillRect(hpBarX - 1, hpBarY - 1, hpBarW + 2, hpBarH + 2);
   ctx.fillStyle = '#400';
   ctx.fillRect(hpBarX, hpBarY, hpBarW, hpBarH);
-  const maxHP = mythicMode ? 18 : 10;
+  const maxHP = mythicMode ? 24 : 10;
   const hpRatio = Math.max(0, lives) / maxHP;
   const hpColor = hpRatio > 0.5 ? '#ff4444' : hpRatio > 0.25 ? '#ff8800' : '#ff0000';
   ctx.fillStyle = hpColor;
@@ -3325,14 +3325,14 @@ function render() {
   ctx.fillRect(stBarX - 1, stBarY - 1, stBarW + 2, stBarH + 2);
   ctx.fillStyle = '#333';
   ctx.fillRect(stBarX, stBarY, stBarW, stBarH);
-  const stRatio = stamina / (godSlayerMode ? 750 : MAX_STAMINA);
+  const stRatio = stamina / (godSlayerMode ? 750 : (mythicMode ? 250 : MAX_STAMINA));
   ctx.fillStyle = stRatio > 0.5 ? '#4ecdc4' : stRatio > 0.25 ? '#ff8c00' : '#ff0000';
   ctx.fillRect(stBarX, stBarY, stBarW * stRatio, stBarH);
   ctx.fillStyle = '#fff';
   const stfs = Math.max(14, CELL * 0.6);
   ctx.font = `bold ${stfs}px Arial`;
   ctx.textAlign = 'left';
-  ctx.fillText(`⚡${Math.ceil(stamina)}/${godSlayerMode?750:MAX_STAMINA}`, stBarX + stBarW + 5, stBarY + stBarH - 1);
+  ctx.fillText(`⚡${Math.ceil(stamina)}/${godSlayerMode?750:(mythicMode?250:MAX_STAMINA)}`, stBarX + stBarW + 5, stBarY + stBarH - 1);
 
   // 神话模式指示器
   if (mythicMode && player && player.alive) {
@@ -3415,7 +3415,7 @@ window.addEventListener('keydown', function menuHandler(e) {
 function activateMythic() {
   mythicMode = true; godSlayerMode = false; showFormChoice = false;
   player.invincible = 90; player._mythicAttacks = 0; player._mythicNukeTimer = 0;
-  lives = Math.max(lives, 18);
+  lives = Math.max(lives, 24);
   document.getElementById('formChoiceOverlay').classList.add('hidden');
 }
 function activateGodSlayer() {
