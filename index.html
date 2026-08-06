@@ -686,6 +686,7 @@ let bossPhase = 1;            // Boss 当前阶段
 let nukes = [];               // 核弹列表
 let thunderQueue = [];        // 雷公闪电队列
 let lightningPillars = [];    // 血光柱渲染特效
+let greenRipples = [];        // 绿色波纹渲染
 let thunderCharge = 0;        // 雷公蓄力值
 const THUNDER_MAX_CHARGE = 60; // 最大蓄力帧数
 let bossKillCount = 0;        // Boss击杀总数（跨关卡）
@@ -2884,6 +2885,7 @@ function loadLevel(lvl) {
   nukes = [];
   thunderQueue = [];
   lightningPillars = [];
+  greenRipples = [];
   thunderCharge = 0;
   stamina = MAX_STAMINA;
   dashState = null;
@@ -3164,9 +3166,11 @@ function update() {
   }
   nukes = nukes.filter(n => n.timer > -30); // 爆炸后保留30帧特效
 
-  // 血光柱更新
+  // 血光柱+绿波纹更新
   lightningPillars.forEach(p => p.life--);
   lightningPillars = lightningPillars.filter(p => p.life > 0);
+  greenRipples.forEach(p => p.life--);
+  greenRipples = greenRipples.filter(p => p.life > 0);
 
   // 雷公闪电队列：逐帧释放金色闪电
   if (thunderQueue.length > 0) {
@@ -3194,6 +3198,12 @@ function update() {
           const ed = Math.hypot(enemy.x-q.x, enemy.y-q.y);
           if (ed > rippleR - 1.5 && ed < rippleR + 0.5) enemy.hit();
         }
+        // 加入3D波纹渲染（独立队列）
+        greenRipples.push({
+          x: q.x * CELL, y: q.y * CELL,
+          life: 22, maxLife: 22,
+          radius: rippleR * CELL, height: height * CELL
+        });
         // 绿色粒子环
         const pCount = 12 + q.index * 6;
         for (let i = 0; i < pCount; i++) {
@@ -3471,6 +3481,7 @@ function resetGame() {
   dashState = null;
   thunderQueue = [];
   lightningPillars = [];
+  greenRipples = [];
   thunderCharge = 0;
   stamina = MAX_STAMINA;
   deathTimer = 0;
@@ -3755,6 +3766,40 @@ function render() {
     ctx.beginPath();
     ctx.arc(px, py, r, 0, Math.PI*2);
     ctx.fill();
+  }
+
+  // 绿色3D波纹闪电渲染
+  for (const rp of greenRipples) {
+    const alpha = rp.life / rp.maxLife;
+    const rx = rp.x, ry = rp.y;
+    const rr = rp.radius;
+    const rh = rp.height;
+    // 外圈椭圆（3D透视）
+    ctx.strokeStyle = `rgba(0,255,80,${alpha*0.85})`;
+    ctx.lineWidth = 5;
+    ctx.shadowColor = '#00ff44';
+    ctx.shadowBlur = 22;
+    ctx.beginPath();
+    ctx.ellipse(rx, ry - rh, rr, rr * 0.3, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    // 内圈亮线
+    ctx.strokeStyle = `rgba(150,255,200,${alpha})`;
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(rx, ry - rh, rr * 0.8, rr * 0.24, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    // 电光点
+    ctx.shadowBlur = 0;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + rp.life * 0.15;
+      const sx = rx + Math.cos(a) * rr;
+      const sy = ry - rh + Math.sin(a) * rr * 0.3;
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // Boss 血条：魔王顶部大血条 / 普通Boss头顶小血条
