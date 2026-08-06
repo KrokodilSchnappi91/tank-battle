@@ -3675,19 +3675,18 @@ function render() {
       const rx = (player ? player.x : p.x/CELL) * CELL;
       const ry = (player ? player.y : p.y/CELL) * CELL;
       const rr = p.radius * CELL;
-      const h = rr * 0.5; // 3D高度
       ctx.strokeStyle = `rgba(0,255,80,${alpha*0.85})`;
       ctx.lineWidth = 5;
       ctx.shadowColor = '#00ff44';
       ctx.shadowBlur = 20;
       ctx.beginPath();
-      ctx.ellipse(rx, ry - h, rr, rr*0.3, 0, 0, Math.PI*2);
+      ctx.ellipse(rx, ry, rr, rr*0.45, 0, 0, Math.PI*2);
       ctx.stroke();
       ctx.strokeStyle = `rgba(150,255,200,${alpha})`;
       ctx.lineWidth = 3;
       ctx.shadowBlur = 8;
       ctx.beginPath();
-      ctx.ellipse(rx, ry - h, rr*0.8, rr*0.24, 0, 0, Math.PI*2);
+      ctx.ellipse(rx, ry, rr*0.8, rr*0.36, 0, 0, Math.PI*2);
       ctx.stroke();
       ctx.shadowBlur = 0;
       continue;
