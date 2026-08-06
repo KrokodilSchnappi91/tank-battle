@@ -877,10 +877,9 @@ function triggerDash() {
   if (dashState) return; // 已在冲刺中
   if (stamina < DASH_COST) return;
 
-  // 雷公形态：高速冲刺（瞬移效果）
+  // 雷公形态：闪烁瞬移
   if (thunderMode) {
-    const dashDir = player.dir;
-    dashState = { dir: dashDir, timer: 5, maxTimer: 5, thunder: true };
+    player._doThunderBlink = true;
     stamina -= DASH_COST * 2;
     return;
   }
@@ -898,25 +897,40 @@ function triggerDash() {
   }
 }
 
-// 血红色闪电光柱（纯特效，在update中安全调用）
+// 血红色闪电光柱（直接调用，无队列）
 function spawnBloodLightning(x, y) {
+  const cx = Math.floor(x), cy = Math.floor(y);
+  // 摧毁周围障碍
+  for (let dy = -3; dy <= 3; dy++)
+    for (let dx = -3; dx <= 3; dx++) {
+      if (Math.sqrt(dx*dx+dy*dy) > 3) continue;
+      const tx = cx+dx, ty = cy+dy;
+      if (tx>=0 && tx<COLS && ty>=0 && ty<ROWS)
+        if (mapData[ty*COLS+tx]===1 || mapData[ty*COLS+tx]===2) mapData[ty*COLS+tx]=0;
+    }
+  // 伤害敌人
+  for (let i = enemies.length-1; i >= 0; i--) {
+    const e = enemies[i];
+    if (!e || !e.alive) continue;
+    if (Math.hypot(e.x-x, e.y-y) < 3.5) e.hit();
+  }
   // 血红色粒子光柱
-  for (let i = 0; i < 50; i++) {
-    const a = Math.random() * Math.PI * 2;
-    const d = Math.random() * 3 * BASE_CELL;
-    const s = 2 + Math.random() * 5;
+  for (let i = 0; i < 60; i++) {
+    const a = Math.random()*Math.PI*2;
+    const d = Math.random()*3*BASE_CELL;
+    const s = 2+Math.random()*6;
     particles.push(new Particle(
-      x * BASE_CELL + Math.cos(a) * d, y * BASE_CELL + Math.sin(a) * d,
-      Math.cos(a) * s, Math.sin(a) * s,
-      Math.random() < 0.5 ? '#ff0000' : '#8b0000', 15 + Math.random() * 25
+      x*BASE_CELL+Math.cos(a)*d, y*BASE_CELL+Math.sin(a)*d,
+      Math.cos(a)*s, Math.sin(a)*s,
+      Math.random()<0.5?'#ff0000':'#8b0000', 15+Math.random()*25
     ));
   }
-  // 白色闪电核心
-  for (let i = 0; i < 15; i++) {
+  // 白色闪电核心（向上喷射）
+  for (let i = 0; i < 20; i++) {
     particles.push(new Particle(
-      x * BASE_CELL + (Math.random()-0.5)*BASE_CELL*2, y * BASE_CELL + (Math.random()-0.5)*BASE_CELL*2,
-      (Math.random()-0.5)*3, (Math.random()-0.5)*8 - 2,
-      '#ffffff', 5 + Math.random() * 10
+      x*BASE_CELL+(Math.random()-0.5)*BASE_CELL*2, y*BASE_CELL+(Math.random()-0.5)*BASE_CELL*2,
+      (Math.random()-0.5)*4, -2-Math.random()*8,
+      '#ffffff', 5+Math.random()*12
     ));
   }
 }
@@ -1325,6 +1339,38 @@ class Tank {
   }
 
   playerInput() {
+    // ===== 雷公闪烁瞬移 =====
+    if (this._doThunderBlink) {
+      this._doThunderBlink = false;
+      const oldX = this.x, oldY = this.y;
+      const dir = this.dir;
+      // 搜索最远可达空地
+      let bestX = this.x, bestY = this.y;
+      for (let d = 7; d >= 1; d--) {
+        const tx = Math.round(this.x + dir.x * d);
+        const ty = Math.round(this.y + dir.y * d);
+        if (tx > 1 && tx < COLS - 1 && ty > 1 && ty < ROWS - 1) {
+          let blocked = false;
+          for (let oy = -1; oy <= 1; oy++)
+            for (let ox = -1; ox <= 1; ox++) {
+              if (tx+ox>=0 && tx+ox<COLS && ty+oy>=0 && ty+oy<ROWS) {
+                const t = mapData[(ty+oy)*COLS+(tx+ox)];
+                if (t===1||t===2||t===3) blocked = true;
+              }
+            }
+          if (!blocked) { bestX = tx+0.5; bestY = ty+0.5; break; }
+        }
+      }
+      this.x = bestX; this.y = bestY;
+      this.invincible = 30;
+      screenShake = Math.max(screenShake, 12);
+      // 起点血光柱（直接创建粒子，不通过队列）
+      spawnBloodLightning(oldX, oldY);
+      // 终点血光柱
+      spawnBloodLightning(bestX, bestY);
+      return;
+    }
+
     // ===== 冲刺处理 =====
     if (dashState && dashState.timer > 0) {
       const isThunderDash = dashState.thunder;
