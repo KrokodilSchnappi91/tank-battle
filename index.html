@@ -1703,12 +1703,12 @@ class Tank {
       if (this._thunderAttacks % 4 === 0) {
         // ===== 每4发：波纹闪电（以玩家为中心向外扩散） =====
         this.shootCooldown = 60;
-        const waves = 10;
+        const waves = 16;
         for (let w = 0; w < waves; w++) {
           thunderQueue.push({
             index: w, total: waves,
             x: this.x, y: this.y,
-            delay: w * 5,
+            delay: w * 4,
             _isRipple: true
           });
         }
@@ -3189,7 +3189,7 @@ function update() {
     toRelease.forEach(q => {
       if (q._isRipple) {
         // 绿色波纹：复用lightningPillars渲染
-        const rippleR = (q.index + 1) * 2.5; // 每圈半径2.5格，10圈共25格
+        const rippleR = (q.index + 1) * 2.2; // 每圈2.2格，16圈共35格
         lightningPillars.push({
           x: q.x * CELL, y: q.y * CELL,
           life: 20, maxLife: 20,
