@@ -3612,8 +3612,8 @@ function render() {
     ctx.lineWidth = 2;
     ctx.stroke();
     // 圆柱体内闪电束（密集）
-    for (let bolt = 0; bolt < 20; bolt++) {
-      const angle = (bolt / 20) * Math.PI * 2 + p.life * 0.03;
+    for (let bolt = 0; bolt < 36; bolt++) {
+      const angle = (bolt / 36) * Math.PI * 2 + p.life * 0.03;
       const baseR = r * (0.2 + Math.random() * 0.8);
       const baseX = px + Math.cos(angle) * baseR;
       const baseY = py + Math.sin(angle) * baseR * 0.35;
@@ -3623,8 +3623,8 @@ function render() {
       const isCore = bolt % 5 === 0;
       ctx.strokeStyle = isCore
         ? `rgba(255,255,255,${alpha})`
-        : (bolt % 3 === 0 ? `rgba(255,200,0,${alpha*0.7})` : `rgba(255,${20+bolt*8},0,${alpha*0.55})`);
-      ctx.lineWidth = isCore ? 4 : (bolt % 3 === 0 ? 7 : 5);
+        : (bolt % 3 === 0 ? `rgba(255,200,0,${alpha*0.7})` : `rgba(255,${15+bolt*5},0,${alpha*0.5})`);
+      ctx.lineWidth = isCore ? 5 : (bolt % 3 === 0 ? 6 : 4);
       ctx.shadowColor = isCore ? '#fff' : (bolt % 3 === 0 ? '#ffaa00' : '#ff0000');
       ctx.shadowBlur = isCore ? 12 : (bolt % 3 === 0 ? 16 : 20);
       ctx.beginPath();
