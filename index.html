@@ -194,26 +194,52 @@
     margin-top: 6px;
   }
 
-  .btn-pause-mobile, .btn-fullscreen {
-    width: 34px;
-    height: 34px;
+  .btn-fire-mobile {
+    width: 58px;
+    height: 58px;
     border-radius: 50%;
+    background: rgba(233,69,96,0.35);
+    border: 3px solid rgba(233,69,96,0.6);
+    color: #fff;
+    font-size: 22px;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
-    -webkit-tap-highlight-color: transparent;
+    margin-top: 6px;
+    transition: all 0.1s;
+    box-shadow: 0 0 10px rgba(233,69,96,0.25);
+  }
+  .btn-fire-mobile:active {
+    background: rgba(233,69,96,0.7);
+    transform: scale(0.9);
+    box-shadow: 0 0 20px rgba(233,69,96,0.6);
+  }
+
+  /* 冲刺按钮（右摇杆上方） */
+  .btn-dash-mobile {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: rgba(78,205,196,0.3);
+    border: 2.5px solid rgba(78,205,196,0.55);
+    color: #fff;
     font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s;
+    box-shadow: 0 0 12px rgba(78,205,196,0.2);
   }
-  .btn-pause-mobile {
-    background: rgba(255,255,255,0.12);
-    border: 1.5px solid rgba(255,255,255,0.3);
-    color: #aaa;
-  }
-  .btn-fullscreen {
-    background: rgba(78,205,196,0.25);
-    border: 1.5px solid rgba(78,205,196,0.5);
-    color: #4ecdc4;
+  .btn-dash-mobile:active {
+    background: rgba(78,205,196,0.6);
+    transform: scale(0.9);
+    box-shadow: 0 0 24px rgba(78,205,196,0.6);
   }
 
   .overlay {
@@ -289,9 +315,31 @@
     100% { transform: scale(1); opacity: 1; }
   }
 
+  /* 手机菜单按钮（左上角，始终在触屏设备显示） */
+  .btn-mobile-menu {
+    display: none;
+    position: absolute;
+    top: 8px; left: 8px;
+    z-index: 10;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.35);
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto;
+  }
+  .btn-mobile-menu:active {
+    background: rgba(233,69,96,0.5);
+    transform: scale(0.9);
+  }
+
   /* 触屏设备：横屏布局 */
   @media (max-width: 768px), (hover: none) and (pointer: coarse) {
     .touch-controls { display: flex !important; }
+    .btn-mobile-menu { display: flex; align-items: center; justify-content: center; }
     .game-controls.desktop-only { display: none; }
     body { padding: 0; }
     .game-wrapper { padding: 2px; gap: 1px; }
@@ -300,6 +348,7 @@
   /* 桌面：隐藏触屏控制 */
   @media (min-width: 769px) and (hover: hover) and (pointer: fine) {
     .touch-controls { display: none !important; }
+    .btn-mobile-menu { display: none !important; }
     .game-controls.desktop-only { display: flex; }
   }
 </style>
@@ -335,6 +384,9 @@
 
   <!-- 游戏主区域：横屏三栏布局 -->
   <div class="game-main">
+    <!-- 手机菜单按钮（左上角） -->
+    <button class="btn-mobile-menu" id="btnMobileMenu">☰</button>
+
     <!-- 左摇杆：移动 -->
     <div class="touch-controls touch-side" id="touchMove">
       <div class="joystick-area" id="moveJoystick">
@@ -350,14 +402,11 @@
 
     <!-- 右摇杆：瞄准射击 -->
     <div class="touch-controls touch-side" id="touchAim">
+      <button class="btn-dash-mobile" id="btnDash">⚡</button>
       <div class="joystick-area" id="aimJoystick">
         <div class="joystick-knob" id="aimKnob"></div>
       </div>
       <div class="joystick-label">瞄准·射击</div>
-      <div class="center-btns" style="margin-top:4px;">
-        <button class="btn-fullscreen" id="btnFullscreen">📺</button>
-        <button class="btn-pause-mobile" id="btnPause">⏸</button>
-      </div>
     </div>
   </div>
 
@@ -609,18 +658,7 @@ window.addEventListener('keydown', e => {
 
   // 空格键触发冲刺
   if (e.code === 'Space' && player && player.alive) {
-    // 杀神模式：长按持续冲刺
-    if (godSlayerMode && isKeyDown(' ') && !dashState && stamina >= DASH_COST) {
-      const dashDir = player.dir;
-      dashState = { dir: dashDir, timer: 30, maxTimer: 30, mythic: false };
-      stamina -= DASH_COST;
-    } else if (!godSlayerMode && !dashState && stamina >= DASH_COST) {
-      const dashDir = player.dir;
-      const mythicBoost = mythicMode ? 1.5 : 1;
-      const dashLen = Math.floor(13 * mythicBoost);
-      dashState = { dir: dashDir, timer: dashLen, maxTimer: dashLen, mythic: mythicMode };
-      stamina -= DASH_COST;
-    }
+    triggerDash();
   }
 
   if (['KeyW','KeyA','KeyS','KeyD','Space','KeyJ'].includes(e.code)) {
@@ -774,6 +812,52 @@ document.getElementById('btnPause')?.addEventListener('touchstart', (e) => {
   if (gameState === STATE.PLAYING) pauseGame();
   else if (gameState === STATE.PAUSED) resumeGame();
 });
+
+// 冲刺函数（桌面空格键 + 手机按钮共用）
+function triggerDash() {
+  if (!player || !player.alive) return;
+  if (dashState) return; // 已在冲刺中
+  if (stamina < DASH_COST) return;
+  if (godSlayerMode) {
+    const dashDir = player.dir;
+    dashState = { dir: dashDir, timer: 30, maxTimer: 30, mythic: false };
+    stamina -= DASH_COST;
+  } else {
+    const dashDir = player.dir;
+    const mythicBoost = mythicMode ? 1.5 : 1;
+    const dashLen = Math.floor(13 * mythicBoost);
+    dashState = { dir: dashDir, timer: dashLen, maxTimer: dashLen, mythic: mythicMode };
+    stamina -= DASH_COST;
+  }
+}
+
+// 手机冲刺按钮
+const btnDash = document.getElementById('btnDash');
+if (btnDash) {
+  btnDash.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    triggerDash();
+  });
+  btnDash.addEventListener('touchstart', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    triggerDash();
+  });
+}
+
+// 手机菜单按钮：切换菜单
+const btnMobileMenu = document.getElementById('btnMobileMenu');
+if (btnMobileMenu) {
+  btnMobileMenu.addEventListener('click', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const menuOpen = !document.getElementById('menuOverlay').classList.contains('hidden');
+    menuOpen ? closeMenu() : openMenu();
+  });
+  btnMobileMenu.addEventListener('touchstart', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const menuOpen = !document.getElementById('menuOverlay').classList.contains('hidden');
+    menuOpen ? closeMenu() : openMenu();
+  });
+}
 
 // 鼠标跟踪（炮塔瞄准）
 canvas.addEventListener('mousemove', (e) => {
@@ -3274,6 +3358,9 @@ function openMenu() {
   if (gameState === STATE.MENU || gameState === STATE.GAMEOVER) return;
   gameState = STATE.PAUSED;
   document.getElementById('menuOverlay').classList.remove('hidden');
+  // 手机菜单按钮变✕
+  const mb = document.getElementById('btnMobileMenu');
+  if (mb) { mb.textContent = '✕'; mb.style.background = 'rgba(233,69,96,0.6)'; }
 }
 function closeMenu() {
   document.getElementById('menuOverlay').classList.add('hidden');
@@ -3281,6 +3368,9 @@ function closeMenu() {
   document.getElementById('levelSelectOverlay').classList.add('hidden');
   document.getElementById('pauseOverlay').classList.add('hidden');
   if (player && player.alive) gameState = STATE.PLAYING;
+  // 恢复菜单按钮
+  const mb = document.getElementById('btnMobileMenu');
+  if (mb) { mb.textContent = '☰'; mb.style.background = 'rgba(0,0,0,0.7)'; }
 }
 
 window.addEventListener('keydown', function menuHandler(e) {
