@@ -721,6 +721,10 @@ window.addEventListener('keydown', e => {
   if (e.code === 'Space' && player && player.alive) {
     triggerDash();
   }
+  // U键释放雷公波纹技能
+  if ((e.key === 'u' || e.key === 'U') && player && player.alive && thunderMode) {
+    castRippleSkill();
+  }
 
   if (['KeyW','KeyA','KeyS','KeyD','Space','KeyJ'].includes(e.code)) {
     e.preventDefault();
@@ -873,6 +877,28 @@ document.getElementById('btnPause')?.addEventListener('touchstart', (e) => {
   if (gameState === STATE.PLAYING) pauseGame();
   else if (gameState === STATE.PAUSED) resumeGame();
 });
+
+// U键技能：雷公波纹闪电
+function castRippleSkill() {
+  if (!player || !player.alive || !thunderMode) return;
+  if (player._rippleCooldown && player._rippleCooldown > 0) return;
+  // 深绿刀光剑影环绕圈
+  lightningPillars.push({
+    x: player.x * CELL, y: player.y * CELL,
+    life: 70, maxLife: 70,
+    radius: 5, _darkGreen: true
+  });
+  const waves = 16;
+  for (let w = 0; w < waves; w++) {
+    thunderQueue.push({
+      index: w, total: waves,
+      x: player.x, y: player.y,
+      delay: w * 4,
+      _isRipple: true
+    });
+  }
+  player._rippleCooldown = 180; // 3秒冷却
+}
 
 // 冲刺函数（桌面空格键 + 手机按钮共用）
 function triggerDash() {
@@ -1700,26 +1726,8 @@ class Tank {
       if (!this._thunderAttacks) this._thunderAttacks = 0;
       this._thunderAttacks++;
 
-      if (this._thunderAttacks % 4 === 0) {
-        // ===== 每4发：波纹闪电（以玩家为中心向外扩散） =====
-        this.shootCooldown = 60;
-        // 固定深绿刀光剑影环绕圈
-        lightningPillars.push({
-          x: this.x * CELL, y: this.y * CELL,
-          life: 70, maxLife: 70,
-          radius: 5, _darkGreen: true
-        });
-        const waves = 16;
-        for (let w = 0; w < waves; w++) {
-          thunderQueue.push({
-            index: w, total: waves,
-            x: this.x, y: this.y,
-            delay: w * 4,
-            _isRipple: true
-          });
-        }
-      } else if (this._thunderAttacks % 4 === 2) {
-        // ===== 第2击(奇数段)：360°金色闪电 =====
+      if (this._thunderAttacks % 2 === 1) {
+        // ===== 奇数击：360°金色闪电 + 回体150 =====
         this.shootCooldown = 50;
         const totalBolts = 48;
         for (let i = 0; i < totalBolts; i++) {
@@ -1729,7 +1737,7 @@ class Tank {
             delay: Math.floor(i / 2)
           });
         }
-      } else if (this._thunderAttacks % 4 === 3) {
+      } else {
         // ===== 第3击(偶数段)：三连激光 + 紫雷球 + 蓝反向闪电 =====
         this.shootCooldown = 28;
         // 三连激光
@@ -1769,51 +1777,6 @@ class Tank {
             _reverseSpin: true
           });
         }
-      } else {
-        // ===== 第1击：三连激光 =====
-        this.shootCooldown = 22;
-        const colors = ['#00bfff','#4dc9f6','#80d8ff'];
-        for (let burst = 0; burst < 3; burst++) {
-          const spreadAngle = (burst - 1) * 0.08;
-          const baseAngle = this.turretDir.angle + spreadAngle;
-          const laserDir = { x: Math.cos(baseAngle), y: Math.sin(baseAngle), angle: baseAngle };
-          const steps = Math.max(COLS, ROWS) * 2;
-          for (let s = 1; s <= steps; s++) {
-            const lx = this.x + laserDir.x * s * 0.5;
-            const ly = this.y + laserDir.y * s * 0.5;
-            if (lx < 0 || lx >= COLS || ly < 0 || ly >= ROWS) break;
-            const cx = Math.floor(lx), cy = Math.floor(ly);
-            if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
-              const tile = mapData[cy * COLS + cx];
-              if (tile === 1 || tile === 2) {
-                mapData[cy * COLS + cx] = 0;
-                for (let p = 0; p < 3; p++) {
-                  particles.push(new Particle(
-                    cx * BASE_CELL + BASE_CELL/2, cy * BASE_CELL + BASE_CELL/2,
-                    (Math.random()-0.5)*3, (Math.random()-0.5)*3,
-                    tile===2?'#7f8c8d':'#c4934a', 10+Math.random()*10
-                  ));
-                }
-              }
-            }
-            for (const enemy of enemies) {
-              if (!enemy.alive) continue;
-              const edx = enemy.x - lx, edy = enemy.y - ly;
-              if (Math.abs(edx) < 0.7 && Math.abs(edy) < 0.7) enemy.hit();
-            }
-          }
-          for (let s = 0; s <= steps; s++) {
-            const px = this.x + laserDir.x * s * 0.5;
-            const py = this.y + laserDir.y * s * 0.5;
-            if (px < 0 || px >= COLS || py < 0 || py >= ROWS) break;
-            particles.push(new Particle(
-              px * BASE_CELL, py * BASE_CELL,
-              (Math.random()-0.5)*2, (Math.random()-0.5)*2,
-              colors[burst], 12+Math.random()*12
-            ));
-          }
-        }
-        screenShake = Math.max(screenShake, 5);
       }
     } else if (this.isPlayer && godSlayerMode) {
       if (!this._fireCount) this._fireCount = 0;
@@ -3152,6 +3115,9 @@ function update() {
       player._shieldBuffTimer--;
     }
   }
+
+  // 雷公波纹技能冷却
+  if (player && player._rippleCooldown > 0) player._rippleCooldown--;
 
   // 体力回复（杀神模式上限+50%）
   const staminaCap = godSlayerMode ? 750 : (mythicMode ? 250 : (thunderMode ? 300 : MAX_STAMINA));
