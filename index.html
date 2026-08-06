@@ -1759,13 +1759,13 @@ class Tank {
           bolt.color = '#9933ff';
           bullets.push(bolt);
         }
-        // 16道反向旋转蓝色闪电（与第3击金色方向相反）
-        const revBolts = 16;
+        // 32道反向旋转蓝色闪电（密集慢速）
+        const revBolts = 32;
         for (let i = 0; i < revBolts; i++) {
           thunderQueue.push({
             index: i, total: revBolts,
             x: this.x, y: this.y,
-            delay: Math.floor(i / 2),
+            delay: i, // 每帧1道，缓慢释放
             _reverseSpin: true
           });
         }
@@ -3320,12 +3320,12 @@ function update() {
         const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
         const bolt = new Bullet(q.x + dir.x * 0.6, q.y + dir.y * 0.6, dir, true, false, 99);
         bolt.isMissile = true;
-        bolt.speed = q._reverseSpin ? 1.0 : 1.3;
-        bolt.size = q._reverseSpin ? Math.max(8, CELL*0.4) : Math.max(16, CELL*0.9);
+        bolt.speed = q._reverseSpin ? 0.55 : 1.3;
+        bolt.size = q._reverseSpin ? Math.max(7, CELL*0.35) : Math.max(16, CELL*0.9);
         bolt.hp = 99;
         bolt._goldLightning = !q._reverseSpin;
         bolt._blueLightning = q._reverseSpin;
-        bolt._boltLife = q._reverseSpin ? 10 : 12;
+        bolt._boltLife = q._reverseSpin ? 16 : 12;
         bolt._boltRange = 8;
         bolt.color = q._reverseSpin ? '#00bfff' : '#ffd700';
         bullets.push(bolt);
