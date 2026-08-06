@@ -877,11 +877,11 @@ function triggerDash() {
   if (dashState) return; // 已在冲刺中
   if (stamina < DASH_COST) return;
 
-  // 雷公形态：暂时使用普通冲刺
+  // 雷公形态：闪烁瞬移
   if (thunderMode) {
     const dashDir = player.dir;
-    dashState = { dir: dashDir, timer: 18, maxTimer: 18, mythic: false };
-    stamina -= DASH_COST;
+    dashState = { dir: dashDir, thunder: true };
+    stamina -= DASH_COST * 2; // 消耗双倍体力
     return;
   }
 
@@ -1354,25 +1354,45 @@ class Tank {
     // ===== 雷公冲刺：闪烁瞬移 =====
     if (dashState && dashState.thunder) {
       const startX = this.x, startY = this.y;
-      const blinkDist = 6;
+      const blinkDist = 7;
+      // 搜索可达最远空地
       let bestX = this.x, bestY = this.y;
-      for (let d = blinkDist; d >= 0.5; d -= 0.5) {
-        const tx = this.x + dashState.dir.x * d;
-        const ty = this.y + dashState.dir.y * d;
-        if (tx > 0.5 && tx < COLS - 0.5 && ty > 0.5 && ty < ROWS - 0.5) {
-          const cx = Math.floor(tx), cy = Math.floor(ty);
-          if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS && mapData[cy * COLS + cx] === 0) {
-            bestX = tx; bestY = ty; break;
+      for (let d = blinkDist; d >= 1; d--) {
+        const tx = Math.round(this.x + dashState.dir.x * d);
+        const ty = Math.round(this.y + dashState.dir.y * d);
+        if (tx > 1 && tx < COLS - 1 && ty > 1 && ty < ROWS - 1) {
+          // 检查目标格及周围是否可行
+          let blocked = false;
+          for (let ody = -1; ody <= 1 && !blocked; ody++) {
+            for (let odx = -1; odx <= 1 && !blocked; odx++) {
+              const tcx = tx + odx, tcy = ty + ody;
+              if (tcx >= 0 && tcx < COLS && tcy >= 0 && tcy < ROWS) {
+                const t = mapData[tcy * COLS + tcx];
+                if (t === 1 || t === 2 || t === 3) blocked = true;
+              }
+            }
           }
+          if (!blocked) { bestX = tx + 0.5; bestY = ty + 0.5; break; }
         }
       }
-      // 有新位置才瞬移
-      if (bestX !== this.x || bestY !== this.y) {
-        this.x = bestX; this.y = bestY;
-      }
+      // 执行瞬移
+      const oldX = this.x, oldY = this.y;
+      this.x = bestX; this.y = bestY;
       this.dir = dashState.dir;
       this.invincible = 30;
       dashState = null;
+      // 效果
+      screenShake = Math.max(screenShake, 6);
+      // 起点粒子
+      for (let i = 0; i < 10; i++) {
+        particles.push(new Particle(oldX * BASE_CELL, oldY * BASE_CELL,
+          (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 10+Math.random()*10));
+      }
+      // 终点粒子
+      for (let i = 0; i < 10; i++) {
+        particles.push(new Particle(bestX * BASE_CELL, bestY * BASE_CELL,
+          (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 10+Math.random()*10));
+      }
       return;
     }
 
