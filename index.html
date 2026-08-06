@@ -1727,6 +1727,24 @@ class Tank {
     if (this.isPlayer && thunderMode) {
       if (!this._thunderAttacks) this._thunderAttacks = 0;
       this._thunderAttacks++;
+      // 每次攻击向瞄准方向闪烁
+      const blinkDir = this.turretDir;
+      const blinkDist = 3;
+      let bx = this.x, by = this.y;
+      for (let d = blinkDist; d >= 1; d--) {
+        const tx = this.x + blinkDir.x * d;
+        const ty = this.y + blinkDir.y * d;
+        if (tx>0.5&&tx<COLS-0.5&&ty>0.5&&ty<ROWS-0.5) {
+          const cx=Math.floor(tx),cy=Math.floor(ty);
+          if (cx>=0&&cx<COLS&&cy>=0&&cy<ROWS&&mapData[cy*COLS+cx]===0) { bx=tx; by=ty; break; }
+        }
+      }
+      if (bx !== this.x || by !== this.y) {
+        this.x = bx; this.y = by;
+        for (let i = 0; i < 8; i++) {
+          particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*3, (Math.random()-0.5)*3, '#00bfff', 8+Math.random()*8));
+        }
+      }
 
       if (this._thunderAttacks % 2 === 0) {
         // ===== 金色闪电 =====
