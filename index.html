@@ -1715,53 +1715,50 @@ class Tank {
           });
         }
       } else {
-        // ===== 逐帧三连激光 =====
-        if (!this._comboStep) this._comboStep = 0;
-        this.shootCooldown = 6; // 每6帧一发（快速三连）
-        this._comboStep++;
-        const burst = this._comboStep - 1; // 0,1,2
-        const colors = ['#00bfff','#4dc9f6','#80d8ff'];
-        const spreadAngle = (burst - 1) * 0.06;
-        const baseAngle = this.turretDir.angle + spreadAngle;
-        const laserDir = { x: Math.cos(baseAngle), y: Math.sin(baseAngle), angle: baseAngle };
-        const steps = Math.max(COLS, ROWS) * 2;
-        for (let s = 1; s <= steps; s++) {
-          const lx = this.x + laserDir.x * s * 0.5;
-          const ly = this.y + laserDir.y * s * 0.5;
-          if (lx < 0 || lx >= COLS || ly < 0 || ly >= ROWS) break;
-          const cx = Math.floor(lx), cy = Math.floor(ly);
-          if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
-            const tile = mapData[cy * COLS + cx];
-            if (tile === 1 || tile === 2) {
-              mapData[cy * COLS + cx] = 0;
-              for (let p = 0; p < 3; p++) {
-                particles.push(new Particle(
-                  cx * BASE_CELL + BASE_CELL/2, cy * BASE_CELL + BASE_CELL/2,
-                  (Math.random()-0.5)*3, (Math.random()-0.5)*3,
-                  tile===2?'#7f8c8d':'#c4934a', 10+Math.random()*10
-                ));
+        // ===== 普通激光三连击 =====
+        this.shootCooldown = 25;
+        for (let burst = 0; burst < 3; burst++) {
+          const spreadAngle = (burst - 1) * 0.08;
+          const baseAngle = this.turretDir.angle + spreadAngle;
+          const laserDir = { x: Math.cos(baseAngle), y: Math.sin(baseAngle), angle: baseAngle };
+          const steps = Math.max(COLS, ROWS) * 2;
+          for (let s = 1; s <= steps; s++) {
+            const lx = this.x + laserDir.x * s * 0.5;
+            const ly = this.y + laserDir.y * s * 0.5;
+            if (lx < 0 || lx >= COLS || ly < 0 || ly >= ROWS) break;
+            const cx = Math.floor(lx), cy = Math.floor(ly);
+            if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
+              const tile = mapData[cy * COLS + cx];
+              if (tile === 1 || tile === 2) {
+                mapData[cy * COLS + cx] = 0;
+                for (let p = 0; p < 3; p++) {
+                  particles.push(new Particle(
+                    cx * BASE_CELL + BASE_CELL/2, cy * BASE_CELL + BASE_CELL/2,
+                    (Math.random()-0.5)*3, (Math.random()-0.5)*3,
+                    tile===2?'#7f8c8d':'#c4934a', 10+Math.random()*10
+                  ));
+                }
               }
             }
+            for (const enemy of enemies) {
+              if (!enemy.alive) continue;
+              const edx = enemy.x - lx, edy = enemy.y - ly;
+              if (Math.abs(edx) < 0.7 && Math.abs(edy) < 0.7) enemy.hit();
+            }
           }
-          for (const enemy of enemies) {
-            if (!enemy.alive) continue;
-            const edx = enemy.x - lx, edy = enemy.y - ly;
-            if (Math.abs(edx) < 0.7 && Math.abs(edy) < 0.7) enemy.hit();
+          for (let s = 0; s <= steps; s++) {
+            const px = this.x + laserDir.x * s * 0.5;
+            const py = this.y + laserDir.y * s * 0.5;
+            if (px < 0 || px >= COLS || py < 0 || py >= ROWS) break;
+            const colors = ['#00bfff','#4dc9f6','#80d8ff'];
+            particles.push(new Particle(
+              px * BASE_CELL, py * BASE_CELL,
+              (Math.random()-0.5)*2, (Math.random()-0.5)*2,
+              colors[burst], 15+Math.random()*15
+            ));
           }
         }
-        // 激光粒子
-        for (let s = 0; s <= steps; s++) {
-          const px = this.x + laserDir.x * s * 0.5;
-          const py = this.y + laserDir.y * s * 0.5;
-          if (px < 0 || px >= COLS || py < 0 || py >= ROWS) break;
-          particles.push(new Particle(
-            px * BASE_CELL, py * BASE_CELL,
-            (Math.random()-0.5)*2, (Math.random()-0.5)*2,
-            colors[burst], 15+Math.random()*15
-          ));
-        }
-        if (this._comboStep >= 3) { this._comboStep = 0; this.shootCooldown = 18; }
-        screenShake = Math.max(screenShake, 4);
+        screenShake = Math.max(screenShake, 5);
       }
     } else if (this.isPlayer && godSlayerMode) {
       if (!this._fireCount) this._fireCount = 0;
