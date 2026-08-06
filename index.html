@@ -1356,9 +1356,6 @@ class Tank {
       this.dir = dashState.dir;
       this.invincible = 30;
       dashState = null;
-      // 血光柱加入延迟队列
-      bloodPillars.push({ x: oldX, y: oldY, timer: 3 });
-      bloodPillars.push({ x: bestX, y: bestY, timer: 3 });
       screenShake = Math.max(screenShake, 10);
       haptic('boss');
       return;
@@ -3098,17 +3095,6 @@ function update() {
     }
   }
   nukes = nukes.filter(n => n.timer > -30); // 爆炸后保留30帧特效
-
-  // 血光柱队列（在update安全处理：延时2帧后执行）
-  if (bloodPillars.length > 0) {
-    const ready = [];
-    bloodPillars = bloodPillars.filter(p => {
-      p.timer--;
-      if (p.timer <= 0) { ready.push(p); return false; }
-      return true;
-    });
-    ready.forEach(p => spawnBloodLightning(p.x, p.y));
-  }
 
   // 雷公闪电队列：逐帧释放金色闪电
   if (thunderQueue.length > 0) {
