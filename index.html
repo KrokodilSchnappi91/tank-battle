@@ -3768,10 +3768,11 @@ function render() {
     ctx.fill();
   }
 
-  // 绿色3D波纹闪电渲染
+  // 绿色3D波纹闪电渲染（跟随玩家）
   for (const rp of greenRipples) {
     const alpha = rp.life / rp.maxLife;
-    const rx = rp.x, ry = rp.y;
+    const rx = (player ? player.x : rp.x / CELL) * CELL;
+    const ry = (player ? player.y : rp.y / CELL) * CELL;
     const rr = rp.radius;
     const rh = rp.height;
     // 外圈椭圆（3D透视）
