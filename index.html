@@ -685,6 +685,7 @@ let bossTank = null;          // Boss 坦克引用
 let bossPhase = 1;            // Boss 当前阶段
 let nukes = [];               // 核弹列表
 let thunderQueue = [];        // 雷公闪电队列
+let bloodPillars = [];        // 血光柱队列（安全延迟处理）
 let bossKillCount = 0;        // Boss击杀总数（跨关卡）
 let demonKingActive = false;  // 魔王战中
 let advancedUnlocked = false;
@@ -897,7 +898,7 @@ function triggerDash() {
   }
 }
 
-// 血红色闪电光柱（雷公闪烁特效）
+// 血红色闪电光柱（雷公闪烁特效，从update安全调用）
 function spawnBloodLightning(x, y) {
   const cx = Math.floor(x), cy = Math.floor(y);
   const radius = 3;
@@ -907,11 +908,19 @@ function spawnBloodLightning(x, y) {
       const tx = cx + dx, ty = cy + dy;
       if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS) {
         if (Math.sqrt(dx*dx+dy*dy) <= radius) {
-          const tile = mapData[ty*COLS+tx];
-          if (tile === 1 || tile === 2) mapData[ty*COLS+tx] = 0;
+          if (mapData[ty*COLS+tx] === 1 || mapData[ty*COLS+tx] === 2) {
+            mapData[ty*COLS+tx] = 0;
+          }
         }
       }
     }
+  }
+  // 伤害范围内敌人（在update循环中安全调用）
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const enemy = enemies[i];
+    if (!enemy.alive) continue;
+    const edx = enemy.x - x, edy = enemy.y - y;
+    if (Math.sqrt(edx*edx+edy*edy) < radius + 0.5) enemy.hit();
   }
   // 血红色粒子光柱
   for (let i = 0; i < 40; i++) {
@@ -1351,7 +1360,6 @@ class Tank {
       for (let d = blinkDist; d >= 0.5; d -= 0.5) {
         const tx = this.x + dashState.dir.x * d;
         const ty = this.y + dashState.dir.y * d;
-        // 检查是否在地图内且不在障碍物上
         const cx = Math.floor(tx), cy = Math.floor(ty);
         if (tx >= 0.5 && tx < COLS - 0.5 && ty >= 0.5 && ty < ROWS - 0.5) {
           const tile = mapData[cy * COLS + cx];
@@ -1365,10 +1373,9 @@ class Tank {
       this.invincible = 40;
       dashState = null;
 
-      // 起点血红色闪电光柱
-      spawnBloodLightning(startX, startY);
-      // 终点血红色闪电光柱
-      spawnBloodLightning(bestX, bestY);
+      // 加入血光柱队列（在update中安全处理）
+      bloodPillars.push({ x: startX, y: startY, timer: 2 });
+      bloodPillars.push({ x: bestX, y: bestY, timer: 2 });
 
       screenShake = Math.max(screenShake, 12);
       haptic('boss');
@@ -1938,6 +1945,7 @@ class Tank {
         player._thunderAttacks = 0;
         player._fireCount = 0;
         thunderQueue = [];
+        bloodPillars = [];
         player.color = '#2ecc71';
       }
     }
@@ -2838,6 +2846,7 @@ function loadLevel(lvl) {
   demonKingActive = false;
   nukes = [];
   thunderQueue = [];
+  bloodPillars = [];
   stamina = MAX_STAMINA;
   dashState = null;
   mythicMode = false;
@@ -3108,6 +3117,17 @@ function update() {
   }
   nukes = nukes.filter(n => n.timer > -30); // 爆炸后保留30帧特效
 
+  // 血光柱队列（在update安全处理：延时2帧后执行）
+  if (bloodPillars.length > 0) {
+    const ready = [];
+    bloodPillars = bloodPillars.filter(p => {
+      p.timer--;
+      if (p.timer <= 0) { ready.push(p); return false; }
+      return true;
+    });
+    ready.forEach(p => spawnBloodLightning(p.x, p.y));
+  }
+
   // 雷公闪电队列：逐帧释放金色闪电
   if (thunderQueue.length > 0) {
     const toRelease = thunderQueue.filter(q => q.delay <= 0);
@@ -3366,6 +3386,7 @@ function resetGame() {
   thunderMode = false;
   dashState = null;
   thunderQueue = [];
+  bloodPillars = [];
   stamina = MAX_STAMINA;
   deathTimer = 0;
   bossActive = false;
@@ -3375,6 +3396,7 @@ function resetGame() {
   bossKillCount = 0;
   nukes = [];
   thunderQueue = [];
+  bloodPillars = [];
   enemiesRemaining = 0;
   enemiesOnScreen = 0;
   maxEnemiesOnScreen = 4;
