@@ -1715,10 +1715,15 @@ class Tank {
           });
         }
       } else {
-        // ===== 普通激光三连击 =====
-        this.shootCooldown = 25;
+        // ===== 单击三连爆：每发3束激光 × 3段 = 9束 =====
+        if (!this._comboStep) this._comboStep = 0;
+        this.shootCooldown = 6; // 每6帧释放一段
+        this._comboStep++;
+        const seg = this._comboStep - 1; // 0,1,2（当前段）
+        const colors = ['#00bfff','#4dc9f6','#80d8ff'];
+        // 每段释放3束激光
         for (let burst = 0; burst < 3; burst++) {
-          const spreadAngle = (burst - 1) * 0.08;
+          const spreadAngle = (burst - 1) * 0.08 + seg * 0.03;
           const baseAngle = this.turretDir.angle + spreadAngle;
           const laserDir = { x: Math.cos(baseAngle), y: Math.sin(baseAngle), angle: baseAngle };
           const steps = Math.max(COLS, ROWS) * 2;
@@ -1750,14 +1755,14 @@ class Tank {
             const px = this.x + laserDir.x * s * 0.5;
             const py = this.y + laserDir.y * s * 0.5;
             if (px < 0 || px >= COLS || py < 0 || py >= ROWS) break;
-            const colors = ['#00bfff','#4dc9f6','#80d8ff'];
             particles.push(new Particle(
               px * BASE_CELL, py * BASE_CELL,
               (Math.random()-0.5)*2, (Math.random()-0.5)*2,
-              colors[burst], 15+Math.random()*15
+              colors[burst], 12+Math.random()*12
             ));
           }
         }
+        if (this._comboStep >= 3) { this._comboStep = 0; this.shootCooldown = 16; }
         screenShake = Math.max(screenShake, 5);
       }
     } else if (this.isPlayer && godSlayerMode) {
