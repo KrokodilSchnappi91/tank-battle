@@ -3601,30 +3601,37 @@ function render() {
     const alpha = p.life / p.maxLife;
     const px = p.x, py = p.y;
     const R = CELL * p.radius; // 圆柱半径
-    const H = R * 2.5; // 光柱高度
+    const r = R * 1.2; // 半径+20%
+    const H = r * 1.6; // 更短的光柱
     // 底部椭圆（3D地面）
-    ctx.fillStyle = `rgba(255,0,0,${alpha*0.3})`;
+    ctx.fillStyle = `rgba(255,0,0,${alpha*0.35})`;
     ctx.beginPath();
-    ctx.ellipse(px, py, R, R*0.35, 0, 0, Math.PI*2);
+    ctx.ellipse(px, py, r, r*0.35, 0, 0, Math.PI*2);
     ctx.fill();
-    // 圆柱体内闪电束（限制在椭圆范围内）
-    for (let bolt = 0; bolt < 12; bolt++) {
-      const angle = (bolt / 12) * Math.PI * 2;
-      const baseR = R * (0.3 + Math.random() * 0.7);
+    ctx.strokeStyle = `rgba(255,80,0,${alpha*0.5})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // 圆柱体内闪电束（密集）
+    for (let bolt = 0; bolt < 20; bolt++) {
+      const angle = (bolt / 20) * Math.PI * 2 + p.life * 0.03;
+      const baseR = r * (0.2 + Math.random() * 0.8);
       const baseX = px + Math.cos(angle) * baseR;
       const baseY = py + Math.sin(angle) * baseR * 0.35;
-      const topX = px + Math.cos(angle + p.life*0.02) * baseR * 0.8;
-      const topY = py - H + Math.sin(angle + p.life*0.02) * baseR * 0.28;
-      const isCore = bolt % 4 === 0;
-      ctx.strokeStyle = isCore ? `rgba(255,255,255,${alpha})` : `rgba(255,${30+bolt*10},0,${alpha*0.6})`;
-      ctx.lineWidth = isCore ? 3 : 6;
-      ctx.shadowColor = isCore ? '#fff' : '#ff0000';
-      ctx.shadowBlur = isCore ? 8 : 14;
+      const topR = baseR * (0.3 + Math.random() * 0.5);
+      const topX = px + Math.cos(angle + p.life*0.04) * topR;
+      const topY = py - H + Math.sin(angle + p.life*0.04) * topR * 0.28;
+      const isCore = bolt % 5 === 0;
+      ctx.strokeStyle = isCore
+        ? `rgba(255,255,255,${alpha})`
+        : (bolt % 3 === 0 ? `rgba(255,200,0,${alpha*0.7})` : `rgba(255,${20+bolt*8},0,${alpha*0.55})`);
+      ctx.lineWidth = isCore ? 4 : (bolt % 3 === 0 ? 7 : 5);
+      ctx.shadowColor = isCore ? '#fff' : (bolt % 3 === 0 ? '#ffaa00' : '#ff0000');
+      ctx.shadowBlur = isCore ? 12 : (bolt % 3 === 0 ? 16 : 20);
       ctx.beginPath();
       ctx.moveTo(baseX, baseY);
-      for (let s = 1; s <= 8; s++) {
-        const t = s / 8;
-        const sx = baseX + (topX - baseX) * t + (Math.sin(s*5+bolt+p.life*0.1) * R * 0.3);
+      for (let s = 1; s <= 6; s++) {
+        const t = s / 6;
+        const sx = baseX + (topX - baseX) * t + (Math.sin(s*7+bolt+p.life*0.15) * r * 0.25);
         const sy = baseY + (topY - baseY) * t;
         ctx.lineTo(sx, sy);
       }
@@ -3633,21 +3640,24 @@ function render() {
     ctx.shadowBlur = 0;
     ctx.lineWidth = 1;
     // 顶部光圈
-    ctx.strokeStyle = `rgba(255,50,0,${alpha*0.7})`;
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255,80,0,${alpha*0.8})`;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#ff4400';
+    ctx.shadowBlur = 8;
     ctx.beginPath();
-    ctx.ellipse(px, py - H, R, R*0.35, 0, 0, Math.PI*2);
+    ctx.ellipse(px, py - H, r, r*0.35, 0, 0, Math.PI*2);
     ctx.stroke();
-    // 中心光球
-    const glowAlpha = alpha * 0.6;
-    const glow = ctx.createRadialGradient(px, py, 0, px, py, R);
+    ctx.shadowBlur = 0;
+    // 中心光球（更亮）
+    const glowAlpha = alpha * 0.7;
+    const glow = ctx.createRadialGradient(px, py, 0, px, py, r);
     glow.addColorStop(0, `rgba(255,255,255,${glowAlpha})`);
-    glow.addColorStop(0.15, `rgba(255,200,0,${glowAlpha*0.7})`);
-    glow.addColorStop(0.4, `rgba(255,0,0,${glowAlpha*0.4})`);
+    glow.addColorStop(0.1, `rgba(255,220,50,${glowAlpha*0.8})`);
+    glow.addColorStop(0.3, `rgba(255,30,0,${glowAlpha*0.5})`);
     glow.addColorStop(1, `rgba(255,0,0,0)`);
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(px, py, R, 0, Math.PI*2);
+    ctx.arc(px, py, r, 0, Math.PI*2);
     ctx.fill();
   }
 
