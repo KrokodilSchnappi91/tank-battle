@@ -1001,11 +1001,6 @@ canvas.addEventListener('mousedown', (e) => {
     e.preventDefault();
     player.shoot();
   }
-  if (e.button === 2) { keys['MouseRight'] = true; }
-});
-canvas.addEventListener('mouseup', (e) => {
-  if (e.button === 2) { keys['MouseRight'] = false; }
-});
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 // 防止 canvas 上的触摸滚动
@@ -1731,8 +1726,8 @@ class Tank {
     if (this.isPlayer && thunderMode) {
       if (!this._thunderAttacks) this._thunderAttacks = 0;
       this._thunderAttacks++;
-      // 右键+左键：闪烁到鼠标位置
-      if (keys['MouseRight'] || keys['mouse2']) {
+      // Shift+左键：闪烁到鼠标位置
+      if (isKeyDown('Shift')) {
         const tx = mouseX, ty = mouseY;
         if (tx>1&&tx<COLS-1&&ty>1&&ty<ROWS-1) {
           let bx = tx, by = ty;
@@ -1752,7 +1747,6 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
-          keys['MouseRight'] = false; // 单次触发
         }
       }
 
