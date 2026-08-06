@@ -1337,7 +1337,7 @@ class Tank {
       const dir = this.dir;
       // 搜索最远可达空地
       let bestX = this.x, bestY = this.y;
-      for (let d = 8; d >= 1; d--) {
+      for (let d = 12; d >= 1; d--) {
         const tx = Math.round(this.x + dir.x * d);
         const ty = Math.round(this.y + dir.y * d);
         if (tx > 1 && tx < COLS - 1 && ty > 1 && ty < ROWS - 1) {
@@ -3601,7 +3601,7 @@ function render() {
     const alpha = p.life / p.maxLife;
     const px = p.x, py = p.y;
     const R = CELL * p.radius; // 圆柱半径
-    const H = R * 5; // 光柱高度（透视缩短）
+    const H = R * 2.5; // 光柱高度
     // 底部椭圆（3D地面）
     ctx.fillStyle = `rgba(255,0,0,${alpha*0.3})`;
     ctx.beginPath();
