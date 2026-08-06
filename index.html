@@ -3288,12 +3288,12 @@ function update() {
         const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
         const bolt = new Bullet(q.x + dir.x * 0.6, q.y + dir.y * 0.6, dir, true, false, 99);
         bolt.isMissile = true;
-        bolt.speed = q._reverseSpin ? 0.9 : 1.3;
+        bolt.speed = q._reverseSpin ? 1.6 : 1.3;
         bolt.size = q._reverseSpin ? Math.max(7, CELL*0.35) : Math.max(16, CELL*0.9);
         bolt.hp = 99;
         bolt._goldLightning = !q._reverseSpin;
         bolt._blueLightning = q._reverseSpin;
-        bolt._boltLife = q._reverseSpin ? 16 : 12;
+        bolt._boltLife = q._reverseSpin ? 10 : 12;
         bolt._boltRange = 8;
         bolt.color = q._reverseSpin ? '#00bfff' : '#ffd700';
         bullets.push(bolt);
