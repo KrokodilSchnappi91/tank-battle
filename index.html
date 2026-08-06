@@ -2973,10 +2973,19 @@ function update() {
   if (gameState !== STATE.PLAYING) return;
 
   // 66关自动进入杀神形态
-  if (level >= 66 && !godSlayerMode && !mythicMode && player && player.alive) {
+  if (level === 66 && !godSlayerMode && !mythicMode && !thunderMode && player && player.alive) {
     godSlayerMode = true;
     player.invincible = 90;
     player.color = '#cc0000';
+  }
+  // 67关起自动进入雷公形态
+  if (level >= 67 && !thunderMode && player && player.alive) {
+    thunderMode = true;
+    mythicMode = false;
+    godSlayerMode = false;
+    player.invincible = 90;
+    player.color = '#00bfff';
+    lives = Math.max(lives, 15);
   }
 
   // Buff计时器
@@ -3988,7 +3997,7 @@ const FORM_DEFS = [
     speed: 1.4,
     fireRate: '30帧/发',
     features: ['激光穿透一切障碍', '摧毁砖墙+钢墙', '激光持续0.3秒', '贯穿全场直线伤害', '全敌穿透打击'],
-    unlock: '连续击杀3个敌人后选3号'
+    unlock: '连续击杀3人选3号 / Lv67自动'
   }
 ];
 
