@@ -684,6 +684,7 @@ let bossActive = false;       // Boss 战中
 let bossTank = null;          // Boss 坦克引用
 let bossPhase = 1;            // Boss 当前阶段
 let nukes = [];               // 核弹列表
+let thunderQueue = [];        // 雷公闪电队列
 let bossKillCount = 0;        // Boss击杀总数（跨关卡）
 let demonKingActive = false;  // 魔王战中
 let advancedUnlocked = false;
@@ -1592,49 +1593,66 @@ class Tank {
     }
 
     if (this.isPlayer && thunderMode) {
-      // ===== 雷公形态：激光穿透 =====
-      const laserDir = this.turretDir;
-      this.shootCooldown = 30;
-      // 激光贯穿全图
-      const steps = Math.max(COLS, ROWS) * 2;
-      for (let s = 1; s <= steps; s++) {
-        const lx = this.x + laserDir.x * s * 0.5;
-        const ly = this.y + laserDir.y * s * 0.5;
-        if (lx < 0 || lx >= COLS || ly < 0 || ly >= ROWS) break;
-        const cx = Math.floor(lx), cy = Math.floor(ly);
-        if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
-          const tile = mapData[cy * COLS + cx];
-          // 激光摧毁任何障碍（砖墙+钢墙）
-          if (tile === 1 || tile === 2) {
-            mapData[cy * COLS + cx] = 0;
-            for (let p = 0; p < 4; p++) {
-              particles.push(new Particle(
-                cx * BASE_CELL + BASE_CELL/2, cy * BASE_CELL + BASE_CELL/2,
-                (Math.random()-0.5)*3, (Math.random()-0.5)*3,
-                tile===2?'#7f8c8d':'#c4934a', 15+Math.random()*10
-              ));
+      // 追踪雷公攻击次数
+      if (!this._thunderAttacks) this._thunderAttacks = 0;
+      this._thunderAttacks++;
+
+      if (this._thunderAttacks % 3 === 0) {
+        // ===== 每3发：360°金色闪电逐帧释放 =====
+        this.shootCooldown = 50;
+        const totalBolts = 12;
+        // 将闪电加入队列，逐帧释放
+        for (let i = 0; i < totalBolts; i++) {
+          thunderQueue.push({
+            index: i,
+            total: totalBolts,
+            x: this.x,
+            y: this.y,
+            delay: i * 2  // 每2帧放一个
+          });
+        }
+      } else {
+        // ===== 普通激光穿透 =====
+        const laserDir = this.turretDir;
+        this.shootCooldown = 30;
+        const steps = Math.max(COLS, ROWS) * 2;
+        for (let s = 1; s <= steps; s++) {
+          const lx = this.x + laserDir.x * s * 0.5;
+          const ly = this.y + laserDir.y * s * 0.5;
+          if (lx < 0 || lx >= COLS || ly < 0 || ly >= ROWS) break;
+          const cx = Math.floor(lx), cy = Math.floor(ly);
+          if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
+            const tile = mapData[cy * COLS + cx];
+            if (tile === 1 || tile === 2) {
+              mapData[cy * COLS + cx] = 0;
+              for (let p = 0; p < 4; p++) {
+                particles.push(new Particle(
+                  cx * BASE_CELL + BASE_CELL/2, cy * BASE_CELL + BASE_CELL/2,
+                  (Math.random()-0.5)*3, (Math.random()-0.5)*3,
+                  tile===2?'#7f8c8d':'#c4934a', 15+Math.random()*10
+                ));
+              }
             }
           }
+          for (const enemy of enemies) {
+            if (!enemy.alive) continue;
+            const edx = enemy.x - lx, edy = enemy.y - ly;
+            if (Math.abs(edx) < 0.7 && Math.abs(edy) < 0.7) enemy.hit();
+          }
         }
-        // 伤害沿途敌人
-        for (const enemy of enemies) {
-          if (!enemy.alive) continue;
-          const edx = enemy.x - lx, edy = enemy.y - ly;
-          if (Math.abs(edx) < 0.7 && Math.abs(edy) < 0.7) enemy.hit();
+        // 激光粒子
+        for (let s = 0; s <= steps; s++) {
+          const px = this.x + laserDir.x * s * 0.5;
+          const py = this.y + laserDir.y * s * 0.5;
+          if (px < 0 || px >= COLS || py < 0 || py >= ROWS) break;
+          particles.push(new Particle(
+            px * BASE_CELL, py * BASE_CELL,
+            (Math.random()-0.5)*1, (Math.random()-0.5)*1,
+            Math.random()<0.5?'#00bfff':'#ffffff', 20+Math.random()*15
+          ));
         }
+        screenShake = Math.max(screenShake, 4);
       }
-      // 激光粒子特效
-      for (let s = 0; s <= steps; s++) {
-        const px = this.x + laserDir.x * s * 0.5;
-        const py = this.y + laserDir.y * s * 0.5;
-        if (px < 0 || px >= COLS || py < 0 || py >= ROWS) break;
-        particles.push(new Particle(
-          px * BASE_CELL, py * BASE_CELL,
-          (Math.random()-0.5)*1, (Math.random()-0.5)*1,
-          Math.random()<0.5?'#00bfff':'#ffffff', 20+Math.random()*15
-        ));
-      }
-      screenShake = Math.max(screenShake, 4);
     } else if (this.isPlayer && godSlayerMode) {
       if (!this._fireCount) this._fireCount = 0;
       this._fireCount++;
@@ -1835,7 +1853,9 @@ class Tank {
         thunderMode = false;
         player._mythicAttacks = 0;
         player._mythicNukeTimer = 0;
+        player._thunderAttacks = 0;
         player._fireCount = 0;
+        thunderQueue = [];
         player.color = '#2ecc71';
       }
     }
@@ -2072,6 +2092,27 @@ class Bullet {
   update() {
     this.life++;
 
+    // 金色闪电：短程高速+摧毁障碍
+    if (this._goldLightning) {
+      this._boltLife--;
+      if (this._boltLife <= 0) { this.alive = false; return; }
+      this.x += this.dir.x * this.speed;
+      this.y += this.dir.y * this.speed;
+      if (this.x < 0 || this.x >= COLS || this.y < 0 || this.y >= ROWS) { this.alive = false; return; }
+      const cx = Math.floor(this.x), cy = Math.floor(this.y);
+      if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
+        const tile = mapData[cy * COLS + cx];
+        if (tile === 1 || tile === 2) { mapData[cy * COLS + cx] = 0; }
+      }
+      // 伤害敌人
+      for (const enemy of enemies) {
+        if (!enemy.alive) continue;
+        const edx = enemy.x - this.x, edy = enemy.y - this.y;
+        if (Math.abs(edx) < 0.6 && Math.abs(edy) < 0.6) enemy.hit();
+      }
+      return;
+    }
+
     // 火球引信：1秒后自动爆炸
     if (this._fireball && this._fuseTimer !== undefined) {
       this._fuseTimer--;
@@ -2294,6 +2335,43 @@ class Bullet {
 
   draw(ctx) {
     if (!this.alive) return;
+
+    // 金色闪电特效
+    if (this._goldLightning) {
+      const lx = this.x * CELL, ly = this.y * CELL;
+      // 锯齿闪电
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      const len = this.size * 3;
+      let cx = lx, cy = ly;
+      ctx.moveTo(cx, cy);
+      for (let s = 1; s <= 4; s++) {
+        cx += this.dir.x * len * 0.25 + (Math.random() - 0.5) * 12;
+        cy += this.dir.y * len * 0.25 + (Math.random() - 0.5) * 12;
+        ctx.lineTo(cx, cy);
+      }
+      ctx.stroke();
+      // 内层白光
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.shadowBlur = 6;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = 1;
+      // 中心光球
+      const gGrad = ctx.createRadialGradient(lx, ly, 0, lx, ly, this.size * 1.5);
+      gGrad.addColorStop(0, '#fff');
+      gGrad.addColorStop(0.3, '#ffd700');
+      gGrad.addColorStop(1, 'rgba(255,215,0,0)');
+      ctx.fillStyle = gGrad;
+      ctx.beginPath();
+      ctx.arc(lx, ly, this.size * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
 
     // 杀神火球特效
     if (this._fireball) {
@@ -2642,10 +2720,12 @@ function loadLevel(lvl) {
   bossPhase = 1;
   demonKingActive = false;
   nukes = [];
+  thunderQueue = [];
   stamina = MAX_STAMINA;
   dashState = null;
   mythicMode = false;
   godSlayerMode = false;
+  thunderMode = false;
   showFormChoice = false;
   killStreak = 0;
   healthSpawnTimer = 180;
@@ -2911,6 +2991,36 @@ function update() {
   }
   nukes = nukes.filter(n => n.timer > -30); // 爆炸后保留30帧特效
 
+  // 雷公闪电队列：逐帧释放金色闪电
+  if (thunderQueue.length > 0) {
+    const toRelease = thunderQueue.filter(q => q.delay <= 0);
+    thunderQueue = thunderQueue.filter(q => q.delay > 0);
+    thunderQueue.forEach(q => q.delay--);
+
+    toRelease.forEach(q => {
+      const angle = (Math.PI * 2 / q.total) * q.index + Date.now() * 0.002;
+      const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
+      const bolt = new Bullet(q.x + dir.x * 0.6, q.y + dir.y * 0.6, dir, true, false, 99);
+      bolt.isMissile = true;
+      bolt.speed = 0.3;
+      bolt.size = Math.max(8, CELL * 0.5);
+      bolt.hp = 99;
+      bolt._goldLightning = true;
+      bolt._boltLife = 25;
+      bolt._boltRange = 5;
+      bolt.color = '#ffd700';
+      bullets.push(bolt);
+      // 闪电粒子
+      for (let p = 0; p < 6; p++) {
+        particles.push(new Particle(
+          q.x * BASE_CELL, q.y * BASE_CELL,
+          dir.x * (2 + Math.random() * 4), dir.y * (2 + Math.random() * 4),
+          '#ffd700', 15 + Math.random() * 20
+        ));
+      }
+    });
+  }
+
   // Boss/魔王全灭才过关
   const bossAlive = enemies.filter(e => e.alive && e.type === 'boss').length;
   if (bossActive && bossAlive === 0) {
@@ -3138,6 +3248,7 @@ function resetGame() {
   godSlayerMode = false;
   thunderMode = false;
   dashState = null;
+  thunderQueue = [];
   stamina = MAX_STAMINA;
   deathTimer = 0;
   bossActive = false;
@@ -3146,6 +3257,7 @@ function resetGame() {
   demonKingActive = false;
   bossKillCount = 0;
   nukes = [];
+  thunderQueue = [];
   enemiesRemaining = 0;
   enemiesOnScreen = 0;
   maxEnemiesOnScreen = 4;
