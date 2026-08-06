@@ -3169,27 +3169,6 @@ function update() {
   // 血光柱+绿波纹更新
   lightningPillars.forEach(p => p.life--);
   lightningPillars = lightningPillars.filter(p => p.life > 0);
-  // 绿色波纹每帧伤害+破墙
-  if (greenRipples.length > 0 && player) {
-    for (const rp of greenRipples) {
-      const rippleR = rp.radius / CELL;
-      // 摧毁环状障碍
-      for (let dy = -Math.ceil(rippleR+0.5); dy <= Math.ceil(rippleR+0.5); dy++)
-        for (let dx = -Math.ceil(rippleR+0.5); dx <= Math.ceil(rippleR+0.5); dx++) {
-          const dist = Math.sqrt(dx*dx+dy*dy);
-          if (dist > rippleR + 0.8 || dist < rippleR - 1.2) continue;
-          const tx = Math.floor(player.x)+dx, ty = Math.floor(player.y)+dy;
-          if (tx>=0 && tx<COLS && ty>=0 && ty<ROWS)
-            if (mapData[ty*COLS+tx]===1 || mapData[ty*COLS+tx]===2) mapData[ty*COLS+tx]=0;
-        }
-      // 伤害环内敌人
-      for (const enemy of enemies) {
-        if (!enemy.alive) continue;
-        const ed = Math.hypot(enemy.x-player.x, enemy.y-player.y);
-        if (ed > rippleR - 1.2 && ed < rippleR + 0.8) enemy.hit();
-      }
-    }
-  }
   greenRipples.forEach(p => p.life--);
   greenRipples = greenRipples.filter(p => p.life > 0);
 
@@ -3779,27 +3758,27 @@ function render() {
     const rx = (player ? player.x : rp.x / CELL) * CELL;
     const ry = (player ? player.y : rp.y / CELL) * CELL;
     const rr = rp.radius;
-    // 外圈（地面平面）
+    // 外圈（地面）
     ctx.strokeStyle = `rgba(0,255,80,${alpha*0.9})`;
     ctx.lineWidth = 6;
     ctx.shadowColor = '#00ff44';
     ctx.shadowBlur = 24;
     ctx.beginPath();
-    ctx.ellipse(rx, ry, rr, rr * 0.4, 0, 0, Math.PI * 2);
+    ctx.arc(rx, ry, rr, 0, Math.PI * 2);
     ctx.stroke();
     // 内圈亮线
     ctx.strokeStyle = `rgba(150,255,200,${alpha})`;
     ctx.lineWidth = 3;
     ctx.shadowBlur = 12;
     ctx.beginPath();
-    ctx.ellipse(rx, ry, rr * 0.8, rr * 0.32, 0, 0, Math.PI * 2);
+    ctx.arc(rx, ry, rr * 0.8, 0, Math.PI * 2);
     ctx.stroke();
     // 电光点
     ctx.shadowBlur = 0;
-    for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2 + rp.life * 0.2;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + rp.life * 0.2;
       const sx = rx + Math.cos(a) * rr;
-      const sy = ry + Math.sin(a) * rr * 0.4;
+      const sy = ry + Math.sin(a) * rr;
       ctx.fillStyle = `rgba(255,255,255,${alpha})`;
       ctx.beginPath();
       ctx.arc(sx, sy, 4, 0, Math.PI * 2);
