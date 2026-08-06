@@ -2542,23 +2542,27 @@ class Bullet {
     // 蓝色反向闪电特效
     if (this._blueLightning) {
       const blx = this.x * CELL, bly = this.y * CELL;
-      ctx.strokeStyle = '#00bfff';
-      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#0099dd';
+      ctx.lineWidth = 8;
       ctx.shadowColor = '#00aaff';
-      ctx.shadowBlur = 16;
+      ctx.shadowBlur = 24;
       ctx.beginPath();
       const blen = this.size * 3;
       let bcx = blx, bcy = bly;
       ctx.moveTo(bcx, bcy);
-      for (let s = 1; s <= 4; s++) {
-        bcx += this.dir.x * blen * 0.25 + (Math.random()-0.5)*10;
-        bcy += this.dir.y * blen * 0.25 + (Math.random()-0.5)*10;
+      for (let s = 1; s <= 5; s++) {
+        bcx += this.dir.x * blen * 0.2 + (Math.random()-0.5)*12;
+        bcy += this.dir.y * blen * 0.2 + (Math.random()-0.5)*12;
         ctx.lineTo(bcx, bcy);
       }
       ctx.stroke();
-      ctx.strokeStyle = '#80dfff';
+      ctx.strokeStyle = '#40c8ff';
+      ctx.lineWidth = 4;
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+      ctx.strokeStyle = '#c0eeff';
       ctx.lineWidth = 2;
-      ctx.shadowBlur = 6;
+      ctx.shadowBlur = 4;
       ctx.stroke();
       ctx.shadowBlur = 0;
       ctx.lineWidth = 1;
@@ -3288,8 +3292,8 @@ function update() {
         const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
         const bolt = new Bullet(q.x + dir.x * 0.6, q.y + dir.y * 0.6, dir, true, false, 99);
         bolt.isMissile = true;
-        bolt.speed = q._reverseSpin ? 1.6 : 1.3;
-        bolt.size = q._reverseSpin ? Math.max(7, CELL*0.35) : Math.max(16, CELL*0.9);
+        bolt.speed = q._reverseSpin ? 1.1 : 1.3;
+        bolt.size = q._reverseSpin ? Math.max(12, CELL*0.6) : Math.max(16, CELL*0.9);
         bolt.hp = 99;
         bolt._goldLightning = !q._reverseSpin;
         bolt._blueLightning = q._reverseSpin;
