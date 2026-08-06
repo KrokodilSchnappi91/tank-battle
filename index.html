@@ -875,6 +875,15 @@ function triggerDash() {
   if (!player || !player.alive) return;
   if (dashState) return; // 已在冲刺中
   if (stamina < DASH_COST) return;
+
+  // 雷公形态：闪烁瞬移
+  if (thunderMode) {
+    const dashDir = player.dir;
+    dashState = { dir: dashDir, thunder: true };
+    stamina -= DASH_COST;
+    return;
+  }
+
   if (godSlayerMode) {
     const dashDir = player.dir;
     dashState = { dir: dashDir, timer: 30, maxTimer: 30, mythic: false };
@@ -885,6 +894,53 @@ function triggerDash() {
     const dashLen = Math.floor(13 * mythicBoost);
     dashState = { dir: dashDir, timer: dashLen, maxTimer: dashLen, mythic: mythicMode };
     stamina -= DASH_COST;
+  }
+}
+
+// 血红色闪电光柱（雷公闪烁特效）
+function spawnBloodLightning(x, y) {
+  const cx = Math.floor(x), cy = Math.floor(y);
+  const radius = 4;
+  // 摧毁周围障碍
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      const tx = cx + dx, ty = cy + dy;
+      if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS) {
+        if (Math.sqrt(dx*dx+dy*dy) <= radius) {
+          if (mapData[ty*COLS+tx] === 1 || mapData[ty*COLS+tx] === 2) {
+            mapData[ty*COLS+tx] = 0;
+          }
+        }
+      }
+    }
+  }
+  // 伤害范围内敌人
+  for (const enemy of enemies) {
+    if (!enemy.alive) continue;
+    const edx = enemy.x - x, edy = enemy.y - y;
+    if (Math.sqrt(edx*edx+edy*edy) < radius + 0.5) enemy.hit();
+  }
+  // 大量血红色粒子（光柱效果）
+  for (let i = 0; i < 60; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const dist = Math.random() * radius * BASE_CELL;
+    const spd = 1 + Math.random() * 5;
+    particles.push(new Particle(
+      x * BASE_CELL + Math.cos(a) * dist,
+      y * BASE_CELL + Math.sin(a) * dist,
+      Math.cos(a) * spd + (Math.random()-0.5)*3,
+      Math.sin(a) * spd + (Math.random()-0.5)*3,
+      Math.random() < 0.5 ? '#ff0000' : '#8b0000',
+      20 + Math.random() * 30
+    ));
+  }
+  // 中心白色闪光
+  for (let i = 0; i < 20; i++) {
+    particles.push(new Particle(
+      x * BASE_CELL, y * BASE_CELL,
+      (Math.random()-0.5)*6, (Math.random()-0.5)*6,
+      '#ffffff', 8 + Math.random() * 12
+    ));
   }
 }
 
@@ -1293,6 +1349,36 @@ class Tank {
 
   playerInput() {
     // ===== 冲刺处理 =====
+    // ===== 雷公冲刺：闪烁瞬移 + 血红色闪电光柱 =====
+    if (dashState && dashState.thunder) {
+      // 记录起点
+      const startX = this.x, startY = this.y;
+      // 向移动方向瞬移
+      const blinkDist = 8;
+      const nx = this.x + dashState.dir.x * blinkDist;
+      const ny = this.y + dashState.dir.y * blinkDist;
+      // 找最远可达位置
+      let bestX = this.x, bestY = this.y;
+      for (let d = blinkDist; d >= 1; d--) {
+        const tx = this.x + dashState.dir.x * d;
+        const ty = this.y + dashState.dir.y * d;
+        if (this.canMoveTo(tx, ty, dashState.dir)) { bestX = tx; bestY = ty; break; }
+      }
+      this.x = bestX; this.y = bestY;
+      this.dir = dashState.dir;
+      this.invincible = 40;
+      dashState = null;
+
+      // 起点血红色闪电光柱
+      spawnBloodLightning(startX, startY);
+      // 终点血红色闪电光柱
+      spawnBloodLightning(bestX, bestY);
+
+      screenShake = Math.max(screenShake, 12);
+      haptic('boss');
+      return;
+    }
+
     if (dashState && dashState.timer > 0) {
       dashState.timer--;
       // 杀神模式：可调整方向（惯性）
