@@ -2240,7 +2240,7 @@ class Bullet {
             }
           }
         }
-        // 终点范围伤害 + 回体
+        // 终点范围伤害 + 回体 + 击落敌方子弹
         for (const enemy of enemies) {
           if (!enemy.alive) continue;
           const edx = enemy.x - this.x, edy = enemy.y - this.y;
@@ -2249,6 +2249,10 @@ class Bullet {
             const cap = godSlayerMode ? 750 : (mythicMode ? 250 : (thunderMode ? 300 : MAX_STAMINA));
             stamina = Math.min(cap, stamina + 150);
           }
+        }
+        for (const b of bullets) {
+          if (!b.alive || b.isPlayer) continue;
+          if (Math.hypot(b.x - this.x, b.y - this.y) < radius) { b.alive = false; b.spark(); }
         }
         // 轻微金色光爆
         for (let i = 0; i < 8; i++) {
@@ -2269,7 +2273,7 @@ class Bullet {
         const tile = mapData[cy * COLS + cx];
         if (tile === 1 || tile === 2) { mapData[cy * COLS + cx] = 0; }
       }
-      // 飞行中范围伤害 + 回体
+      // 飞行中范围伤害 + 回体 + 击落敌方子弹
       for (const enemy of enemies) {
         if (!enemy.alive) continue;
         const ed = Math.hypot(enemy.x - this.x, enemy.y - this.y);
@@ -2278,6 +2282,10 @@ class Bullet {
           const cap = godSlayerMode ? 750 : (mythicMode ? 250 : (thunderMode ? 300 : MAX_STAMINA));
           stamina = Math.min(cap, stamina + 150);
         }
+      }
+      for (const b of bullets) {
+        if (!b.alive || b.isPlayer) continue;
+        if (Math.hypot(b.x - this.x, b.y - this.y) < 1.2) { b.alive = false; b.spark(); }
       }
       return;
     }
