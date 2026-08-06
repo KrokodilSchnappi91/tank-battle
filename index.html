@@ -3612,7 +3612,7 @@ function render() {
     ctx.lineWidth = 2;
     ctx.stroke();
     // 圆柱体内闪电束（密集）
-    for (let bolt = 0; bolt < 36; bolt++) {
+    for (let bolt = 0; bolt < 48; bolt++) {
       const angle = (bolt / 36) * Math.PI * 2 + p.life * 0.03;
       const baseR = r * (0.2 + Math.random() * 0.8);
       const baseX = px + Math.cos(angle) * baseR;
@@ -3620,13 +3620,14 @@ function render() {
       const topR = baseR * (0.3 + Math.random() * 0.5);
       const topX = px + Math.cos(angle + p.life*0.04) * topR;
       const topY = py - H + Math.sin(angle + p.life*0.04) * topR * 0.28;
-      const isCore = bolt % 5 === 0;
+      const isCore = bolt === 0; // 仅1条纯白
+      const isGold = bolt === 9 || bolt === 18 || bolt === 27; // 仅3条金色
       ctx.strokeStyle = isCore
         ? `rgba(255,255,255,${alpha})`
-        : (bolt % 3 === 0 ? `rgba(255,200,0,${alpha*0.7})` : `rgba(255,${15+bolt*5},0,${alpha*0.5})`);
-      ctx.lineWidth = isCore ? 5 : (bolt % 3 === 0 ? 6 : 4);
-      ctx.shadowColor = isCore ? '#fff' : (bolt % 3 === 0 ? '#ffaa00' : '#ff0000');
-      ctx.shadowBlur = isCore ? 12 : (bolt % 3 === 0 ? 16 : 20);
+        : (isGold ? `rgba(255,200,0,${alpha*0.6})` : `rgba(255,${10+bolt*2},0,${alpha*0.9})`);
+      ctx.lineWidth = isCore ? 4 : (isGold ? 5 : 8);
+      ctx.shadowColor = isCore ? '#fff' : (isGold ? '#ffaa00' : '#ff0000');
+      ctx.shadowBlur = isCore ? 8 : (isGold ? 12 : 24);
       ctx.beginPath();
       ctx.moveTo(baseX, baseY);
       for (let s = 1; s <= 6; s++) {
