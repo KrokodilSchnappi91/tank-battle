@@ -342,6 +342,8 @@
   .form-card.mythic .form-name  { color: #ffd700; }
   .form-card.godslayer { border-color: #ff4500; box-shadow: 0 0 12px rgba(255,69,0,0.2); }
   .form-card.godslayer .form-name { color: #ff4500; }
+  .form-card.thunder  { border-color: #00bfff; box-shadow: 0 0 14px rgba(0,191,255,0.25); }
+  .form-card.thunder .form-name  { color: #00bfff; }
 
   @keyframes pulse {
     0%, 100% { transform: scale(1); }
@@ -553,18 +555,23 @@
 </div>
 
 <!-- 形态选择（不暂停游戏，右上角小窗） -->
-<div class="hidden" id="formChoiceOverlay" style="position:fixed;top:50%;right:16px;z-index:20;transform:translateY(-50%);background:rgba(0,0,0,0.9);border:3px solid #ffd700;border-radius:14px;padding:20px;min-width:220px;text-align:center;box-shadow:0 0 30px rgba(255,215,0,0.5);">
+<div class="hidden" id="formChoiceOverlay" style="position:fixed;top:50%;right:16px;z-index:20;transform:translateY(-50%);background:rgba(0,0,0,0.9);border:3px solid #ffd700;border-radius:14px;padding:20px;min-width:340px;text-align:center;box-shadow:0 0 30px rgba(255,215,0,0.5);">
   <div style="color:#ffd700;font-size:22px;font-weight:bold;animation:pulse 0.6s infinite;">⚡ 进化形态 ⚡</div>
-  <div style="display:flex;gap:12px;justify-content:center;margin-top:14px;">
-    <div id="choiceMythic" style="background:linear-gradient(180deg,#3a2000,#1a0a00);border:3px solid #ffd700;border-radius:12px;padding:16px;cursor:pointer;text-align:center;width:100px;">
-      <div style="font-size:36px;">🌟</div>
-      <div style="color:#ffd700;font-size:16px;font-weight:bold;">神话</div>
-      <div style="color:#ffd700;font-size:14px;background:#333;border-radius:4px;padding:2px 8px;margin-top:4px;">1</div>
+  <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
+    <div id="choiceMythic" style="background:linear-gradient(180deg,#3a2000,#1a0a00);border:3px solid #ffd700;border-radius:12px;padding:14px;cursor:pointer;text-align:center;width:95px;">
+      <div style="font-size:32px;">🌟</div>
+      <div style="color:#ffd700;font-size:14px;font-weight:bold;">神话</div>
+      <div style="color:#ffd700;font-size:12px;background:#333;border-radius:4px;padding:2px 6px;margin-top:3px;">1</div>
     </div>
-    <div id="choiceGodSlayer" style="background:linear-gradient(180deg,#3a0000,#1a0000);border:3px solid #ff4500;border-radius:12px;padding:16px;cursor:pointer;text-align:center;width:100px;">
-      <div style="font-size:36px;">🔥</div>
-      <div style="color:#ff4500;font-size:16px;font-weight:bold;">杀神</div>
-      <div style="color:#ff4500;font-size:14px;background:#333;border-radius:4px;padding:2px 8px;margin-top:4px;">2</div>
+    <div id="choiceGodSlayer" style="background:linear-gradient(180deg,#3a0000,#1a0000);border:3px solid #ff4500;border-radius:12px;padding:14px;cursor:pointer;text-align:center;width:95px;">
+      <div style="font-size:32px;">🔥</div>
+      <div style="color:#ff4500;font-size:14px;font-weight:bold;">杀神</div>
+      <div style="color:#ff4500;font-size:12px;background:#333;border-radius:4px;padding:2px 6px;margin-top:3px;">2</div>
+    </div>
+    <div id="choiceThunder" style="background:linear-gradient(180deg,#001a2e,#000a1a);border:3px solid #00bfff;border-radius:12px;padding:14px;cursor:pointer;text-align:center;width:95px;">
+      <div style="font-size:32px;">⚡</div>
+      <div style="color:#00bfff;font-size:14px;font-weight:bold;">雷公</div>
+      <div style="color:#00bfff;font-size:12px;background:#333;border-radius:4px;padding:2px 6px;margin-top:3px;">3</div>
     </div>
   </div>
   <div id="choiceSkip" style="color:#aaa;font-size:13px;margin-top:10px;cursor:pointer;">按 <b style="color:#fff;">U</b> 保持普通形态</div>
@@ -663,6 +670,7 @@ let kills = 0;
 let killStreak = 0;           // 连续击杀数
 let mythicMode = false;       // 神话模式
 let godSlayerMode = false;    // 杀神形态
+let thunderMode = false;      // 雷公形态
 let showFormChoice = false;   // 显示形态选择
 // 冲刺系统
 let dashState = null;         // { dir, timer, maxTimer }
@@ -1583,7 +1591,51 @@ class Tank {
       return;
     }
 
-    if (this.isPlayer && godSlayerMode) {
+    if (this.isPlayer && thunderMode) {
+      // ===== 雷公形态：激光穿透 =====
+      const laserDir = this.turretDir;
+      this.shootCooldown = 30;
+      // 激光贯穿全图
+      const steps = Math.max(COLS, ROWS) * 2;
+      for (let s = 1; s <= steps; s++) {
+        const lx = this.x + laserDir.x * s * 0.5;
+        const ly = this.y + laserDir.y * s * 0.5;
+        if (lx < 0 || lx >= COLS || ly < 0 || ly >= ROWS) break;
+        const cx = Math.floor(lx), cy = Math.floor(ly);
+        if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
+          const tile = mapData[cy * COLS + cx];
+          // 激光摧毁任何障碍（砖墙+钢墙）
+          if (tile === 1 || tile === 2) {
+            mapData[cy * COLS + cx] = 0;
+            for (let p = 0; p < 4; p++) {
+              particles.push(new Particle(
+                cx * BASE_CELL + BASE_CELL/2, cy * BASE_CELL + BASE_CELL/2,
+                (Math.random()-0.5)*3, (Math.random()-0.5)*3,
+                tile===2?'#7f8c8d':'#c4934a', 15+Math.random()*10
+              ));
+            }
+          }
+        }
+        // 伤害沿途敌人
+        for (const enemy of enemies) {
+          if (!enemy.alive) continue;
+          const edx = enemy.x - lx, edy = enemy.y - ly;
+          if (Math.abs(edx) < 0.7 && Math.abs(edy) < 0.7) enemy.hit();
+        }
+      }
+      // 激光粒子特效
+      for (let s = 0; s <= steps; s++) {
+        const px = this.x + laserDir.x * s * 0.5;
+        const py = this.y + laserDir.y * s * 0.5;
+        if (px < 0 || px >= COLS || py < 0 || py >= ROWS) break;
+        particles.push(new Particle(
+          px * BASE_CELL, py * BASE_CELL,
+          (Math.random()-0.5)*1, (Math.random()-0.5)*1,
+          Math.random()<0.5?'#00bfff':'#ffffff', 20+Math.random()*15
+        ));
+      }
+      screenShake = Math.max(screenShake, 4);
+    } else if (this.isPlayer && godSlayerMode) {
       if (!this._fireCount) this._fireCount = 0;
       this._fireCount++;
       const fireDir = this.turretDir;
@@ -1780,6 +1832,7 @@ class Tank {
         killStreak = 0;
         mythicMode = false;
         godSlayerMode = false;
+        thunderMode = false;
         player._mythicAttacks = 0;
         player._mythicNukeTimer = 0;
         player._fireCount = 0;
@@ -1829,7 +1882,7 @@ class Tank {
         }
       }
       // 连续击杀3个弹出形态选择
-      if (killStreak >= 3 && !mythicMode && !godSlayerMode && !showFormChoice) {
+      if (killStreak >= 3 && !mythicMode && !godSlayerMode && !thunderMode && !showFormChoice) {
         showFormChoice = true;
         document.getElementById('formChoiceOverlay').classList.remove('hidden');
         // 10秒自动选神话
@@ -1853,7 +1906,25 @@ class Tank {
     const cy = this.y * CELL;
     const half = (this.size * CELL) / 2;
     const isMythic = this.isPlayer && mythicMode;
+    const isThunder = this.isPlayer && thunderMode;
     const isDashing = this.isPlayer && dashState && dashState.timer > 0;
+
+    // 雷公形态：蓝色电光光环
+    if (isThunder) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      const tGlow = half * 1.5 + Math.sin(Date.now() / 60) * half * 0.2;
+      const tGrad = ctx.createRadialGradient(0, 0, half * 0.4, 0, 0, tGlow);
+      tGrad.addColorStop(0, 'rgba(0,191,255,0)');
+      tGrad.addColorStop(0.4, 'rgba(0,191,255,0.35)');
+      tGrad.addColorStop(0.7, 'rgba(0,150,255,0.15)');
+      tGrad.addColorStop(1, 'rgba(0,100,255,0)');
+      ctx.fillStyle = tGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, tGlow, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
 
     // 神话模式：金色光环
     if (isMythic) {
@@ -1905,7 +1976,7 @@ class Tank {
     ctx.rotate(this.dir.angle);
 
     // 主体（杀神大红/神话金色/魔王黑红/普通）
-    const bodyColor = (this.isPlayer && godSlayerMode) ? '#cc0000' : (this._isDemonKing ? '#1a0000' : (isMythic ? '#ffd700' : this.color));
+    const bodyColor = (this.isPlayer && thunderMode) ? '#00bfff' : (this.isPlayer && godSlayerMode) ? '#cc0000' : (this._isDemonKing ? '#1a0000' : (isMythic ? '#ffd700' : this.color));
     ctx.fillStyle = bodyColor;
     ctx.fillRect(-half, -half * 0.85, half * 2, half * 1.7);
 
@@ -2331,7 +2402,7 @@ class PowerUp {
       player._shieldBuffTimer = 300;
       score += 200;
     } else if (this.type === 'health') {
-      const maxLives = mythicMode ? 24 : 10;
+      const maxLives = mythicMode ? 24 : (thunderMode ? 15 : 10);
       lives = Math.min(lives + 1, maxLives);
     }
     updateUI();
@@ -2722,7 +2793,7 @@ function update() {
   }
 
   // 体力回复（杀神模式上限+50%）
-  const staminaCap = godSlayerMode ? 750 : (mythicMode ? 250 : MAX_STAMINA);
+  const staminaCap = godSlayerMode ? 750 : (mythicMode ? 250 : (thunderMode ? 300 : MAX_STAMINA));
   if (!dashState && stamina < staminaCap) {
     stamina = Math.min(staminaCap, stamina + 0.15);
   }
@@ -3064,6 +3135,8 @@ function resetGame() {
   kills = 0;
   killStreak = 0;
   mythicMode = false;
+  godSlayerMode = false;
+  thunderMode = false;
   dashState = null;
   stamina = MAX_STAMINA;
   deathTimer = 0;
@@ -3315,7 +3388,7 @@ function render() {
   ctx.fillRect(hpBarX - 1, hpBarY - 1, hpBarW + 2, hpBarH + 2);
   ctx.fillStyle = '#400';
   ctx.fillRect(hpBarX, hpBarY, hpBarW, hpBarH);
-  const maxHP = mythicMode ? 24 : 10;
+  const maxHP = mythicMode ? 24 : (thunderMode ? 15 : 10);
   const hpRatio = Math.max(0, lives) / maxHP;
   const hpColor = hpRatio > 0.5 ? '#ff4444' : hpRatio > 0.25 ? '#ff8800' : '#ff0000';
   ctx.fillStyle = hpColor;
@@ -3374,14 +3447,29 @@ function render() {
   ctx.fillRect(stBarX - 1, stBarY - 1, stBarW + 2, stBarH + 2);
   ctx.fillStyle = '#333';
   ctx.fillRect(stBarX, stBarY, stBarW, stBarH);
-  const stRatio = stamina / (godSlayerMode ? 750 : (mythicMode ? 250 : MAX_STAMINA));
+  const stCap = godSlayerMode ? 750 : (mythicMode ? 250 : (thunderMode ? 300 : MAX_STAMINA));
+  const stRatio = stamina / stCap;
   ctx.fillStyle = stRatio > 0.5 ? '#4ecdc4' : stRatio > 0.25 ? '#ff8c00' : '#ff0000';
   ctx.fillRect(stBarX, stBarY, stBarW * stRatio, stBarH);
   ctx.fillStyle = '#fff';
   const stfs = Math.max(14, CELL * 0.6);
   ctx.font = `bold ${stfs}px Arial`;
   ctx.textAlign = 'left';
-  ctx.fillText(`⚡${Math.ceil(stamina)}/${godSlayerMode?750:(mythicMode?250:MAX_STAMINA)}`, stBarX + stBarW + 5, stBarY + stBarH - 1);
+  ctx.fillText(`⚡${Math.ceil(stamina)}/${stCap}`, stBarX + stBarW + 5, stBarY + stBarH - 1);
+
+  // 雷公模式指示器
+  if (thunderMode && player && player.alive) {
+    const pulse = 0.7 + Math.sin(Date.now() / 100) * 0.3;
+    ctx.fillStyle = `rgba(0, 191, 255, ${pulse})`;
+    const fs3 = Math.max(14, CELL * 0.6);
+    ctx.font = `bold ${fs3}px "Microsoft YaHei", Arial`;
+    ctx.textAlign = 'left';
+    ctx.fillText('⚡ 雷公形态', 8, canvas.height - 32);
+    ctx.fillStyle = '#00bfff';
+    ctx.font = `bold ${Math.max(11, CELL * 0.45)}px Arial`;
+    ctx.textAlign = 'right';
+    ctx.fillText('激光贯穿一切', canvas.width - 14, canvas.height - 10);
+  }
 
   // 神话模式指示器
   if (mythicMode && player && player.alive) {
@@ -3470,8 +3558,14 @@ function activateMythic() {
   document.getElementById('formChoiceOverlay').classList.add('hidden');
 }
 function activateGodSlayer() {
-  godSlayerMode = true; mythicMode = false; showFormChoice = false;
+  godSlayerMode = true; mythicMode = false; thunderMode = false; showFormChoice = false;
   player.invincible = 90; player.color = '#cc0000';
+  document.getElementById('formChoiceOverlay').classList.add('hidden');
+}
+function activateThunder() {
+  thunderMode = true; mythicMode = false; godSlayerMode = false; showFormChoice = false;
+  player.invincible = 90; player.color = '#00bfff'; player._thunderAttacks = 0;
+  lives = Math.max(lives, 15);
   document.getElementById('formChoiceOverlay').classList.add('hidden');
 }
 function skipFormChoice() {
@@ -3480,12 +3574,14 @@ function skipFormChoice() {
 }
 document.getElementById('choiceMythic').addEventListener('click', activateMythic);
 document.getElementById('choiceGodSlayer').addEventListener('click', activateGodSlayer);
+document.getElementById('choiceThunder').addEventListener('click', activateThunder);
 document.getElementById('choiceSkip').addEventListener('click', skipFormChoice);
 
 window.addEventListener('keydown', function formKeyHandler(e) {
   if (!showFormChoice) return;
   if (e.key === '1') activateMythic();
   else if (e.key === '2') activateGodSlayer();
+  else if (e.key === '3') activateThunder();
   else if (e.key === 'u' || e.key === 'U') skipFormChoice();
 });
 
@@ -3569,6 +3665,19 @@ const FORM_DEFS = [
     fireRate: '20帧/发',
     features: ['三方向火球', '龙焰飞弹(3发/组)', '冲刺全程无敌', '冲刺释放火球', '冲刺惯性转向', '体力回复加速'],
     unlock: '连续击杀3个敌人后选2号 / Lv66自动'
+  },
+  {
+    id: 'thunder',
+    name: '雷公形态',
+    icon: '⚡',
+    cssClass: 'thunder',
+    color: '#00bfff',
+    hp: 15,
+    stamina: 300,
+    speed: 1.4,
+    fireRate: '30帧/发',
+    features: ['激光穿透一切障碍', '摧毁砖墙+钢墙', '激光持续0.3秒', '贯穿全场直线伤害', '全敌穿透打击'],
+    unlock: '连续击杀3个敌人后选3号'
   }
 ];
 
