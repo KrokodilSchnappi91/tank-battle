@@ -1001,6 +1001,10 @@ canvas.addEventListener('mousedown', (e) => {
     e.preventDefault();
     player.shoot();
   }
+  if (e.button === 2) { keys['MouseRight'] = true; }
+});
+canvas.addEventListener('mouseup', (e) => {
+  if (e.button === 2) { keys['MouseRight'] = false; }
 });
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -1727,26 +1731,28 @@ class Tank {
     if (this.isPlayer && thunderMode) {
       if (!this._thunderAttacks) this._thunderAttacks = 0;
       this._thunderAttacks++;
-      // 每次攻击闪烁到鼠标位置
-      const tx = mouseX, ty = mouseY;
-      if (tx>1&&tx<COLS-1&&ty>1&&ty<ROWS-1) {
-        let bx = tx, by = ty;
-        // 找最近空地
-        if (mapData[Math.floor(ty)*COLS+Math.floor(tx)] !== 0) {
-          let found = false;
-          for (let r = 1; r <= 5 && !found; r++) {
-            for (let dy = -r; dy <= r && !found; dy++)
-              for (let dx = -r; dx <= r && !found; dx++) {
-                const nx = Math.floor(tx)+dx, ny = Math.floor(ty)+dy;
-                if (nx>0&&nx<COLS-1&&ny>0&&ny<ROWS-1&&mapData[ny*COLS+nx]===0) {
-                  bx = nx+0.5; by = ny+0.5; found = true;
+      // 右键+左键：闪烁到鼠标位置
+      if (keys['MouseRight'] || keys['mouse2']) {
+        const tx = mouseX, ty = mouseY;
+        if (tx>1&&tx<COLS-1&&ty>1&&ty<ROWS-1) {
+          let bx = tx, by = ty;
+          if (mapData[Math.floor(ty)*COLS+Math.floor(tx)] !== 0) {
+            let found = false;
+            for (let r = 1; r <= 5 && !found; r++) {
+              for (let dy = -r; dy <= r && !found; dy++)
+                for (let dx = -r; dx <= r && !found; dx++) {
+                  const nx = Math.floor(tx)+dx, ny = Math.floor(ty)+dy;
+                  if (nx>0&&nx<COLS-1&&ny>0&&ny<ROWS-1&&mapData[ny*COLS+nx]===0) {
+                    bx = nx+0.5; by = ny+0.5; found = true;
+                  }
                 }
-              }
+            }
           }
-        }
-        this.x = bx; this.y = by;
-        for (let i = 0; i < 12; i++) {
-          particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
+          this.x = bx; this.y = by;
+          for (let i = 0; i < 12; i++) {
+            particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
+          }
+          keys['MouseRight'] = false; // 单次触发
         }
       }
 
