@@ -305,6 +305,44 @@
 
   .hidden { display: none !important; }
 
+  /* ====== 形态图鉴卡片 ====== */
+  .form-card {
+    background: #16213e;
+    border: 2px solid #333;
+    border-radius: 12px;
+    padding: 14px;
+    min-width: 150px;
+    max-width: 170px;
+    text-align: center;
+    flex: 1;
+  }
+  .form-card .form-icon { font-size: 36px; margin-bottom: 4px; }
+  .form-card .form-name { font-size: 16px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
+  .form-card .form-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    font-size: 11px;
+    color: #aaa;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .form-card .form-stat .val { color: #fff; font-weight: bold; }
+  .form-card .form-features {
+    margin-top: 8px;
+    font-size: 10px;
+    color: #888;
+    line-height: 1.5;
+    text-align: left;
+  }
+  .form-card .form-features span { color: #ffd700; }
+  /* 各形态边框颜色 */
+  .form-card.normal  { border-color: #4ecdc4; }
+  .form-card.normal .form-name  { color: #4ecdc4; }
+  .form-card.mythic  { border-color: #ffd700; box-shadow: 0 0 12px rgba(255,215,0,0.2); }
+  .form-card.mythic .form-name  { color: #ffd700; }
+  .form-card.godslayer { border-color: #ff4500; box-shadow: 0 0 12px rgba(255,69,0,0.2); }
+  .form-card.godslayer .form-name { color: #ff4500; }
+
   @keyframes pulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.15); }
@@ -463,6 +501,7 @@
       <button class="btn menu-btn" id="menuLevelBtn" style="width:200px;margin:0;background:#4ecdc4;">🗺️ 选择关卡</button>
       <button class="btn menu-btn" id="menuSaveBtn" style="width:200px;margin:0;background:#9b59b6;">💾 手动存档</button>
       <button class="btn menu-btn" id="menuFullscreenBtn" style="width:200px;margin:0;background:#2ecc71;">📺 全屏切换</button>
+      <button class="btn menu-btn" id="menuFormsBtn" style="width:200px;margin:0;background:#ff8c00;">📋 形态图鉴</button>
       <button class="btn menu-btn" id="menuControlsBtn" style="width:200px;margin:0;background:#3498db;">🎮 操作说明</button>
       <button class="btn menu-btn" id="menuHomeBtn" style="width:200px;margin:0;background:#666;">🏠 返回主页</button>
     </div>
@@ -488,6 +527,15 @@
       <p>　📺 - 全屏横屏</p>
     </div>
     <button class="btn" id="closeControlsBtn" style="margin-top:16px;">关 闭</button>
+  </div>
+</div>
+
+<!-- 形态图鉴界面 -->
+<div class="overlay hidden" id="formsOverlay">
+  <div class="overlay-content" style="max-width:600px;">
+    <h2 style="font-size:22px;">📋 形态图鉴</h2>
+    <div id="formsCardsContainer" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:14px;"></div>
+    <button class="btn" id="closeFormsBtn" style="margin-top:16px;background:#666;">关 闭</button>
   </div>
 </div>
 
@@ -3389,6 +3437,7 @@ function closeMenu() {
   document.getElementById('controlsOverlay').classList.add('hidden');
   document.getElementById('levelSelectOverlay').classList.add('hidden');
   document.getElementById('pauseOverlay').classList.add('hidden');
+  document.getElementById('formsOverlay').classList.add('hidden');
   if (player && player.alive) gameState = STATE.PLAYING;
   // 恢复菜单按钮
   const mb = document.getElementById('btnMobileMenu');
@@ -3403,7 +3452,8 @@ window.addEventListener('keydown', function menuHandler(e) {
     const ctrlO = !document.getElementById('controlsOverlay').classList.contains('hidden');
     const lvlO = !document.getElementById('levelSelectOverlay').classList.contains('hidden');
     const pauseO = !document.getElementById('pauseOverlay').classList.contains('hidden');
-    if (menuO || ctrlO || lvlO || pauseO) {
+    const formsO = !document.getElementById('formsOverlay').classList.contains('hidden');
+    if (menuO || ctrlO || lvlO || pauseO || formsO) {
       closeMenu();
     } else {
       openMenu();
@@ -3474,6 +3524,86 @@ document.getElementById('menuHomeBtn').addEventListener('click', () => {
 });
 document.getElementById('closeControlsBtn').addEventListener('click', () => {
   document.getElementById('controlsOverlay').classList.add('hidden');
+  document.getElementById('menuOverlay').classList.remove('hidden');
+});
+
+// ====== 形态图鉴系统 ======
+// 形态定义（后续新增形态只需在此数组添加）
+const FORM_DEFS = [
+  {
+    id: 'normal',
+    name: '普通形态',
+    icon: '🟢',
+    cssClass: 'normal',
+    color: '#4ecdc4',
+    hp: 10,
+    stamina: 100,
+    speed: 1.2,
+    fireRate: '12帧/发',
+    features: ['WASD移动', '鼠标/J键射击', '空格冲刺(13格)'],
+    unlock: '初始'
+  },
+  {
+    id: 'mythic',
+    name: '神话形态',
+    icon: '🌟',
+    cssClass: 'mythic',
+    color: '#ffd700',
+    hp: 24,
+    stamina: 250,
+    speed: 1.8,
+    fireRate: '8帧/发',
+    features: ['32发环形弹幕', '8发追踪导弹', '12枚主动核弹', '每0.5秒3枚核弹', '冲刺距离翻倍'],
+    unlock: '连续击杀3个敌人'
+  },
+  {
+    id: 'godslayer',
+    name: '杀神形态',
+    icon: '🔥',
+    cssClass: 'godslayer',
+    color: '#ff4500',
+    hp: 10,
+    stamina: 750,
+    speed: 1.2,
+    fireRate: '20帧/发',
+    features: ['三方向火球', '龙焰飞弹(3发/组)', '冲刺全程无敌', '冲刺释放火球', '冲刺惯性转向', '体力回复加速'],
+    unlock: '连续击杀3个敌人后选2号 / Lv66自动'
+  }
+];
+
+function buildFormCards() {
+  const container = document.getElementById('formsCardsContainer');
+  if (!container) return;
+  container.innerHTML = '';
+  FORM_DEFS.forEach(f => {
+    const card = document.createElement('div');
+    card.className = 'form-card ' + f.cssClass;
+    card.innerHTML = `
+      <div class="form-icon">${f.icon}</div>
+      <div class="form-name">${f.name}</div>
+      <div class="form-stat"><span>❤️ 生命</span><span class="val">${f.hp}</span></div>
+      <div class="form-stat"><span>⚡ 体力</span><span class="val">${f.stamina}</span></div>
+      <div class="form-stat"><span>🏃 速度</span><span class="val">${f.speed}x</span></div>
+      <div class="form-stat"><span>🔫 射速</span><span class="val">${f.fireRate}</span></div>
+      <div class="form-features">
+        ${f.features.map(ft => '<span>▸</span> ' + ft).join('<br>')}
+      </div>
+      <div style="margin-top:6px;font-size:9px;color:#666;">🔓 ${f.unlock}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// 菜单按钮：打开图鉴
+document.getElementById('menuFormsBtn').addEventListener('click', () => {
+  document.getElementById('menuOverlay').classList.add('hidden');
+  buildFormCards();
+  document.getElementById('formsOverlay').classList.remove('hidden');
+});
+
+// 关闭图鉴
+document.getElementById('closeFormsBtn').addEventListener('click', () => {
+  document.getElementById('formsOverlay').classList.add('hidden');
   document.getElementById('menuOverlay').classList.remove('hidden');
 });
 
