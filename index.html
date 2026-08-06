@@ -2339,25 +2339,30 @@ class Bullet {
     // 金色闪电特效
     if (this._goldLightning) {
       const lx = this.x * CELL, ly = this.y * CELL;
-      // 锯齿闪电
-      ctx.strokeStyle = '#ffd700';
-      ctx.lineWidth = 3;
+      // 锯齿闪电（粗条状）
+      ctx.strokeStyle = '#ffaa00';
+      ctx.lineWidth = 7;
       ctx.shadowColor = '#ffd700';
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 20;
       ctx.beginPath();
-      const len = this.size * 3;
+      const len = this.size * 4;
       let cx = lx, cy = ly;
       ctx.moveTo(cx, cy);
-      for (let s = 1; s <= 4; s++) {
-        cx += this.dir.x * len * 0.25 + (Math.random() - 0.5) * 12;
-        cy += this.dir.y * len * 0.25 + (Math.random() - 0.5) * 12;
+      for (let s = 1; s <= 5; s++) {
+        cx += this.dir.x * len * 0.2 + (Math.random() - 0.5) * 16;
+        cy += this.dir.y * len * 0.2 + (Math.random() - 0.5) * 16;
         ctx.lineTo(cx, cy);
       }
       ctx.stroke();
+      // 中层金色
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 4;
+      ctx.shadowBlur = 12;
+      ctx.stroke();
       // 内层白光
       ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1;
-      ctx.shadowBlur = 6;
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 4;
       ctx.stroke();
       ctx.shadowBlur = 0;
       ctx.lineWidth = 1;
@@ -3002,12 +3007,12 @@ function update() {
       const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
       const bolt = new Bullet(q.x + dir.x * 0.6, q.y + dir.y * 0.6, dir, true, false, 99);
       bolt.isMissile = true;
-      bolt.speed = 0.3;
-      bolt.size = Math.max(8, CELL * 0.5);
+      bolt.speed = 0.55;
+      bolt.size = Math.max(14, CELL * 0.8);
       bolt.hp = 99;
       bolt._goldLightning = true;
-      bolt._boltLife = 25;
-      bolt._boltRange = 5;
+      bolt._boltLife = 20;
+      bolt._boltRange = 8;
       bolt.color = '#ffd700';
       bullets.push(bolt);
       // 闪电粒子
