@@ -1717,7 +1717,7 @@ class Tank {
       } else {
         // ===== 单击三连爆：每发3束激光 × 3段 = 9束 =====
         if (!this._comboStep) this._comboStep = 0;
-        this.shootCooldown = 6; // 每6帧释放一段
+        this.shootCooldown = 10; // 每10帧释放一段（有节奏感）
         this._comboStep++;
         const seg = this._comboStep - 1; // 0,1,2（当前段）
         const colors = ['#00bfff','#4dc9f6','#80d8ff'];
@@ -1762,7 +1762,7 @@ class Tank {
             ));
           }
         }
-        if (this._comboStep >= 3) { this._comboStep = 0; this.shootCooldown = 16; }
+        if (this._comboStep >= 3) { this._comboStep = 0; this.shootCooldown = 12; }
         screenShake = Math.max(screenShake, 5);
       }
     } else if (this.isPlayer && godSlayerMode) {
