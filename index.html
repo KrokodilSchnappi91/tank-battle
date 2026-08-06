@@ -1718,8 +1718,8 @@ class Tank {
             _isRipple: true
           });
         }
-      } else if (this._thunderAttacks % 4 === 3) {
-        // ===== 每4发第3击：360°金色闪电 =====
+      } else if (this._thunderAttacks % 4 === 2) {
+        // ===== 第2击(奇数段)：360°金色闪电 =====
         this.shootCooldown = 50;
         const totalBolts = 48;
         for (let i = 0; i < totalBolts; i++) {
@@ -1729,8 +1729,8 @@ class Tank {
             delay: Math.floor(i / 2)
           });
         }
-      } else if (this._thunderAttacks % 4 === 2) {
-        // ===== 第2击：三连激光 + 20道追踪紫色雷电 =====
+      } else if (this._thunderAttacks % 4 === 3) {
+        // ===== 第3击(偶数段)：三连激光 + 紫雷球 + 蓝反向闪电 =====
         this.shootCooldown = 28;
         // 三连激光
         for (let burst = 0; burst < 3; burst++) {
