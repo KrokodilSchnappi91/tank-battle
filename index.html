@@ -898,30 +898,12 @@ function triggerDash() {
   }
 }
 
-// 血红色闪电光柱（从update安全调用）
+// 血红色闪电光柱（纯特效，在update中安全调用）
 function spawnBloodLightning(x, y) {
-  const cx = Math.floor(x), cy = Math.floor(y);
-  const radius = 3;
-  // 摧毁周围障碍
-  for (let dy = -radius; dy <= radius; dy++) {
-    for (let dx = -radius; dx <= radius; dx++) {
-      const tx = cx + dx, ty = cy + dy;
-      if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS && Math.sqrt(dx*dx+dy*dy) <= radius) {
-        if (mapData[ty*COLS+tx] === 1 || mapData[ty*COLS+tx] === 2) mapData[ty*COLS+tx] = 0;
-      }
-    }
-  }
-  // 伤害敌人（倒序安全遍历）
-  for (let i = enemies.length - 1; i >= 0; i--) {
-    const e = enemies[i];
-    if (!e || !e.alive) continue;
-    const ed = Math.sqrt((e.x-x)**2 + (e.y-y)**2);
-    if (ed < radius + 0.5) e.hit();
-  }
   // 血红色粒子光柱
   for (let i = 0; i < 50; i++) {
     const a = Math.random() * Math.PI * 2;
-    const d = Math.random() * radius * BASE_CELL;
+    const d = Math.random() * 3 * BASE_CELL;
     const s = 2 + Math.random() * 5;
     particles.push(new Particle(
       x * BASE_CELL + Math.cos(a) * d, y * BASE_CELL + Math.sin(a) * d,
