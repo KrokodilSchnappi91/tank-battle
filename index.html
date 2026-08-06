@@ -2214,11 +2214,15 @@ class Bullet {
             }
           }
         }
-        // 伤害范围内敌人
+        // 伤害范围内敌人 + 回复体力
         for (const enemy of enemies) {
           if (!enemy.alive) continue;
           const edx = enemy.x - this.x, edy = enemy.y - this.y;
-          if (Math.sqrt(edx*edx+edy*edy) < radius) enemy.hit();
+          if (Math.sqrt(edx*edx+edy*edy) < radius) {
+            enemy.hit();
+            const cap = godSlayerMode ? 750 : (mythicMode ? 250 : (thunderMode ? 300 : MAX_STAMINA));
+            stamina = Math.min(cap, stamina + 150);
+          }
         }
         // 轻微金色光爆
         for (let i = 0; i < 8; i++) {
@@ -2239,11 +2243,16 @@ class Bullet {
         const tile = mapData[cy * COLS + cx];
         if (tile === 1 || tile === 2) { mapData[cy * COLS + cx] = 0; }
       }
-      // 伤害敌人
+      // 伤害敌人 + 回复体力
       for (const enemy of enemies) {
         if (!enemy.alive) continue;
         const edx = enemy.x - this.x, edy = enemy.y - this.y;
-        if (Math.abs(edx) < 0.6 && Math.abs(edy) < 0.6) enemy.hit();
+        if (Math.abs(edx) < 0.6 && Math.abs(edy) < 0.6) {
+          enemy.hit();
+          // 金色闪电命中回复体力
+          const cap = godSlayerMode ? 750 : (mythicMode ? 250 : (thunderMode ? 300 : MAX_STAMINA));
+          stamina = Math.min(cap, stamina + 150);
+        }
       }
       return;
     }
