@@ -1600,7 +1600,7 @@ class Tank {
       if (this._thunderAttacks % 3 === 0) {
         // ===== 每3发：360°金色闪电逐帧释放 =====
         this.shootCooldown = 50;
-        const totalBolts = 12;
+        const totalBolts = 24;
         // 将闪电加入队列，逐帧释放
         for (let i = 0; i < totalBolts; i++) {
           thunderQueue.push({
@@ -1608,7 +1608,7 @@ class Tank {
             total: totalBolts,
             x: this.x,
             y: this.y,
-            delay: i * 2  // 每2帧放一个
+            delay: i  // 每1帧放一个
           });
         }
       } else {
@@ -3007,11 +3007,11 @@ function update() {
       const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
       const bolt = new Bullet(q.x + dir.x * 0.6, q.y + dir.y * 0.6, dir, true, false, 99);
       bolt.isMissile = true;
-      bolt.speed = 0.55;
+      bolt.speed = 0.85;
       bolt.size = Math.max(14, CELL * 0.8);
       bolt.hp = 99;
       bolt._goldLightning = true;
-      bolt._boltLife = 20;
+      bolt._boltLife = 15;
       bolt._boltRange = 8;
       bolt.color = '#ffd700';
       bullets.push(bolt);
