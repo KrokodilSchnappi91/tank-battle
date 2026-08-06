@@ -1351,18 +1351,21 @@ class Tank {
     // ===== 冲刺处理 =====
     // ===== 雷公冲刺：闪烁瞬移 + 血红色闪电光柱 =====
     if (dashState && dashState.thunder) {
-      // 记录起点
       const startX = this.x, startY = this.y;
-      // 向移动方向瞬移
       const blinkDist = 8;
-      const nx = this.x + dashState.dir.x * blinkDist;
-      const ny = this.y + dashState.dir.y * blinkDist;
-      // 找最远可达位置
+      // 找到最远无障碍点
       let bestX = this.x, bestY = this.y;
-      for (let d = blinkDist; d >= 1; d--) {
+      for (let d = blinkDist; d >= 0.5; d -= 0.5) {
         const tx = this.x + dashState.dir.x * d;
         const ty = this.y + dashState.dir.y * d;
-        if (this.canMoveTo(tx, ty, dashState.dir)) { bestX = tx; bestY = ty; break; }
+        // 检查是否在地图内且不在障碍物上
+        const cx = Math.floor(tx), cy = Math.floor(ty);
+        if (tx >= 0.5 && tx < COLS - 0.5 && ty >= 0.5 && ty < ROWS - 0.5) {
+          const tile = mapData[cy * COLS + cx];
+          if (tile !== 1 && tile !== 2 && tile !== 3) {
+            bestX = tx; bestY = ty; break;
+          }
+        }
       }
       this.x = bestX; this.y = bestY;
       this.dir = dashState.dir;
