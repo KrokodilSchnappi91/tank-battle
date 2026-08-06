@@ -1746,16 +1746,16 @@ class Tank {
             if (cx>=0 && cx<COLS && cy>=0 && cy<ROWS && (mapData[cy*COLS+cx]===1||mapData[cy*COLS+cx]===2)) mapData[cy*COLS+cx]=0;
           }
         }
-        // 20道追踪紫色雷电
-        for (let i = 0; i < 20; i++) {
+        // 8颗追踪紫色雷球
+        for (let i = 0; i < 8; i++) {
           const a = Math.random() * Math.PI * 2;
           const dir = { x: Math.cos(a), y: Math.sin(a), angle: a };
           const bolt = new Bullet(this.x + dir.x*0.5, this.y + dir.y*0.5, dir, true, true, 99);
           bolt.isMissile = true;
-          bolt.speed = 0.18;
-          bolt.size = Math.max(6, CELL*0.25);
+          bolt.speed = 0.14;
+          bolt.size = Math.max(10, CELL*0.45);
           bolt.hp = 99;
-          bolt._purpleBolt = true;
+          bolt._purpleOrb = true;
           bolt.color = '#9933ff';
           bullets.push(bolt);
         }
@@ -2530,38 +2530,37 @@ class Bullet {
   draw(ctx) {
     if (!this.alive) return;
 
-    // 紫色追踪雷电特效
-    if (this._purpleBolt) {
+    // 紫色追踪雷球特效
+    if (this._purpleOrb) {
       const plx = this.x * CELL, ply = this.y * CELL;
-      ctx.strokeStyle = '#9933ff';
-      ctx.lineWidth = 4;
-      ctx.shadowColor = '#bb66ff';
-      ctx.shadowBlur = 16;
+      // 外层光晕
+      const outerGrad = ctx.createRadialGradient(plx, ply, this.size*0.3, plx, ply, this.size*1.8);
+      outerGrad.addColorStop(0, 'rgba(180,100,255,0.8)');
+      outerGrad.addColorStop(0.4, 'rgba(120,40,220,0.4)');
+      outerGrad.addColorStop(1, 'rgba(80,0,180,0)');
+      ctx.fillStyle = outerGrad;
       ctx.beginPath();
-      const plen = this.size * 2.5;
-      let pcx = plx, pcy = ply;
-      ctx.moveTo(pcx, pcy);
-      for (let s = 1; s <= 4; s++) {
-        pcx += this.dir.x * plen * 0.25 + (Math.random()-0.5)*8;
-        pcy += this.dir.y * plen * 0.25 + (Math.random()-0.5)*8;
-        ctx.lineTo(pcx, pcy);
-      }
-      ctx.stroke();
-      ctx.strokeStyle = '#ddbbff';
-      ctx.lineWidth = 2;
-      ctx.shadowBlur = 6;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      ctx.lineWidth = 1;
-      // 紫色光球
-      const pgGrad = ctx.createRadialGradient(plx, ply, 0, plx, ply, this.size*1.2);
-      pgGrad.addColorStop(0, '#fff');
-      pgGrad.addColorStop(0.3, '#bb88ff');
-      pgGrad.addColorStop(1, 'rgba(153,51,255,0)');
-      ctx.fillStyle = pgGrad;
-      ctx.beginPath();
-      ctx.arc(plx, ply, this.size*1.2, 0, Math.PI*2);
+      ctx.arc(plx, ply, this.size*1.8, 0, Math.PI*2);
       ctx.fill();
+      // 球体核心
+      const coreGrad = ctx.createRadialGradient(plx, ply, 0, plx, ply, this.size);
+      coreGrad.addColorStop(0, '#fff');
+      coreGrad.addColorStop(0.2, '#ddbbff');
+      coreGrad.addColorStop(0.5, '#9933ff');
+      coreGrad.addColorStop(1, 'rgba(80,0,160,0)');
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(plx, ply, this.size, 0, Math.PI*2);
+      ctx.fill();
+      // 闪电粒子（每帧随机）
+      if (Math.random() < 0.5) {
+        particles.push(new Particle(
+          this.x * BASE_CELL + (Math.random()-0.5)*BASE_CELL,
+          this.y * BASE_CELL + (Math.random()-0.5)*BASE_CELL,
+          (Math.random()-0.5)*2, (Math.random()-0.5)*2,
+          '#bb88ff', 5+Math.random()*8
+        ));
+      }
       return;
     }
 
