@@ -1337,7 +1337,7 @@ class Tank {
       const dir = this.dir;
       // 搜索最远可达空地
       let bestX = this.x, bestY = this.y;
-      for (let d = 7; d >= 1; d--) {
+      for (let d = 8; d >= 1; d--) {
         const tx = Math.round(this.x + dir.x * d);
         const ty = Math.round(this.y + dir.y * d);
         if (tx > 1 && tx < COLS - 1 && ty > 1 && ty < ROWS - 1) {
@@ -3596,31 +3596,41 @@ function render() {
     ctx.fill();
   }
 
-  // 血红色闪电光柱渲染
+  // 血红色闪电光柱渲染 — 贯穿天地
   for (const p of lightningPillars) {
     const alpha = p.life / p.maxLife;
     const px = p.x, py = p.y;
-    const h = canvas.height * 0.8; // 贯穿屏幕80%
-    const topY = py - h * 0.4;
-    const botY = py + h * 0.4;
-    // 多条锯齿闪电
-    for (let bolt = 0; bolt < 5; bolt++) {
-      const bx = px + (bolt - 2) * CELL * 0.6;
-      ctx.strokeStyle = bolt === 2 ? `rgba(255,255,255,${alpha})` : `rgba(255,${30+bolt*30},0,${alpha*0.8})`;
-      ctx.lineWidth = bolt === 2 ? 3 : (bolt === 1 || bolt === 3 ? 5 : 7);
-      ctx.shadowColor = bolt === 2 ? '#fff' : '#ff0000';
-      ctx.shadowBlur = bolt === 2 ? 8 : 16;
+    const topY = 0; // 从屏幕顶端
+    const botY = canvas.height; // 到底端
+    // 7条锯齿闪电光柱
+    for (let bolt = 0; bolt < 7; bolt++) {
+      const bx = px + (bolt - 3) * CELL * 0.5;
+      const isCore = bolt === 3;
+      ctx.strokeStyle = isCore ? `rgba(255,255,255,${alpha})` : `rgba(255,${20+bolt*15},0,${alpha*0.7})`;
+      ctx.lineWidth = isCore ? 4 : (bolt === 2 || bolt === 4 ? 6 : 9);
+      ctx.shadowColor = isCore ? '#fff' : '#ff0000';
+      ctx.shadowBlur = isCore ? 10 : 20;
       ctx.beginPath();
       ctx.moveTo(bx, topY);
-      for (let s = 1; s <= 10; s++) {
-        const sy = topY + (botY - topY) * (s / 10);
-        const sx = bx + (Math.sin(s * 3.7 + bolt + p.life * 0.3) * CELL * 0.8);
+      for (let s = 1; s <= 14; s++) {
+        const sy = topY + botY * (s / 14);
+        const sx = bx + (Math.sin(s * 4.1 + bolt + p.life * 0.5) * CELL * 1.2);
         ctx.lineTo(sx, sy);
       }
       ctx.stroke();
     }
     ctx.shadowBlur = 0;
     ctx.lineWidth = 1;
+    // 光柱中心光球
+    const glowAlpha = alpha * 0.5;
+    const glow = ctx.createRadialGradient(px, py, 0, px, py, CELL * p.radius);
+    glow.addColorStop(0, `rgba(255,255,255,${glowAlpha})`);
+    glow.addColorStop(0.2, `rgba(255,0,0,${glowAlpha*0.8})`);
+    glow.addColorStop(1, `rgba(255,0,0,0)`);
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(px, py, CELL * p.radius, 0, Math.PI*2);
+    ctx.fill();
   }
 
   // Boss 血条：魔王顶部大血条 / 普通Boss头顶小血条
