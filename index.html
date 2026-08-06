@@ -2092,10 +2092,40 @@ class Bullet {
   update() {
     this.life++;
 
-    // 金色闪电：短程高速+摧毁障碍
+    // 金色闪电：短程高速+摧毁障碍+终点范围伤害
     if (this._goldLightning) {
       this._boltLife--;
-      if (this._boltLife <= 0) { this.alive = false; return; }
+      if (this._boltLife <= 0) {
+        // 终点范围伤害
+        const ecx = Math.floor(this.x), ecy = Math.floor(this.y);
+        const radius = 2;
+        for (let dy = -radius; dy <= radius; dy++) {
+          for (let dx = -radius; dx <= radius; dx++) {
+            const tx = ecx + dx, ty = ecy + dy;
+            if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS) {
+              if (Math.sqrt(dx*dx+dy*dy) <= radius && (mapData[ty*COLS+tx] === 1 || mapData[ty*COLS+tx] === 2)) {
+                mapData[ty*COLS+tx] = 0;
+              }
+            }
+          }
+        }
+        // 伤害范围内敌人
+        for (const enemy of enemies) {
+          if (!enemy.alive) continue;
+          const edx = enemy.x - this.x, edy = enemy.y - this.y;
+          if (Math.sqrt(edx*edx+edy*edy) < radius) enemy.hit();
+        }
+        // 轻微金色光爆
+        for (let i = 0; i < 8; i++) {
+          const a = Math.random() * Math.PI * 2;
+          particles.push(new Particle(
+            this.x * BASE_CELL, this.y * BASE_CELL,
+            Math.cos(a) * (1+Math.random()*2), Math.sin(a) * (1+Math.random()*2),
+            '#ffd700', 10+Math.random()*10
+          ));
+        }
+        this.alive = false; return;
+      }
       this.x += this.dir.x * this.speed;
       this.y += this.dir.y * this.speed;
       if (this.x < 0 || this.x >= COLS || this.y < 0 || this.y >= ROWS) { this.alive = false; return; }
