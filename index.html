@@ -1357,9 +1357,9 @@ class Tank {
       } else {
         const ratio = thunderCharge / THUNDER_MAX_CHARGE;
         const oldX = this.x, oldY = this.y;
-        const maxDist = 4 + Math.floor(ratio * 16);
+        const maxDist = 8 + Math.floor(ratio * 22);
         const r = 2 + Math.floor(ratio * 6);
-        stamina = Math.max(0, stamina - Math.floor(DASH_COST * (1 + ratio * 3)));
+        stamina = Math.max(0, stamina - Math.floor(DASH_COST * (1 + ratio * 4)));
         let bestX = this.x, bestY = this.y;
         for (let d = maxDist; d >= 1; d--) {
           const tx = Math.round(this.x + this.dir.x * d);
