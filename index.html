@@ -1703,6 +1703,12 @@ class Tank {
       if (this._thunderAttacks % 4 === 0) {
         // ===== 每4发：波纹闪电（以玩家为中心向外扩散） =====
         this.shootCooldown = 60;
+        // 固定深绿环绕圈（持续伴随玩家）
+        lightningPillars.push({
+          x: this.x * CELL, y: this.y * CELL,
+          life: 65, maxLife: 65,
+          radius: 2, _darkGreen: true
+        });
         const waves = 16;
         for (let w = 0; w < waves; w++) {
           thunderQueue.push({
@@ -3681,6 +3687,28 @@ function render() {
   // 血红色闪电光柱渲染 — 3D圆柱光柱
   for (const p of lightningPillars) {
     const alpha = p.life / p.maxLife;
+    if (p._darkGreen) {
+      // 深绿固定环绕闪电圈（跟随玩家）
+      const drx = (player ? player.x : p.x/CELL) * CELL;
+      const dry = (player ? player.y : p.y/CELL) * CELL;
+      const dr = p.radius * CELL;
+      const segs = 24;
+      ctx.strokeStyle = `rgba(0,180,40,${alpha*0.8})`;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#006620';
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      for (let i = 0; i <= segs; i++) {
+        const a = (i / segs) * Math.PI * 2;
+        const j = dr * (0.85 + Math.sin(i*9 + p.life*0.4)*0.12 + Math.sin(i*17)*0.06);
+        const sx = drx + Math.cos(a) * j;
+        const sy = dry + Math.sin(a) * j * 0.4;
+        i === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      continue;
+    }
     if (p._greenRipple) {
       // 绿色3D波纹
       const rx = (player ? player.x : p.x/CELL) * CELL;
