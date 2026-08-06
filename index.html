@@ -877,10 +877,10 @@ function triggerDash() {
   if (dashState) return; // 已在冲刺中
   if (stamina < DASH_COST) return;
 
-  // 雷公形态：闪烁瞬移
+  // 雷公形态：暂时使用普通冲刺
   if (thunderMode) {
     const dashDir = player.dir;
-    dashState = { dir: dashDir, thunder: true };
+    dashState = { dir: dashDir, timer: 18, maxTimer: 18, mythic: false };
     stamina -= DASH_COST;
     return;
   }
@@ -1351,40 +1351,28 @@ class Tank {
 
   playerInput() {
     // ===== 冲刺处理 =====
-    // ===== 雷公冲刺：闪烁瞬移 + 血红色闪电光柱 =====
+    // ===== 雷公冲刺：闪烁瞬移 =====
     if (dashState && dashState.thunder) {
       const startX = this.x, startY = this.y;
-      const blinkDist = 8;
-      // 找最远无障碍点
+      const blinkDist = 6;
       let bestX = this.x, bestY = this.y;
       for (let d = blinkDist; d >= 0.5; d -= 0.5) {
         const tx = this.x + dashState.dir.x * d;
         const ty = this.y + dashState.dir.y * d;
-        if (tx >= 0.5 && tx < COLS - 0.5 && ty >= 0.5 && ty < ROWS - 0.5) {
+        if (tx > 0.5 && tx < COLS - 0.5 && ty > 0.5 && ty < ROWS - 0.5) {
           const cx = Math.floor(tx), cy = Math.floor(ty);
-          const tile = mapData[cy * COLS + cx];
-          if (tile !== 1 && tile !== 2 && tile !== 3) {
+          if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS && mapData[cy * COLS + cx] === 0) {
             bestX = tx; bestY = ty; break;
           }
         }
       }
-      this.x = bestX; this.y = bestY;
-      this.dir = dashState.dir;
-      this.invincible = 40;
-      dashState = null;
-      screenShake = Math.max(screenShake, 8);
-      haptic('dash');
-      // 瞬移粒子尾迹
-      const dx = bestX - startX, dy = bestY - startY;
-      const steps = Math.floor(Math.sqrt(dx*dx+dy*dy) * 2);
-      for (let s = 0; s <= steps; s++) {
-        const t = s / Math.max(steps, 1);
-        particles.push(new Particle(
-          (startX + dx * t) * BASE_CELL, (startY + dy * t) * BASE_CELL,
-          (Math.random()-0.5)*2, (Math.random()-0.5)*2,
-          '#00bfff', 8 + Math.random() * 8
-        ));
+      // 有新位置才瞬移
+      if (bestX !== this.x || bestY !== this.y) {
+        this.x = bestX; this.y = bestY;
       }
+      this.dir = dashState.dir;
+      this.invincible = 30;
+      dashState = null;
       return;
     }
 
