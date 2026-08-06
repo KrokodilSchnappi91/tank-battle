@@ -3359,42 +3359,50 @@ function render() {
 
     // 魔王：屏幕上方显眼大血条
     if (demonKing) {
-      const barW = Math.min(300, canvas.width * 0.55);
-      const barH = 12;
+      const barW = Math.min(420, canvas.width * 0.7);
+      const barH = 18;
       const barX = (canvas.width - barW) / 2;
-      const barY = 8;
+      const barY = 6;
       const ratio = Math.max(0, demonKing.hp / demonKing._maxHp);
 
       // 标题闪烁
       const glow = 0.6 + Math.sin(Date.now() / 150) * 0.4;
       ctx.fillStyle = `rgba(255, 0, 0, ${glow})`;
-      const bfs = Math.max(18, CELL * 0.8);
+      const bfs = Math.max(22, CELL * 1.0);
       ctx.font = `bold ${bfs}px "Microsoft YaHei", Arial`;
       ctx.textAlign = 'center';
-      ctx.fillText('👑 魔 王 👑', canvas.width / 2, barY - 2);
+      ctx.fillText('👑 魔 王 👑', canvas.width / 2, barY + bfs);
 
-      // 血条外框
-      ctx.fillStyle = 'rgba(0,0,0,0.8)';
-      ctx.fillRect(barX - 2, barY + 4, barW + 4, barH + 4);
+      // 血条外框发光
+      ctx.shadowColor = '#ff0000';
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      const framePad = 3;
+      ctx.fillRect(barX - framePad, barY + bfs + 6, barW + framePad * 2, barH + framePad * 2);
       ctx.strokeStyle = '#ff0000';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(barX - 2, barY + 4, barW + 4, barH + 4);
+      ctx.lineWidth = 3;
+      ctx.strokeRect(barX - framePad, barY + bfs + 6, barW + framePad * 2, barH + framePad * 2);
+      ctx.shadowBlur = 0;
       // 血条底色
-      ctx.fillStyle = '#400';
-      ctx.fillRect(barX, barY + 6, barW, barH);
-      // 血量填充（红黑渐变）
+      ctx.fillStyle = '#300';
+      ctx.fillRect(barX, barY + bfs + 9, barW, barH);
+      // 血量填充渐变
       const hpGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
       hpGrad.addColorStop(0, '#ff0000');
-      hpGrad.addColorStop(0.5, '#ff4444');
+      hpGrad.addColorStop(0.3, '#ff3333');
+      hpGrad.addColorStop(0.6, '#ff0000');
       hpGrad.addColorStop(1, '#8b0000');
       ctx.fillStyle = hpGrad;
-      ctx.fillRect(barX, barY + 6, barW * ratio, barH);
-      // 血量文字
+      ctx.fillRect(barX, barY + bfs + 9, barW * ratio, barH);
+      // 血量数字（血条内部）
       ctx.fillStyle = '#fff';
-      const hfs = Math.max(13, CELL * 0.55);
+      const hfs = Math.max(16, CELL * 0.65);
       ctx.font = `bold ${hfs}px Arial`;
       ctx.textAlign = 'center';
-      ctx.fillText(`${Math.ceil(demonKing.hp)} / ${demonKing._maxHp}`, canvas.width / 2, barY + barH + 6);
+      ctx.shadowColor = '#000';
+      ctx.shadowBlur = 4;
+      ctx.fillText(`${Math.ceil(demonKing.hp)} / ${demonKing._maxHp}`, canvas.width / 2, barY + bfs + barH + 8);
+      ctx.shadowBlur = 0;
     }
 
     // 普通Boss：头顶小血条
