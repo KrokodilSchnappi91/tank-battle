@@ -1812,6 +1812,8 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
+          darkStrikeTimer = 54;
+          this._multiStrike = true; // 触发6道
           // 闪烁粒子
           for (let i = 0; i < 15; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*5, (Math.random()-0.5)*5, '#00bfff', 8+Math.random()*10));
@@ -3433,12 +3435,17 @@ function update() {
   // 雷公波纹技能冷却
   if (player && player._rippleCooldown > 0) player._rippleCooldown--;
 
-  // 雷公自动黑闪(每0.6s)
+  // 雷公黑闪(每0.6s自动1道 / shift+click额外触发)
   if (thunderMode && player && player.alive) {
     darkStrikeTimer++;
     if (darkStrikeTimer >= 54) {
       darkStrikeTimer = 0;
-      spawnDarkLightning(2+Math.random()*(COLS-4), 2+Math.random()*(ROWS-4), 1);
+      // shift+click触发6道，自动触发1道
+      const count = player._multiStrike ? 6 : 1;
+      player._multiStrike = false;
+      for (let i = 0; i < count; i++) {
+        spawnDarkLightning(2+Math.random()*(COLS-4), 2+Math.random()*(ROWS-4), 1);
+      }
     }
   } else {
     darkStrikeTimer = 0;
