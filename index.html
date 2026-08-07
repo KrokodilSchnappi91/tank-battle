@@ -4226,13 +4226,12 @@ function render() {
     const px = p.x, py = p.y;
     const R = CELL * p.radius;
     const r = R * 1.2;
-    const drawY = py;
     const H = p._lowDensity ? r * 3.6 : r * 1.8;
     const topR = p._lowDensity ? r : r * 0.7;
     // 底部椭圆
     ctx.fillStyle = p._lowDensity ? `rgba(0,0,0,${alpha*0.6})` : `rgba(255,0,0,${alpha*0.3})`;
     ctx.beginPath();
-    ctx.ellipse(px, drawY, r, r*0.4, 0, 0, Math.PI*2);
+    ctx.ellipse(px, py, r, r*0.4, 0, 0, Math.PI*2);
     ctx.fill();
     ctx.strokeStyle = p._lowDensity ? `rgba(20,20,20,${alpha*0.6})` : `rgba(255,100,0,${alpha*0.5})`;
     ctx.lineWidth = 3;
@@ -4243,12 +4242,12 @@ function render() {
       const angle = (bolt / boltCount) * Math.PI * 2 + p.life * 0.03;
       const baseR = r * (p._lowDensity ? (0.5 + Math.random() * 0.5) : (0.2 + Math.random() * 0.8));
       const baseX = px + Math.cos(angle) * baseR;
-      const baseY = drawY + Math.sin(angle) * baseR * 0.4;
+      const baseY = py + Math.sin(angle) * baseR * 0.4;
       const topRatio = p._lowDensity ? 1.0 : 0.7;
       const tRX = baseR * topRatio;
       const tRY = baseR * topRatio * 0.35;
       const topX = px + Math.cos(angle + p.life*0.04) * tRX;
-      const topY = drawY - H + Math.sin(angle + p.life*0.04) * tRY;
+      const topY = py - H + Math.sin(angle + p.life*0.04) * tRY;
       const isCore = bolt % 7 === 0;
       const isGold = bolt % 3 === 0;
       const isRed = !isCore && !isGold;
@@ -4291,12 +4290,12 @@ function render() {
     ctx.shadowColor = p._lowDensity ? '#000' : '#ff4400';
     ctx.shadowBlur = 6;
     ctx.beginPath();
-    ctx.ellipse(px, drawY - H, topR, topR*0.35, 0, 0, Math.PI*2);
+    ctx.ellipse(px, py - H, topR, topR*0.35, 0, 0, Math.PI*2);
     ctx.stroke();
     ctx.shadowBlur = 0;
     // 中心光球
     const glowAlpha = alpha * 0.7;
-    const glow = ctx.createRadialGradient(px, drawY, 0, px, drawY, r);
+    const glow = ctx.createRadialGradient(px, py, 0, px, py, r);
     if (p._lowDensity) {
       glow.addColorStop(0, `rgba(30,30,30,${glowAlpha})`);
       glow.addColorStop(0.3, `rgba(5,5,5,${glowAlpha*0.5})`);
