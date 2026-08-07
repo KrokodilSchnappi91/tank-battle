@@ -1404,7 +1404,7 @@ class Tank {
         if (Math.floor(thunderCharge) % 4 === 0) {
           lightningPillars.push({ x: this.x*CELL, y: this.y*CELL, life: 4, maxLife: 4, radius: 1+thunderCharge*0.1 });
         }
-        // 预览落点+范围
+        // 预览落点+范围（丝滑插值）
         const pvRatio = thunderCharge / THUNDER_MAX_CHARGE;
         const pvDist = 8 + Math.floor(pvRatio * 22);
         const pvR = 2 + Math.floor(pvRatio * 6);
@@ -1421,7 +1421,14 @@ class Tank {
             if (!blocked) { pvX = tx+0.5; pvY = ty+0.5; break; }
           }
         }
-        this._previewX = pvX; this._previewY = pvY; this._previewR = pvR;
+        // 平滑插值（旧位置→新位置，0.3速率）
+        if (this._previewX !== undefined) {
+          this._previewX += (pvX - this._previewX) * 0.3;
+          this._previewY += (pvY - this._previewY) * 0.3;
+        } else {
+          this._previewX = pvX; this._previewY = pvY;
+        }
+        this._previewR += (pvR - (this._previewR||pvR)) * 0.3;
         return;
       } else {
         const ratio = thunderCharge / THUNDER_MAX_CHARGE;
