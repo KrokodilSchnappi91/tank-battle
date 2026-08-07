@@ -4241,7 +4241,7 @@ function render() {
     const boltCount = p._whitePillar ? 19 : (p._lowDensity ? 5 : 48);
     for (let bolt = 0; bolt < boltCount; bolt++) {
       const angle = (bolt / boltCount) * Math.PI * 2 + p.life * 0.03;
-      const baseR = r * (0.2 + Math.random() * 0.8);
+      const baseR = r * (p._lowDensity ? (0.5 + Math.random() * 0.5) : (0.2 + Math.random() * 0.8));
       const baseX = px + Math.cos(angle) * baseR;
       const baseY = drawY + Math.sin(angle) * baseR * 0.4;
       const topRatio = p._lowDensity ? 1.0 : 0.7;
@@ -4254,10 +4254,12 @@ function render() {
       const isRed = !isCore && !isGold;
       if (p._lowDensity) {
         // 黑色闪电
-        ctx.strokeStyle = isCore ? `rgba(80,80,80,${alpha*0.5})` : `rgba(${2+bolt},${1+bolt},${3+bolt},${alpha*0.9})`;
-        ctx.lineWidth = isCore ? 2 : 3;
-        ctx.shadowColor = '#000';
-        ctx.shadowBlur = isCore ? 3 : 6;
+        // 硬挺黑闪+白色内核衬托
+        const isWhiteBolt = bolt % 3 === 0;
+        ctx.strokeStyle = isWhiteBolt ? `rgba(255,255,255,${alpha*0.7})` : `rgba(5,3,5,${alpha*0.95})`;
+        ctx.lineWidth = isWhiteBolt ? 2 : 4;
+        ctx.shadowColor = isWhiteBolt ? '#fff' : '#000';
+        ctx.shadowBlur = isWhiteBolt ? 3 : 8;
       } else {
         ctx.strokeStyle = isCore
           ? `rgba(255,255,255,${alpha})`
@@ -4268,9 +4270,10 @@ function render() {
       }
       ctx.beginPath();
       ctx.moveTo(baseX, baseY);
+      const jitterStrength = p._lowDensity ? 0.06 : 0.25;
       for (let s = 1; s <= 6; s++) {
         const t = s / 6;
-        const sx = baseX + (topX - baseX) * t + (Math.sin(s*7+bolt+p.life*0.15) * r * 0.25);
+        const sx = baseX + (topX - baseX) * t + (Math.sin(s*7+bolt+p.life*0.15) * r * jitterStrength);
         const sy = baseY + (topY - baseY) * t;
         ctx.lineTo(sx, sy);
       }
