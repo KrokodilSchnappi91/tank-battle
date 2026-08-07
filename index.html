@@ -1915,77 +1915,116 @@ class Tank {
     if (this.shootCooldown > 0) return;
     this.shootCooldown = this.shootDelay;
 
-    // 追踪攻击次数
     if (!this._attackCount) this._attackCount = 0;
     this._attackCount++;
 
     const isDemon = this._isDemonKing;
     const isPhase2 = bossPhase === 2;
-    const count = isDemon ? 7 : (isPhase2 ? 5 : 3);
-    const spread = isDemon ? 0.15 : (isPhase2 ? 0.2 : 0.3);
+    const diff = level; // 关卡越高技能越强
     const baseDir = this.turretDir;
 
-    // 每第4次攻击：核弹预警
-    if (this._attackCount % 4 === 0) {
-      const nukeCount = isPhase2 ? 6 : 4;
-      const nukePositions = []; // 跟踪位置用于限制重叠
-      for (let n = 0; n < nukeCount; n++) {
-        let nx, ny, overlaps;
-        // 最多重试10次找不重叠位置
-        for (let attempt = 0; attempt < 10; attempt++) {
-          nx = 3 + Math.random() * (COLS - 6);
-          ny = 3 + Math.random() * (ROWS - 6);
-          // 检查与已有核弹的重叠数
-          overlaps = nukePositions.filter(p =>
-            Math.abs(p.x - nx) < 4 && Math.abs(p.y - ny) < 4
-          ).length;
-          if (overlaps <= 1) break; // 最多与1个重叠（即2个重合）
-        }
-        nukePositions.push({ x: nx, y: ny });
-        nukes.push({
-          x: nx, y: ny,
-          timer: 120,
-          maxTimer: 120,
-          radius: isPhase2 ? 5 : 4,
-          warningRadius: isPhase2 ? 5 : 4
-        });
-      }
-      this.shootCooldown = this.shootDelay * 2; // 核弹攻击冷却更长
-    } else if (this._attackCount % 3 === 0) {
-      // 每第3次攻击：发射追踪导弹
-      const pdx = player.x - this.x;
-      const pdy = player.y - this.y;
-      const pAngle = Math.atan2(pdy, pdx);
-      const pDir = { x: Math.cos(pAngle), y: Math.sin(pAngle), angle: pAngle };
-      const mbx = this.x + pDir.x * 0.7;
-      const mby = this.y + pDir.y * 0.7;
-      const missile = new Bullet(mbx, mby, pDir, false, true, 999);
-      missile.isMissile = true;
-      missile.speed = 0.08;
-      missile.size = Math.max(4, CELL * 0.22);
-      bullets.push(missile);
+    // 攻击模式随关卡解锁
+    const hasLaser = diff >= 5;
+    const hasRipple = diff >= 10;
+    const hasSpiral = diff >= 15;
+    const hasLightning = diff >= 20;
+    const patternCount = 3 + (hasLaser?1:0) + (hasRipple?1:0) + (hasSpiral?1:0) + (hasLightning?1:0);
+    const pattern = this._attackCount % Math.max(patternCount, 3);
 
-      // 3发随机位置导弹
-      for (let m = 0; m < 3; m++) {
-        const rAngle = Math.random() * Math.PI * 2;
-        const rDir = { x: Math.cos(rAngle), y: Math.sin(rAngle), angle: rAngle };
-        const rbx = this.x + rDir.x * 0.7;
-        const rby = this.y + rDir.y * 0.7;
-        const rMissile = new Bullet(rbx, rby, rDir, false, false, 999);
-        rMissile.isMissile = true;
-        rMissile.speed = 0.06;
-        rMissile.size = Math.max(4, CELL * 0.2);
-        bullets.push(rMissile);
-      }
-    } else {
-      // 普通扇形散射
+    if (pattern === 0) {
+      // 扇形弹幕（基础）
+      const count = isDemon ? 7 : (isPhase2 ? 5 : 3);
+      const spread = isDemon ? 0.12 : (isPhase2 ? 0.18 : 0.25);
       for (let i = 0; i < count; i++) {
         const offset = (i - (count - 1) / 2) * spread;
-        const angle = baseDir.angle + offset;
-        const dir = { x: Math.cos(angle), y: Math.sin(angle), angle: angle };
-        const bx = this.x + dir.x * 0.5;
-        const by = this.y + dir.y * 0.5;
-        bullets.push(new Bullet(bx, by, dir, false, false, 2));
+        const a = baseDir.angle + offset;
+        const d = { x: Math.cos(a), y: Math.sin(a), angle: a };
+        bullets.push(new Bullet(this.x+d.x*0.5, this.y+d.y*0.5, d, false, false, isDemon?3:2));
+      }
+    } else if (pattern === 1) {
+      // 追踪导弹群
+      const missileCount = isDemon ? 8 : (isPhase2 ? 5 : 3);
+      for (let m = 0; m < missileCount; m++) {
+        const a = Math.random() * Math.PI * 2;
+        const d = { x: Math.cos(a), y: Math.sin(a), angle: a };
+        const ms = new Bullet(this.x+d.x*0.7, this.y+d.y*0.7, d, false, true, 99);
+        ms.isMissile = true; ms.speed = 0.06 + diff*0.002;
+        ms.size = Math.max(4, CELL*0.2); ms._bossMissile = true;
+        bullets.push(ms);
+      }
+      // 1发锁定导弹
+      const pa = Math.atan2(player.y-this.y, player.x-this.x);
+      const pd = { x: Math.cos(pa), y: Math.sin(pa), angle: pa };
+      const lm = new Bullet(this.x+pd.x*0.7, this.y+pd.y*0.7, pd, false, true, 99);
+      lm.isMissile = true; lm.speed = 0.1 + diff*0.003;
+      lm.size = Math.max(5, CELL*0.28); lm._bossMissile = true;
+      bullets.push(lm);
+    } else if (pattern === 2) {
+      // 核弹预警（数量随关卡）
+      const nukeCount = (isDemon ? 8 : (isPhase2 ? 6 : 4)) + Math.floor(diff/10);
+      for (let n = 0; n < nukeCount; n++) {
+        nukes.push({
+          x: 3+Math.random()*(COLS-6), y: 3+Math.random()*(ROWS-6),
+          timer: 100, maxTimer: 100,
+          radius: (isPhase2?5:4) + Math.floor(diff/15)
+        });
+      }
+      this.shootCooldown = this.shootDelay * 2;
+    } else if (pattern === 3 && hasLaser) {
+      // 激光扫射（Lv5+）
+      const laserAng = baseDir.angle + Math.sin(this._attackCount*0.3)*0.5;
+      const ld = { x: Math.cos(laserAng), y: Math.sin(laserAng), angle: laserAng };
+      const laser = new Bullet(this.x+ld.x, this.y+ld.y, ld, false, false, 5);
+      laser.isMissile = true; laser.speed = 0.25;
+      laser.size = Math.max(6, CELL*0.3); laser._bossLaser = true;
+      laser.color = isDemon ? '#ff0040' : '#ff00ff';
+      bullets.push(laser);
+    } else if (pattern === 4 && hasRipple) {
+      // 暗红波纹（Lv10+，模仿雷公波纹）
+      const waves = 3 + Math.floor(diff/5);
+      for (let w = 0; w < waves; w++) {
+        const rr = (w+1)*2.5;
+        for (const enemy of enemies) { // 不对，应该伤玩家
+          // 波纹经过时伤玩家
+        }
+        // 在update中处理：这里只放粒子
+        for (let i = 0; i < 20+w*5; i++) {
+          const a = Math.random()*Math.PI*2;
+          particles.push(new Particle(
+            this.x*BASE_CELL+Math.cos(a)*rr*BASE_CELL, this.y*BASE_CELL+Math.sin(a)*rr*BASE_CELL,
+            Math.cos(a)*(2+Math.random()*3), Math.sin(a)*(2+Math.random()*3),
+            isDemon?'#ff0000':'#8b0000', 15+Math.random()*20
+          ));
+        }
+      }
+      // 波纹伤玩家
+      if (player && player.alive) {
+        const dist = Math.hypot(player.x-this.x, player.y-this.y);
+        if (dist < waves*2.5+1) player.hit();
+      }
+      this.shootCooldown = this.shootDelay * 1.5;
+    } else if (pattern === 5 && hasSpiral) {
+      // 螺旋弹幕（Lv15+）
+      const spiralCount = 16 + diff;
+      for (let i = 0; i < spiralCount; i++) {
+        const a = (i/spiralCount)*Math.PI*2 + this._attackCount*0.15;
+        const d = { x: Math.cos(a), y: Math.sin(a), angle: a };
+        const sb = new Bullet(this.x+d.x*0.6, this.y+d.y*0.6, d, false, false, 1);
+        sb.speed = 0.04 + (i/spiralCount)*0.06;
+        sb.size = Math.max(3, CELL*0.12);
+        bullets.push(sb);
+      }
+    } else if (pattern === 6 && hasLightning) {
+      // 红色闪电链（Lv20+）
+      const boltCount = 12 + Math.floor(diff/2);
+      for (let i = 0; i < boltCount; i++) {
+        const a = Math.random()*Math.PI*2;
+        const d = { x: Math.cos(a), y: Math.sin(a), angle: a };
+        const b = new Bullet(this.x+d.x*0.5, this.y+d.y*0.5, d, false, true, 9);
+        b.isMissile = true; b.speed = 0.15 + Math.random()*0.1;
+        b.size = Math.max(5, CELL*0.25);
+        b._bossBolt = true; b.color = isDemon ? '#ff0040' : '#ff4400';
+        bullets.push(b);
       }
     }
   }
@@ -2750,9 +2789,37 @@ class Bullet {
       return;
     }
 
-    ctx.fillStyle = this.isMissile ? (this.isPlayer ? '#00aaff' : '#ff4500') : (this.homing ? '#ffd700' : (this.isPlayer ? '#fff' : '#ff6b6b'));
-    if (this.isMissile) {
-      ctx.shadowColor = this.isPlayer ? '#0088ff' : '#ff0000';
+    // Boss特殊子弹渲染
+    if (this._bossLaser) {
+      ctx.strokeStyle = this.color || '#ff00ff';
+      ctx.lineWidth = 5;
+      ctx.shadowColor = this.color || '#ff00ff';
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.moveTo(this.x*CELL, this.y*CELL);
+      ctx.lineTo((this.x-this.dir.x*2)*CELL, (this.y-this.dir.y*2)*CELL);
+      ctx.stroke();
+      ctx.shadowBlur = 0; ctx.lineWidth = 1;
+    }
+    if (this._bossBolt) {
+      ctx.strokeStyle = this.color || '#ff4400';
+      ctx.lineWidth = 4;
+      ctx.shadowColor = this.color || '#ff4400';
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      let bx = this.x*CELL, by = this.y*CELL;
+      ctx.moveTo(bx, by);
+      for (let s=0; s<3; s++) {
+        bx += this.dir.x*8 + (Math.random()-0.5)*10;
+        by += this.dir.y*8 + (Math.random()-0.5)*10;
+        ctx.lineTo(bx, by);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0; ctx.lineWidth = 1;
+    }
+    ctx.fillStyle = this._bossLaser ? (this.color||'#ff00ff') : (this._bossBolt ? (this.color||'#ff4400') : (this.isMissile ? (this.isPlayer ? '#00aaff' : '#ff4500') : (this.homing ? '#ffd700' : (this.isPlayer ? '#fff' : '#ff6b6b'))));
+    if (this.isMissile || this._bossLaser || this._bossBolt) {
+      ctx.shadowColor = this.isPlayer ? '#0088ff' : (this._bossLaser ? (this.color||'#ff00ff') : (this._bossBolt ? (this.color||'#ff4400') : '#ff0000'));
       ctx.shadowBlur = 8;
     }
     ctx.beginPath();
