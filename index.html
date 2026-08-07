@@ -3903,7 +3903,7 @@ function render() {
     if (screenShake < 0.3) screenShake = 0;
   }
 
-  ctx.fillStyle = '#0a0a0a';
+  ctx.fillStyle = '#3d2b1f';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // 地图
@@ -3943,7 +3943,7 @@ function render() {
           break;
         default:
           if ((x + y) % 2 === 0 && CELL > 6) {
-            ctx.fillStyle = '#111';
+            ctx.fillStyle = '#4a3728';
             ctx.fillRect(px, py, CELL, CELL);
           }
           break;
