@@ -1383,6 +1383,24 @@ class Tank {
         if (thunderCharge % 2 === 0) {
           lightningPillars.push({ x: this.x*CELL, y: this.y*CELL, life: 4, maxLife: 4, radius: 1+thunderCharge*0.1 });
         }
+        // 预览落点+范围
+        const pvRatio = thunderCharge / THUNDER_MAX_CHARGE;
+        const pvDist = 8 + Math.floor(pvRatio * 22);
+        const pvR = 2 + Math.floor(pvRatio * 6);
+        let pvX = this.x, pvY = this.y;
+        for (let d = pvDist; d >= 1; d--) {
+          const tx = Math.round(this.x + this.dir.x * d);
+          const ty = Math.round(this.y + this.dir.y * d);
+          if (tx>1&&tx<COLS-1&&ty>1&&ty<ROWS-1) {
+            let blocked = false;
+            for (let oy=-1;oy<=1;oy++) for (let ox=-1;ox<=1;ox++) {
+              if (tx+ox>=0&&tx+ox<COLS&&ty+oy>=0&&ty+oy<ROWS)
+                {const t=mapData[(ty+oy)*COLS+(tx+ox)];if(t===1||t===2||t===3)blocked=true;}
+            }
+            if (!blocked) { pvX = tx+0.5; pvY = ty+0.5; break; }
+          }
+        }
+        this._previewX = pvX; this._previewY = pvY; this._previewR = pvR;
         return;
       } else {
         const ratio = thunderCharge / THUNDER_MAX_CHARGE;
@@ -4283,6 +4301,45 @@ function render() {
   ctx.font = `bold ${stfs}px Arial`;
   ctx.textAlign = 'left';
   ctx.fillText(`⚡${Math.ceil(stamina)}/${stCap}`, stBarX + stBarW + 5, stBarY + stBarH - 1);
+
+  // 雷公蓄力预览落点
+  if (thunderMode && player && player.alive && thunderCharge > 0 && player._previewX !== undefined) {
+    const pvx = player._previewX * CELL;
+    const pvy = player._previewY * CELL;
+    const pvr = player._previewR * CELL;
+    const pvPulse = 0.5 + Math.sin(Date.now()/120) * 0.3;
+    // 落点光圈
+    ctx.strokeStyle = `rgba(255,255,255,${0.5+pvPulse*0.3})`;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.arc(pvx, pvy, 6, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 范围圈
+    ctx.strokeStyle = `rgba(0,180,255,${0.35+pvPulse*0.2})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(pvx, pvy, pvr, 0, Math.PI*2);
+    ctx.stroke();
+    // 范围填充
+    ctx.fillStyle = `rgba(0,150,255,${0.08+pvPulse*0.04})`;
+    ctx.fill();
+    // 落点十字
+    ctx.strokeStyle = `rgba(255,255,255,${0.6+pvPulse*0.3})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pvx-8, pvy); ctx.lineTo(pvx+8, pvy);
+    ctx.moveTo(pvx, pvy-8); ctx.lineTo(pvx, pvy+8);
+    ctx.stroke();
+    // 距离文字
+    const pvDist = Math.floor(Math.hypot(player._previewX-player.x, player._previewY-player.y));
+    ctx.fillStyle = '#fff';
+    const pvfs = Math.max(12, CELL*0.5);
+    ctx.font = `bold ${pvfs}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillText(`${pvDist}格`, pvx, pvy + pvr + pvfs + 4);
+  }
 
   // 雷公模式指示器
   if (thunderMode && player && player.alive) {
