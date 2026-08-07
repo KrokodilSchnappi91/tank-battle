@@ -3174,7 +3174,7 @@ function spawnDemonKing() {
   bossPhase = 1;
   const bx = COLS/2, by = 2;
   bossTank = new Tank(bx, by, DIR.DOWN, '#000000', 0.6, false);
-  bossTank.hp = Math.floor((80 + level * 50) * 1.5); // 比普通Boss多50%血
+  bossTank.hp = Math.floor((60 + level * 30) * 1.2);
   bossTank._maxHp = bossTank.hp;
   bossTank.size = 1.5;              // 巨型
   bossTank.shootDelay = 18;         // 极快射速
@@ -3218,7 +3218,7 @@ function spawnBoss() {
     { x: margin, y: ROWS - margin, dir: DIR.UP, color: bossColors[2] },
     { x: COLS - margin, y: ROWS - margin, dir: DIR.UP, color: bossColors[3] }
   ];
-  const baseHP = Math.floor((80 + level * 50) * 0.77 / 4);
+  const baseHP = Math.floor((60 + level * 25) * 0.7 / 4);
 
   positions.forEach((pos, idx) => {
     const b = new Tank(pos.x, pos.y, pos.dir, pos.color, 0.7, false);
