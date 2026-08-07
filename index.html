@@ -4347,27 +4347,25 @@ function render() {
     ctx.fillStyle = `rgba(255,0,0,${0.06+pvPulse*0.03})`;
     ctx.fill();
     ctx.setLineDash([]);
-    // 落点范围圈（核弹风格虚线大圈）
-    ctx.setLineDash([10, 6]);
-    ctx.strokeStyle = `rgba(255,255,255,${0.7+pvPulse*0.3})`;
-    ctx.lineWidth = 3;
-    ctx.shadowColor = '#fff';
-    ctx.shadowBlur = 8;
+    // 落点范围圈（完全仿核弹风格）
+    const nukeAlpha = 0.35 + pvPulse * 0.15;
+    ctx.fillStyle = `rgba(0,180,255,${nukeAlpha*0.3})`;
+    ctx.beginPath();
+    ctx.arc(pvx, pvy, pvr, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(0,200,255,${nukeAlpha})`;
+    ctx.lineWidth = 2 + pvPulse * 2;
+    ctx.setLineDash([8, 4]);
     ctx.beginPath();
     ctx.arc(pvx, pvy, pvr, 0, Math.PI*2);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = `rgba(255,255,255,${0.1+pvPulse*0.05})`;
-    ctx.fill();
-    // 中心点（更亮更大）
+    ctx.lineWidth = 1;
+    // 中心点
     ctx.fillStyle = '#fff';
-    ctx.shadowColor = '#fff';
-    ctx.shadowBlur = 12;
     ctx.beginPath();
-    ctx.arc(pvx, pvy, 5, 0, Math.PI*2);
+    ctx.arc(pvx, pvy, 3, 0, Math.PI*2);
     ctx.fill();
-    ctx.shadowBlur = 0;
     // 距离文字
     const pvDist = Math.floor(Math.hypot(player._previewX-player.x, player._previewY-player.y));
     ctx.fillStyle = '#fff';
