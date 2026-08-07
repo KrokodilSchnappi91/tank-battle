@@ -1808,8 +1808,6 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
-          // 标记：在playerInput中释放白色闪电
-          this._doWhiteStrikes = true;
           // 闪烁粒子
           for (let i = 0; i < 15; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*5, (Math.random()-0.5)*5, '#00bfff', 8+Math.random()*10));
