@@ -1390,20 +1390,19 @@ class Tank {
           const ny = this.y + ndy * spd;
           if (this.canMoveTo(nx, ny, this.dir)) { this.x = nx; this.y = ny; }
         }
-        if (Math.floor(thunderCharge) % 6 === 0) {
-          for (let i = 0; i < 3; i++) {
+        // 稳定渐大的蓄力光环（不闪烁）
+        if (Math.floor(thunderCharge) % 3 === 0) {
+          for (let i = 0; i < 2; i++) {
             particles.push(new Particle(
-              this.x * BASE_CELL + (Math.random()-0.5)*BASE_CELL*2,
-              this.y * BASE_CELL + (Math.random()-0.5)*BASE_CELL*2,
-              (Math.random()-0.5)*2, -1-Math.random()*3,
-              thunderCharge > 40 ? '#ff0000' : (thunderCharge > 20 ? '#ffaa00' : '#00bfff'),
-              8+Math.random()*10
+              this.x * BASE_CELL + (Math.random()-0.5)*BASE_CELL*1.5,
+              this.y * BASE_CELL + (Math.random()-0.5)*BASE_CELL*1.5,
+              (Math.random()-0.5)*1.5, -1-Math.random()*2,
+              thunderCharge > 50 ? '#ff6600' : (thunderCharge > 25 ? '#ffaa00' : '#44aaff'),
+              12+Math.random()*12
             ));
           }
         }
-        if (Math.floor(thunderCharge) % 4 === 0) {
-          lightningPillars.push({ x: this.x*CELL, y: this.y*CELL, life: 4, maxLife: 4, radius: 1+thunderCharge*0.1 });
-        }
+        lightningPillars.push({ x: this.x*CELL, y: this.y*CELL, life: 3, maxLife: 3, radius: 0.5+thunderCharge*0.08 });
         // 预览落点+范围（丝滑插值）
         const pvRatio = thunderCharge / THUNDER_MAX_CHARGE;
         const pvDist = 8 + Math.floor(pvRatio * 22);
