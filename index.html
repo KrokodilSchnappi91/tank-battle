@@ -963,11 +963,33 @@ function spawnBloodLightning(x, y, radius) {
 }
 
 // 黑闪专用函数(纯视觉光柱+粒子)
+// 黑闪专用函数(完全仿照spawnBloodLightning)
 function spawnDarkLightning(x, y, radius) {
-  lightningPillars.push({x:x*CELL,y:y*CELL,life:90,maxLife:90,radius:radius||1,_blackPillar:true});
-  for (let i=0;i<15;i++) {
-    const a=Math.random()*Math.PI*2; const d=Math.random()*BASE_CELL;
-    particles.push(new Particle(x*BASE_CELL+Math.cos(a)*d,y*BASE_CELL+Math.sin(a)*d,Math.cos(a)*(1+Math.random()*3),Math.sin(a)*(1+Math.random()*3),'#222',10+Math.random()*15));
+  const cx = Math.floor(x), cy = Math.floor(y);
+  const RADIUS = radius || 1;
+  // 摧毁周围障碍
+  for (let dy = -RADIUS; dy <= RADIUS; dy++)
+    for (let dx = -RADIUS; dx <= RADIUS; dx++) {
+      if (Math.sqrt(dx*dx+dy*dy) > RADIUS) continue;
+      const tx = cx+dx, ty = cy+dy;
+      if (tx>=0 && tx<COLS && ty>=0 && ty<ROWS)
+        if (mapData[ty*COLS+tx]===1 || mapData[ty*COLS+tx]===2) mapData[ty*COLS+tx]=0;
+    }
+  // 伤害敌人
+  for (let i = enemies.length-1; i >= 0; i--) {
+    const e = enemies[i];
+    if (!e || !e.alive) continue;
+    if (Math.hypot(e.x-x, e.y-y) < RADIUS + 1) e.hit();
+  }
+  // 加入光柱渲染队列
+  lightningPillars.push({ x: x * CELL, y: y * CELL, life: 25, maxLife: 25, radius: RADIUS, _blackPillar: true });
+  // 爆炸粒子
+  const pCount = 30 + RADIUS * 10;
+  for (let i = 0; i < pCount; i++) {
+    const a = Math.random()*Math.PI*2;
+    const d = Math.random()*RADIUS*BASE_CELL*0.6;
+    const s = 2+Math.random()*5;
+    particles.push(new Particle(x*BASE_CELL+Math.cos(a)*d, y*BASE_CELL+Math.sin(a)*d, Math.cos(a)*s, Math.sin(a)*s, '#111', 15+Math.random()*20));
   }
 }
 
@@ -1808,8 +1830,7 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
-          // 黑色闪电光柱(直接push/不破墙不伤敌)
-          lightningPillars.push({x:this.x*CELL, y:this.y*CELL, life:50, maxLife:50, radius:1, _blackPillar:true});
+          spawnDarkLightning(this.x, this.y, 1);
         }
       }
 
@@ -4118,40 +4139,52 @@ function render() {
       continue;
     }
     if (p._blackPillar) {
+      // 黑色闪电光柱(完全仿血红光柱)
       const br = p.radius * CELL;
-      const bh = br * 3.6;
-      ctx.fillStyle = `rgba(0,0,0,${alpha*0.5})`;
-      ctx.beginPath(); ctx.ellipse(px, py, br, br*0.4, 0, 0, Math.PI*2); ctx.fill();
-      ctx.strokeStyle = `rgba(30,30,30,${alpha*0.6})`; ctx.lineWidth=3; ctx.stroke();
-      for (let bolt=0; bolt<5; bolt++) {
-        const a=(bolt/5)*Math.PI*2+p.life*0.02;
-        const bR=br*(0.3+Math.random()*0.7);
-        const bx=px+Math.cos(a)*bR, by=py+Math.sin(a)*bR*0.4;
-        const tX=px+Math.cos(a)*bR*0.6, tY=py-bh+Math.sin(a)*bR*0.2;
-        // 黑柱
-        ctx.strokeStyle=`rgba(3,2,3,${alpha*0.95})`;
-        ctx.lineWidth=6; ctx.shadowColor='#000'; ctx.shadowBlur=14;
-        ctx.beginPath(); ctx.moveTo(bx,by);
-        for(let s=1;s<=8;s++){const t=s/8;
-          ctx.lineTo(bx+(tX-bx)*t+(Math.sin(s*5+bolt)*br*0.12), by+(tY-by)*t);}
-        ctx.stroke();
-        // 白边
-        ctx.strokeStyle=`rgba(255,255,255,${alpha*0.6})`;
-        ctx.lineWidth=2; ctx.shadowColor='#fff'; ctx.shadowBlur=6;
-        ctx.beginPath(); ctx.moveTo(bx,by);
-        for(let s=1;s<=8;s++){const t=s/8;
-          ctx.lineTo(bx+(tX-bx)*t+(Math.sin(s*5+bolt)*br*0.12), by+(tY-by)*t);}
+      const r = br * 1.2;
+      const H = r * 1.8;
+      const topR = r * 0.7;
+      ctx.fillStyle = `rgba(0,0,0,${alpha*0.4})`;
+      ctx.beginPath(); ctx.ellipse(px, py, r, r*0.4, 0, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = `rgba(20,20,20,${alpha*0.5})`;
+      ctx.lineWidth = 3; ctx.stroke();
+      for (let bolt = 0; bolt < 48; bolt++) {
+        const angle = (bolt / 48) * Math.PI * 2 + p.life * 0.03;
+        const baseR = r * (0.2 + Math.random() * 0.8);
+        const baseX = px + Math.cos(angle) * baseR;
+        const baseY = py + Math.sin(angle) * baseR * 0.4;
+        const tRX = baseR * 0.7; const tRY = baseR * 0.7 * 0.35;
+        const topX = px + Math.cos(angle + p.life*0.04) * tRX;
+        const topY = py - H + Math.sin(angle + p.life*0.04) * tRY;
+        const isCore = bolt % 7 === 0;
+        const isGray = bolt % 3 === 0;
+        ctx.strokeStyle = isCore
+          ? `rgba(255,255,255,${alpha})`
+          : (isGray ? `rgba(60,60,60,${alpha*0.8})` : `rgba(5,3,5,${alpha*0.9})`);
+        ctx.lineWidth = isCore ? 7 : (isGray ? 8 : 9);
+        ctx.shadowColor = isCore ? '#fff' : '#000';
+        ctx.shadowBlur = isCore ? 14 : (isGray ? 18 : 26);
+        ctx.beginPath(); ctx.moveTo(baseX, baseY);
+        for (let s = 1; s <= 6; s++) {
+          const t = s / 6;
+          const sx = baseX + (topX - baseX) * t + (Math.sin(s*7+bolt+p.life*0.15) * r * 0.25);
+          const sy = baseY + (topY - baseY) * t;
+          ctx.lineTo(sx, sy);
+        }
         ctx.stroke();
       }
-      ctx.shadowBlur=0; ctx.lineWidth=1;
-      ctx.strokeStyle=`rgba(20,20,20,${alpha*0.7})`; ctx.lineWidth=2;
-      ctx.beginPath(); ctx.ellipse(px,py-bh,br,br*0.35,0,0,Math.PI*2); ctx.stroke();
-      ctx.shadowBlur=0;
-      const gA=alpha*0.8;
-      const gl=ctx.createRadialGradient(px,py,0,px,py,br*1.5);
-      gl.addColorStop(0,`rgba(40,40,40,${gA})`); gl.addColorStop(0.3,`rgba(10,10,10,${gA*0.4})`);
-      gl.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(px,py,br*1.5,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0; ctx.lineWidth = 1;
+      ctx.strokeStyle = `rgba(15,15,15,${alpha*0.7})`; ctx.lineWidth = 2;
+      ctx.shadowColor = '#000'; ctx.shadowBlur = 6;
+      ctx.beginPath(); ctx.ellipse(px, py - H, topR, topR*0.35, 0, 0, Math.PI*2); ctx.stroke();
+      ctx.shadowBlur = 0;
+      const gA = alpha * 0.7;
+      const gl = ctx.createRadialGradient(px, py, 0, px, py, r);
+      gl.addColorStop(0, `rgba(40,40,40,${gA})`);
+      gl.addColorStop(0.1, `rgba(20,20,20,${gA*0.8})`);
+      gl.addColorStop(0.3, `rgba(5,5,5,${gA*0.5})`);
+      gl.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
       continue;
     }
     if (p._darkGreen) {
