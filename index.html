@@ -3419,6 +3419,12 @@ function spawnEnemy() {
 function update() {
   if (gameState !== STATE.PLAYING) return;
 
+  // 黑闪(update最开头/模块级标记/最小延迟)
+  if (pendingDarkStrike && thunderMode && player && player.alive) {
+    pendingDarkStrike = false;
+    spawnDarkLightning(player.x, player.y, 1);
+  }
+
   // 66关自动进入杀神形态
   if (level === 66 && !godSlayerMode && !mythicMode && !thunderMode && player && player.alive) {
     godSlayerMode = true;
@@ -3448,12 +3454,6 @@ function update() {
 
   // 雷公波纹技能冷却
   if (player && player._rippleCooldown > 0) player._rippleCooldown--;
-
-  // 黑闪处理(模块级标记/update循环)
-  if (pendingDarkStrike && thunderMode && player && player.alive) {
-    pendingDarkStrike = false;
-    spawnDarkLightning(player.x, player.y, 1);
-  }
 
   // 体力回复（杀神模式上限+50%）
   const staminaCap = godSlayerMode ? 750 : (mythicMode ? 250 : (thunderMode ? 300 : MAX_STAMINA));
