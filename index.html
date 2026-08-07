@@ -1798,12 +1798,9 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
-          // 黑色闪电：所有敌人+随机8位置(纯粒子/伤害即时)
+          // 黑色闪电：随机6个位置
           const targets = [];
-          for (const e of enemies) {
-            if (e.alive) targets.push({ x: e.x, y: e.y });
-          }
-          for (let i = 0; i < 8; i++) {
+          for (let i = 0; i < 6; i++) {
             targets.push({ x: 2+Math.random()*(COLS-4), y: 2+Math.random()*(ROWS-4) });
           }
           targets.forEach((t) => {
