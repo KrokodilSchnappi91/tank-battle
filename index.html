@@ -955,12 +955,12 @@ function spawnBloodLightning(x, y, radius, colorType) {
   const life = isLowDensity ? 120 : 25;
   lightningPillars.push({ x: x * CELL, y: y * CELL, life, maxLife: life, radius: RADIUS, _whitePillar: isWhite, _lowDensity: isLowDensity });
   // 爆炸粒子
-  const pCount = 20 + RADIUS * 8;
+  const pCount = isLowDensity ? (20 + RADIUS * 8) : (30 + RADIUS * 10);
   for (let i = 0; i < pCount; i++) {
     const a = Math.random()*Math.PI*2;
     const d = Math.random()*RADIUS*BASE_CELL*0.6;
     const s = 2+Math.random()*5;
-    const pColor = isWhite ? ['#ddd','#eee','#fff'][Math.floor(Math.random()*3)] : ['#ff0000','#8b0000','#ff4500'][Math.floor(Math.random()*3)];
+    const pColor = isLowDensity ? ['#ddd','#eee','#fff'][Math.floor(Math.random()*3)] : ['#ff0000','#8b0000','#ff4500'][Math.floor(Math.random()*3)];
     particles.push(new Particle(x*BASE_CELL+Math.cos(a)*d, y*BASE_CELL+Math.sin(a)*d, Math.cos(a)*s, Math.sin(a)*s, pColor, 15+Math.random()*20));
   }
 }
