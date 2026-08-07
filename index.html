@@ -1798,7 +1798,11 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
-          // 闪烁粒子效果
+          // 6道黑色闪电(复用血红闪电/半径1格)
+          for (let i = 0; i < 6; i++) {
+            spawnBloodLightning(2+Math.random()*(COLS-4), 2+Math.random()*(ROWS-4), 1);
+          }
+          // 闪烁粒子
           for (let i = 0; i < 15; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*5, (Math.random()-0.5)*5, '#00bfff', 8+Math.random()*10));
           }
