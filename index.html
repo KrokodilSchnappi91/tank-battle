@@ -1470,12 +1470,6 @@ class Tank {
       }
     }
 
-    // ===== 黑闪(仅1道) =====
-    if (this._doWhiteStrikes) {
-      this._doWhiteStrikes = false;
-      spawnDarkLightning(2+Math.random()*(COLS-4), 2+Math.random()*(ROWS-4), 1);
-    }
-
     // ===== 冲刺处理 =====
     if (dashState && dashState.timer > 0) {
       const isThunderDash = dashState.thunder;
@@ -1814,7 +1808,6 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
-          this._doWhiteStrikes = true;
           // 闪烁粒子
           for (let i = 0; i < 15; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*5, (Math.random()-0.5)*5, '#00bfff', 8+Math.random()*10));
