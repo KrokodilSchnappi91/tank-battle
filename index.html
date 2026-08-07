@@ -4330,10 +4330,10 @@ function render() {
   ctx.fillText(`⚡${Math.ceil(stamina)}/${stCap}`, stBarX + stBarW + 5, stBarY + stBarH - 1);
 
   // 雷公蓄力预览落点+起点范围
-  if (thunderMode && player && player.alive && thunderCharge > 0 && player._previewX !== undefined) {
-    const pvx = player._previewX * CELL;
-    const pvy = player._previewY * CELL;
-    const pvr = player._previewR * CELL;
+  if (thunderMode && player && player.alive && thunderCharge > 0) {
+    const pvx = (player._previewX !== undefined ? player._previewX : player.x) * CELL;
+    const pvy = (player._previewY !== undefined ? player._previewY : player.y) * CELL;
+    const pvr = (player._previewR !== undefined ? player._previewR : 3) * CELL;
     const pvPulse = 0.5 + Math.sin(Date.now()/120) * 0.3;
     const px = player.x * CELL;
     const py = player.y * CELL;
@@ -4347,7 +4347,7 @@ function render() {
     ctx.fillStyle = `rgba(255,0,0,${0.06+pvPulse*0.03})`;
     ctx.fill();
     ctx.setLineDash([]);
-    // 落点范围圈（完全仿核弹风格）
+    // 落点范围圈（核弹风格）
     const nukeAlpha = 0.35 + pvPulse * 0.15;
     ctx.fillStyle = `rgba(0,180,255,${nukeAlpha*0.3})`;
     ctx.beginPath();
@@ -4367,12 +4367,14 @@ function render() {
     ctx.arc(pvx, pvy, 3, 0, Math.PI*2);
     ctx.fill();
     // 距离文字
-    const pvDist = Math.floor(Math.hypot(player._previewX-player.x, player._previewY-player.y));
-    ctx.fillStyle = '#fff';
-    const pvfs = Math.max(13, CELL*0.55);
-    ctx.font = `bold ${pvfs}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.fillText(`${pvDist}格`, pvx, pvy + pvr + pvfs + 6);
+    if (player._previewX !== undefined) {
+      const pvDist = Math.floor(Math.hypot(player._previewX-player.x, player._previewY-player.y));
+      ctx.fillStyle = '#fff';
+      const pvfs = Math.max(13, CELL*0.55);
+      ctx.font = `bold ${pvfs}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`${pvDist}格`, pvx, pvy + pvr + pvfs + 6);
+    }
   }
 
   // 雷公模式指示器
