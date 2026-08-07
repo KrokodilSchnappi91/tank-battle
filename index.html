@@ -4305,28 +4305,17 @@ function render() {
       const isCore = bolt % 7 === 0;
       const isGold = bolt % 3 === 0;
       const isRed = !isCore && !isGold;
-      if (p._lowDensity) {
-        // 黑色闪电
-        // 硬挺黑闪+白色内核衬托
-        const isWhiteBolt = bolt % 3 === 0;
-        ctx.strokeStyle = isWhiteBolt ? `rgba(255,255,255,${alpha*0.7})` : `rgba(5,3,5,${alpha*0.95})`;
-        ctx.lineWidth = isWhiteBolt ? 2 : 4;
-        ctx.shadowColor = isWhiteBolt ? '#fff' : '#000';
-        ctx.shadowBlur = isWhiteBolt ? 3 : 8;
-      } else {
-        ctx.strokeStyle = isCore
+      ctx.strokeStyle = isCore
           ? `rgba(255,255,255,${alpha})`
           : (isGold ? `rgba(255,240,50,${alpha*0.8})` : `rgba(255,${10+bolt*2},0,${alpha*0.9})`);
         ctx.lineWidth = isCore ? 7 : (isGold ? 8 : 9);
         ctx.shadowColor = isCore ? '#fff' : (isGold ? '#ffdd00' : '#ff0000');
         ctx.shadowBlur = isCore ? 14 : (isGold ? 18 : 26);
-      }
       ctx.beginPath();
       ctx.moveTo(baseX, baseY);
       for (let s = 1; s <= 6; s++) {
         const t = s / 6;
         const sx = baseX + (topX - baseX) * t + (Math.sin(s*7+bolt+p.life*0.15) * r * 0.25);
-        const sy = baseY + (topY - baseY) * t;
         const sy = baseY + (topY - baseY) * t;
         ctx.lineTo(sx, sy);
       }
