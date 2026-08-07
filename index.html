@@ -1798,7 +1798,7 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
-          // 黑色闪电：所有敌人+随机8位置/延迟18帧/半径1.5
+          // 黑色闪电：所有敌人+随机8位置(直接执行不排队)
           const targets = [];
           for (const e of enemies) {
             if (e.alive) targets.push({ x: e.x, y: e.y });
@@ -1806,13 +1806,23 @@ class Tank {
           for (let i = 0; i < 8; i++) {
             targets.push({ x: 2+Math.random()*(COLS-4), y: 2+Math.random()*(ROWS-4) });
           }
-          targets.forEach((t, idx) => {
-            // 加入延迟队列(18帧=0.3s)
-            thunderQueue.push({
-              index: idx, total: targets.length,
-              x: t.x, y: t.y,
-              delay: 18,
-              _blackStrike: true
+          targets.forEach((t) => {
+            const r = 1.5;
+            const cx = Math.floor(t.x), cy = Math.floor(t.y);
+            for (let dy=-2;dy<=2;dy++) for (let dx=-2;dx<=2;dx++) {
+              if (Math.sqrt(dx*dx+dy*dy)>r) continue;
+              const tx=cx+dx,ty=cy+dy;
+              if (tx>=0&&tx<COLS&&ty>=0&&ty<ROWS)
+                if (mapData[ty*COLS+tx]===1||mapData[ty*COLS+tx]===2) mapData[ty*COLS+tx]=0;
+            }
+            for (const e of enemies) {
+              if (!e.alive) continue;
+              if (Math.hypot(e.x-t.x, e.y-t.y)<r+0.5) e.hit();
+            }
+            lightningPillars.push({
+              x: t.x*CELL, y: t.y*CELL,
+              life: 20, maxLife: 20,
+              radius: r, _blackPillar: true
             });
           });
         }
@@ -3593,27 +3603,7 @@ function update() {
     thunderQueue.forEach(q => q.delay--);
 
     toRelease.forEach(q => {
-      if (q._blackStrike) {
-        // 黑色闪电打击(仿血光柱)
-        const r = 1.5;
-        const cx = Math.floor(q.x), cy = Math.floor(q.y);
-        for (let dy=-2;dy<=2;dy++) for (let dx=-2;dx<=2;dx++) {
-          if (Math.sqrt(dx*dx+dy*dy)>r) continue;
-          const tx=cx+dx,ty=cy+dy;
-          if (tx>=0&&tx<COLS&&ty>=0&&ty<ROWS)
-            if (mapData[ty*COLS+tx]===1||mapData[ty*COLS+tx]===2) mapData[ty*COLS+tx]=0;
-        }
-        for (const e of enemies) {
-          if (!e.alive) continue;
-          if (Math.hypot(e.x-q.x, e.y-q.y)<r+0.5) e.hit();
-        }
-        lightningPillars.push({
-          x: q.x*CELL, y: q.y*CELL,
-          life: 20, maxLife: 20,
-          radius: r, _blackPillar: true
-        });
-        screenShake = Math.max(screenShake, 3);
-      } else if (q._isRipple) {
+      if (q._isRipple) {
         // 绿色波纹：复用lightningPillars渲染
         const rippleR = (q.index + 1) * 2.2; // 每圈2.2格，16圈共35格
         lightningPillars.push({
