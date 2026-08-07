@@ -4330,7 +4330,24 @@ function render() {
   ctx.fillText(`⚡${Math.ceil(stamina)}/${stCap}`, stBarX + stBarW + 5, stBarY + stBarH - 1);
 
   // 雷公蓄力预览落点+起点范围
+  // DEBUG: 无条件测试圈
+  if (player && player.alive) {
+    const tx = player.x * CELL;
+    const ty = player.y * CELL;
+    const tr = 50;
+    ctx.fillStyle = 'rgba(0,255,0,0.15)';
+    ctx.beginPath(); ctx.arc(tx, ty, tr, 0, Math.PI*2); ctx.fill();
+  }
   if (thunderMode && player && player.alive && thunderCharge > 0) {
+    // 调试：绘制明显标记确认代码在执行
+    const tpx = player.x * CELL;
+    const tpy = player.y * CELL;
+    const tpr = (30 + thunderCharge * 2) * CELL / 4;
+    ctx.fillStyle = 'rgba(255,255,0,0.3)';
+    ctx.beginPath(); ctx.arc(tpx, tpy, tpr, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,0,0.8)';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(tpx, tpy, tpr, 0, Math.PI*2); ctx.stroke();
     const pvx = (player._previewX !== undefined ? player._previewX : player.x) * CELL;
     const pvy = (player._previewY !== undefined ? player._previewY : player.y) * CELL;
     const pvr = (player._previewR !== undefined ? player._previewR : 3) * CELL;
