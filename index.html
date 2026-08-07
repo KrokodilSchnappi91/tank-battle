@@ -952,7 +952,7 @@ function spawnBloodLightning(x, y, radius, colorType) {
   }
   // 加入光柱渲染队列
   const isLowDensity = isWhite || colorType === 'low';
-  const life = isLowDensity ? 50 : 25;
+  const life = isLowDensity ? 120 : 25;
   lightningPillars.push({ x: x * CELL, y: y * CELL, life, maxLife: life, radius: RADIUS, _whitePillar: isWhite, _lowDensity: isLowDensity });
   // 爆炸粒子
   const pCount = 20 + RADIUS * 8;
@@ -4226,17 +4226,15 @@ function render() {
     const px = p.x, py = p.y;
     const R = CELL * p.radius;
     const r = R * 1.2;
-    // 黑闪：从天而降动画
-    const fallOffset = p._lowDensity ? ((p.life / p.maxLife) - 0.3) * r * 3 : 0; // 从上方落下
-    const drawY = py - Math.max(0, fallOffset);
+    const drawY = py;
     const H = p._lowDensity ? r * 3.6 : r * 1.8;
     const topR = p._lowDensity ? r : r * 0.7;
     // 底部椭圆
-    ctx.fillStyle = p._lowDensity ? `rgba(0,0,0,${alpha*0.4})` : `rgba(255,0,0,${alpha*0.3})`;
+    ctx.fillStyle = p._lowDensity ? `rgba(0,0,0,${alpha*0.6})` : `rgba(255,0,0,${alpha*0.3})`;
     ctx.beginPath();
     ctx.ellipse(px, drawY, r, r*0.4, 0, 0, Math.PI*2);
     ctx.fill();
-    ctx.strokeStyle = p._lowDensity ? `rgba(40,40,40,${alpha*0.5})` : `rgba(255,100,0,${alpha*0.5})`;
+    ctx.strokeStyle = p._lowDensity ? `rgba(20,20,20,${alpha*0.6})` : `rgba(255,100,0,${alpha*0.5})`;
     ctx.lineWidth = 3;
     ctx.stroke();
     // 圆柱体内闪电束
@@ -4256,10 +4254,10 @@ function render() {
       const isRed = !isCore && !isGold;
       if (p._lowDensity) {
         // 黑色闪电
-        ctx.strokeStyle = isCore ? `rgba(180,180,180,${alpha*0.6})` : `rgba(${5+bolt*2},${3+bolt},${8+bolt*2},${alpha*0.85})`;
+        ctx.strokeStyle = isCore ? `rgba(80,80,80,${alpha*0.5})` : `rgba(${2+bolt},${1+bolt},${3+bolt},${alpha*0.9})`;
         ctx.lineWidth = isCore ? 2 : 3;
         ctx.shadowColor = '#000';
-        ctx.shadowBlur = isCore ? 4 : 8;
+        ctx.shadowBlur = isCore ? 3 : 6;
       } else {
         ctx.strokeStyle = isCore
           ? `rgba(255,255,255,${alpha})`
@@ -4281,7 +4279,7 @@ function render() {
     ctx.shadowBlur = 0;
     ctx.lineWidth = 1;
     // 顶部光圈
-    ctx.strokeStyle = p._lowDensity ? `rgba(60,60,60,${alpha*0.6})` : `rgba(255,80,0,${alpha*0.7})`;
+    ctx.strokeStyle = p._lowDensity ? `rgba(15,15,15,${alpha*0.7})` : `rgba(255,80,0,${alpha*0.7})`;
     ctx.lineWidth = 2;
     ctx.shadowColor = p._lowDensity ? '#000' : '#ff4400';
     ctx.shadowBlur = 6;
@@ -4293,8 +4291,8 @@ function render() {
     const glowAlpha = alpha * 0.7;
     const glow = ctx.createRadialGradient(px, drawY, 0, px, drawY, r);
     if (p._lowDensity) {
-      glow.addColorStop(0, `rgba(100,100,100,${glowAlpha})`);
-      glow.addColorStop(0.3, `rgba(20,20,20,${glowAlpha*0.5})`);
+      glow.addColorStop(0, `rgba(30,30,30,${glowAlpha})`);
+      glow.addColorStop(0.3, `rgba(5,5,5,${glowAlpha*0.5})`);
       glow.addColorStop(1, `rgba(0,0,0,0)`);
     } else {
       glow.addColorStop(0, `rgba(255,255,255,${glowAlpha})`);
