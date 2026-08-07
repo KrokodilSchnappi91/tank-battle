@@ -2079,6 +2079,35 @@ class Tank {
     // 无敌时不受伤
     if (this.invincible > 0) return;
     this.hp--;
+    // 雷公形态：被击中的敌人向周围所有敌人释放三连激光
+    if (!this.isPlayer && thunderMode && player && player.alive && !this._chainHit) {
+      this._chainHit = true;
+      for (const e of enemies) {
+        if (!e.alive || e === this) continue;
+        const dx = e.x - this.x, dy = e.y - this.y;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if (dist < 0.01) continue;
+        const dir = { x: dx/dist, y: dy/dist, angle: Math.atan2(dy, dx) };
+        for (let burst = 0; burst < 3; burst++) {
+          const sa = dir.angle + (burst-1)*0.08;
+          const ld = { x: Math.cos(sa), y: Math.sin(sa), angle: sa };
+          const steps = Math.max(COLS, ROWS)*2;
+          for (let s=1; s<=steps; s++) {
+            const lx=this.x+ld.x*s*0.5;
+            const ly=this.y+ld.y*s*0.5;
+            if (lx<0||lx>=COLS||ly<0||ly>=ROWS) break;
+            const cx=Math.floor(lx),cy=Math.floor(ly);
+            if (cx>=0&&cx<COLS&&cy>=0&&cy<ROWS&&(mapData[cy*COLS+cx]===1||mapData[cy*COLS+cx]===2)) mapData[cy*COLS+cx]=0;
+          }
+          for (let s=0; s<=steps; s++) {
+            const px=this.x+ld.x*s*0.5, py=this.y+ld.y*s*0.5;
+            if (px<0||px>=COLS||py<0||py>=ROWS) break;
+            particles.push(new Particle(px*BASE_CELL, py*BASE_CELL, (Math.random()-0.5)*2,(Math.random()-0.5)*2,'#00bfff',10+Math.random()*10));
+          }
+        }
+      }
+      this._chainHit = false;
+    }
     if (this.hp <= 0) {
       this.alive = false;
       this.onDestroy();
