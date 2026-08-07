@@ -1367,8 +1367,8 @@ class Tank {
     // ===== 雷公蓄力瞬移 =====
     if (thunderCharge > 0) {
       const spaceHeld = isKeyDown(' ') || isKeyDown('Space');
-      if (spaceHeld && thunderCharge < THUNDER_MAX_CHARGE) {
-        thunderCharge++;
+      if (spaceHeld) {
+        if (thunderCharge < THUNDER_MAX_CHARGE) thunderCharge += 0.5; // 蓄力减半速
         // 蓄力时可自由移动控制方向
         let moveDx = 0, moveDy = 0;
         if (moveJoy.active) { moveDx = moveJoy.dx; moveDy = moveJoy.dy; }
@@ -1390,7 +1390,7 @@ class Tank {
           const ny = this.y + ndy * spd;
           if (this.canMoveTo(nx, ny, this.dir)) { this.x = nx; this.y = ny; }
         }
-        if (thunderCharge % 3 === 0) {
+        if (Math.floor(thunderCharge) % 6 === 0) {
           for (let i = 0; i < 3; i++) {
             particles.push(new Particle(
               this.x * BASE_CELL + (Math.random()-0.5)*BASE_CELL*2,
@@ -1401,7 +1401,7 @@ class Tank {
             ));
           }
         }
-        if (thunderCharge % 2 === 0) {
+        if (Math.floor(thunderCharge) % 4 === 0) {
           lightningPillars.push({ x: this.x*CELL, y: this.y*CELL, life: 4, maxLife: 4, radius: 1+thunderCharge*0.1 });
         }
         // 预览落点+范围
