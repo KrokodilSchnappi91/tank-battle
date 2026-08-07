@@ -4269,7 +4269,7 @@ function render() {
       }
       ctx.beginPath();
       ctx.moveTo(baseX, baseY);
-      const jitterStrength = p._lowDensity ? 0.15 : 0.25;
+      const jitterStrength = p._lowDensity ? 0.15 : 0.12;
       for (let s = 1; s <= 6; s++) {
         const t = s / 6;
         // 折线感：三角形波+阶梯突变
