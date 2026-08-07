@@ -683,6 +683,7 @@ let deathTimer = 0;           // 死亡重生倒计时
 let bossActive = false;       // Boss 战中
 let bossTank = null;          // Boss 坦克引用
 let bossPhase = 1;            // Boss 当前阶段
+let elitesSpawned = false;    // 精英已生成标记
 let nukes = [];               // 核弹列表
 let thunderQueue = [];        // 雷公闪电队列
 let lightningPillars = [];    // 血光柱渲染特效
@@ -3155,6 +3156,7 @@ function loadLevel(lvl) {
   thunderQueue = [];
   lightningPillars = [];
   greenRipples = [] // unused;
+  elitesSpawned = false;
   thunderCharge = 0;
   stamina = MAX_STAMINA;
   dashState = null;
@@ -3205,51 +3207,48 @@ function spawnDemonKing() {
   }
 }
 
+// 精英怪生成
+function spawnElites(count) {
+  const eliteColors = ['#ff6600', '#ff0066', '#cc00ff', '#ff3300'];
+  for (let i = 0; i < count; i++) {
+    const sp = spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
+    const e = new Tank(sp.x+1, sp.y+1, DIR.DOWN, eliteColors[i%eliteColors.length], baseEnemySpeed*0.6, false);
+    e.hp = 3 + Math.floor(level/3);
+    e._maxHp = e.hp;
+    e.size = 1.05;
+    e.shootDelay = 25;
+    e.type = 'elite';
+    e.invincible = 30;
+    e.turretDir = DIR.DOWN;
+    // 清理出生点
+    for (let dy=0;dy<3;dy++) for (let dx=-2;dx<=2;dx++) {
+      const cx=Math.floor(sp.x)+dx, cy=Math.floor(sp.y)+dy;
+      if (cx>=0&&cx<COLS&&cy>=0&&cy<ROWS) mapData[cy*COLS+cx]=0;
+    }
+    if (e.canMoveTo(e.x, e.y, e.dir)) { enemies.push(e); enemiesOnScreen++; }
+  }
+}
+
 function spawnBoss() {
-  bossActive = true;
-  demonKingActive = false;
-  bossPhase = 1;
-
-  const margin = 3;
-  const bossColors = ['#ff4444', '#44aaff', '#ffaa00', '#44ff44'];
-  const positions = [
-    { x: margin, y: margin, dir: DIR.DOWN, color: bossColors[0] },
-    { x: COLS - margin, y: margin, dir: DIR.DOWN, color: bossColors[1] },
-    { x: margin, y: ROWS - margin, dir: DIR.UP, color: bossColors[2] },
-    { x: COLS - margin, y: ROWS - margin, dir: DIR.UP, color: bossColors[3] }
-  ];
-  const baseHP = Math.floor((60 + level * 25) * 0.7 / 4);
-
-  positions.forEach((pos, idx) => {
-    const b = new Tank(pos.x, pos.y, pos.dir, pos.color, 0.7, false);
-    b.hp = baseHP;
-    b._maxHp = baseHP;
-    b.size = 1.0;
-    b.shootDelay = 30;
-    b.type = 'boss';
-    b.invincible = 40;
-    b.turretDir = pos.dir;
-    b.targetDir = pos.dir;
-    if (idx === 0) bossTank = b;
-
-    for (let dy = 0; dy < 3; dy++) {
-      for (let dx = -2; dx <= 2; dx++) {
-        const cx = Math.floor(pos.x) + dx, cy = Math.floor(pos.y) + dy;
-        if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) mapData[cy * COLS + cx] = 0;
-      }
-    }
-
-    enemies.push(b);
-    enemiesOnScreen++;
-
-    for (let i = 0; i < 12; i++) {
-      particles.push(new Particle(
-        pos.x * BASE_CELL, pos.y * BASE_CELL,
-        (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5,
-        '#8b00ff', 20 + Math.random() * 20
-      ));
-    }
-  });
+  bossActive = true; demonKingActive = false; bossPhase = 1;
+  const pos = { x: Math.floor(COLS/2), y: 2, dir: DIR.DOWN, color: '#ff4444' };
+  const baseHP = Math.floor(50 + level * 22);
+  const b = new Tank(pos.x, pos.y, pos.dir, pos.color, 0.6, false);
+  b.hp = baseHP; b._maxHp = baseHP; b.size = 1.2;
+  b.shootDelay = 28; b.type = 'boss'; b.invincible = 50;
+  b.turretDir = pos.dir; b.targetDir = pos.dir;
+  bossTank = b;
+  // 清理出生区
+  for (let dy=0;dy<5;dy++) for (let dx=-3;dx<=3;dx++) {
+    const cx=Math.floor(pos.x)+dx, cy=Math.floor(pos.y)+dy;
+    if (cx>=0&&cx<COLS&&cy>=0&&cy<ROWS) mapData[cy*COLS+cx]=0;
+  }
+  enemies.push(b); enemiesOnScreen++;
+  // 出场特效
+  for (let i=0;i<20;i++) {
+    particles.push(new Particle(pos.x*BASE_CELL, pos.y*BASE_CELL,
+      (Math.random()-0.5)*6, (Math.random()-0.5)*6, '#ff0040', 20+Math.random()*20));
+  }
 }
 
 function spawnEnemy() {
@@ -3358,9 +3357,17 @@ function update() {
     healthSpawnTimer = 60;
   }
 
-  // 普通敌人全灭 → 召唤Boss
-  if (!bossActive && enemiesRemaining <= 0 && enemies.length === 0 && player && player.alive) {
-    spawnBoss();
+  // 普通敌人全灭 → 精英怪 → Boss
+  if (!bossActive && enemiesRemaining <= 0 && enemies.filter(e=>e.alive&&e.type!=='elite').length === 0 && player && player.alive) {
+    const elitesAlive = enemies.filter(e => e.alive && e.type === 'elite').length;
+    if (elitesAlive === 0 && !elitesSpawned) {
+      const eliteCount = 2 + Math.floor(level / 5);
+      spawnElites(eliteCount);
+      elitesSpawned = true;
+    } else if (elitesAlive === 0 && elitesSpawned) {
+      elitesSpawned = false;
+      spawnBoss();
+    }
   }
 
   // Boss 二阶段检测（偶数关，血量<50%触发）
@@ -3736,6 +3743,7 @@ function resetGame() {
   thunderQueue = [];
   lightningPillars = [];
   greenRipples = [] // unused;
+  elitesSpawned = false;
   thunderCharge = 0;
   stamina = MAX_STAMINA;
   deathTimer = 0;
