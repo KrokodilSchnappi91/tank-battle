@@ -909,10 +909,10 @@ function triggerDash() {
   if (dashState) return; // 已在冲刺中
   if (stamina < DASH_COST) return;
 
-  // 雷公形态：开始蓄力（松开时瞬移）
+  // 雷公形态：开始蓄力
   if (thunderMode) {
-    if (thunderCharge === 0 && stamina >= DASH_COST) {
-      thunderCharge = 1; // 开始蓄力
+    if (thunderCharge === 0) {
+      thunderCharge = 1;
     }
     return;
   }
