@@ -2152,10 +2152,22 @@ class Tank {
     ctx.translate(cx, cy);
     ctx.rotate(this.dir.angle);
 
-    // 主体（杀神大红/神话金色/魔王黑红/普通）
-    const bodyColor = (this.isPlayer && thunderMode) ? '#00bfff' : (this.isPlayer && godSlayerMode) ? '#cc0000' : (this._isDemonKing ? '#1a0000' : (isMythic ? '#ffd700' : this.color));
+    // 玩家外发光轮廓
+    if (this.isPlayer) {
+      ctx.shadowColor = thunderMode ? '#00bfff' : (godSlayerMode ? '#ff4500' : (isMythic ? '#ffd700' : '#2ecc71'));
+      ctx.shadowBlur = half * 1.2;
+    }
+
+    // 主体
+    const bodyColor = (this.isPlayer && thunderMode) ? '#00ccff' : (this.isPlayer && godSlayerMode) ? '#ff2200' : (this._isDemonKing ? '#1a0000' : (isMythic ? '#ffd700' : this.color));
     ctx.fillStyle = bodyColor;
     ctx.fillRect(-half, -half * 0.85, half * 2, half * 1.7);
+    // 玩家高亮条纹
+    if (this.isPlayer) {
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillRect(-half, -half * 0.2, half * 2, half * 0.3);
+    }
+    ctx.shadowBlur = 0;
 
     // 魔王红色条纹
     if (this._isDemonKing) {
@@ -2172,14 +2184,21 @@ class Tank {
       ctx.fillRect(-half, half * 0.85 - 4, half * 2, 4);
     }
 
+    // 雷公条纹
+    if (isThunder) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(-half, -half * 0.85, half * 2, 3);
+      ctx.fillRect(-half, half * 0.85 - 3, half * 2, 3);
+    }
+
     // 履带
-    ctx.fillStyle = '#1a1a1a';
+    ctx.fillStyle = '#111';
     const trackW = Math.max(3, CELL * 0.2);
     ctx.fillRect(-half - 2, -half * 0.85, trackW, half * 1.7);
     ctx.fillRect(half - trackW + 2, -half * 0.85, trackW, half * 1.7);
 
     // 履带纹理
-    ctx.fillStyle = isMythic ? '#ffd700' : '#333';
+    ctx.fillStyle = isMythic ? '#ffd700' : (isThunder ? '#00bfff' : '#666');
     for (let i = -half * 0.7; i < half * 0.7; i += Math.max(4, CELL * 0.2)) {
       ctx.fillRect(-half - 2, i, trackW, 2);
       ctx.fillRect(half - trackW + 2, i, trackW, 2);
@@ -2195,20 +2214,44 @@ class Tank {
 
     const turretColor = this._isDemonKing ? '#ff0000' : (this.type === 'boss' ? '#cc00ff' : (isMythic ? '#ff6b00' : (this.isPlayer ? '#4ecdc4' : '#ffd93d')));
 
+    // 玩家炮塔发光
+    if (this.isPlayer) {
+      ctx.shadowColor = thunderMode ? '#00bfff' : (godSlayerMode ? '#ff4500' : (isMythic ? '#ffd700' : '#4ecdc4'));
+      ctx.shadowBlur = half * 0.8;
+    }
+
     // 炮塔底座
     ctx.fillStyle = turretColor;
     ctx.beginPath();
-    ctx.arc(0, 0, half * 0.55, 0, Math.PI * 2);
+    ctx.arc(0, 0, half * 0.6, 0, Math.PI * 2);
     ctx.fill();
+    // 底座亮圈
+    if (this.isPlayer) {
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
 
     // 炮管
     ctx.fillStyle = turretColor;
-    const barrelW = Math.max(2, CELL * 0.2);
-    ctx.fillRect(-barrelW/2, -half * 0.85, barrelW, half * 1.1);
+    const barrelW = Math.max(3, CELL * 0.24);
+    ctx.fillRect(-barrelW/2, -half * 0.85, barrelW, half * 1.15);
 
-    // 炮管尖端（神话模式亮金色）
-    ctx.fillStyle = isMythic ? '#ffd700' : '#fff';
-    ctx.fillRect(-1, -half * 0.85 - 2, 3, Math.max(3, CELL * 0.18));
+    // 炮管尖端（加粗+亮色）
+    ctx.fillStyle = isMythic ? '#ffd700' : (isThunder ? '#fff' : (this.isPlayer ? '#fff' : '#fff'));
+    ctx.fillRect(-2, -half * 0.85 - 2, 4, Math.max(4, CELL * 0.22));
+
+    ctx.shadowBlur = 0;
+    // 玩家头顶三角标记
+    if (this.isPlayer) {
+      ctx.fillStyle = thunderMode ? '#00bfff' : (godSlayerMode ? '#ff4500' : (isMythic ? '#ffd700' : '#2ecc71'));
+      ctx.beginPath();
+      ctx.moveTo(0, -half * 1.4);
+      ctx.lineTo(-4, -half * 1.0);
+      ctx.lineTo(4, -half * 1.0);
+      ctx.closePath();
+      ctx.fill();
+    }
 
     // Boss 王冠标记
     if (this.type === 'boss') {
