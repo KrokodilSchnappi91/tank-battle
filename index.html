@@ -2109,18 +2109,18 @@ class Tank {
           const lx=px+dir.x*s*0.35, ly=py+dir.y*s*0.35;
           if (lx<0||lx>=COLS||ly<0||ly>=ROWS) break;
           const life = 4 + s * 0.08;
-          // 细长白色激光+粉色微点
+          // 高光迅猛白色激光+粉色微点
           for (let p=0; p<3; p++) {
             particles.push(new Particle(
-              lx*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.12, ly*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.12,
-              (Math.random()-0.5)*0.6, (Math.random()-0.5)*0.6,
-              ['#f0f0f0','#fff','#f8f8f8'][p], Math.min(life+Math.random()*4, 16)
+              lx*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.1, ly*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.1,
+              (Math.random()-0.5)*1.2, (Math.random()-0.5)*1.2,
+              ['#f8f8f8','#ffffff','#fdfdfd'][p], Math.min(life+Math.random()*3, 10)
             ));
           }
-          if (s%6===0) particles.push(new Particle(
-            lx*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.2, ly*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.2,
-            (Math.random()-0.5)*1, (Math.random()-0.5)*1,
-            '#ff99aa', 6+Math.random()*4
+          if (s%5===0) particles.push(new Particle(
+            lx*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.15, ly*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.15,
+            (Math.random()-0.5)*2, (Math.random()-0.5)*2,
+            '#ff99bb', 5+Math.random()*3
           ));
         }
       }
