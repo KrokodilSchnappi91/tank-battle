@@ -4337,24 +4337,29 @@ function render() {
     const pvPulse = 0.5 + Math.sin(Date.now()/120) * 0.3;
     const px = player.x * CELL;
     const py = player.y * CELL;
-    // 起点范围圈
-    ctx.strokeStyle = `rgba(255,50,0,${0.3+pvPulse*0.2})`;
-    ctx.lineWidth = 2;
+    // 起点范围圈（红色半透明/蓄力越久越大）
+    const startFillA = 0.06 + (thunderCharge/THUNDER_MAX_CHARGE) * 0.1;
+    ctx.fillStyle = `rgba(255,30,0,${startFillA})`;
+    ctx.beginPath();
+    ctx.arc(px, py, pvr, 0, Math.PI*2);
+    ctx.fill();
+    const startStrokeA = 0.25 + (thunderCharge/THUNDER_MAX_CHARGE) * 0.35;
+    ctx.strokeStyle = `rgba(255,50,0,${startStrokeA})`;
+    ctx.lineWidth = 2 + (thunderCharge/THUNDER_MAX_CHARGE) * 2;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
     ctx.arc(px, py, pvr, 0, Math.PI*2);
     ctx.stroke();
-    ctx.fillStyle = `rgba(255,0,0,${0.06+pvPulse*0.03})`;
-    ctx.fill();
     ctx.setLineDash([]);
-    // 落点范围圈（核弹风格）
-    const nukeAlpha = 0.35 + pvPulse * 0.15;
-    ctx.fillStyle = `rgba(0,180,255,${nukeAlpha*0.3})`;
+    // 落点范围圈（蓝色半透明/蓄力越久越大）
+    const fillAlpha = 0.1 + (thunderCharge/THUNDER_MAX_CHARGE) * 0.15;
+    ctx.fillStyle = `rgba(0,150,255,${fillAlpha})`;
     ctx.beginPath();
     ctx.arc(pvx, pvy, pvr, 0, Math.PI*2);
     ctx.fill();
-    ctx.strokeStyle = `rgba(0,200,255,${nukeAlpha})`;
-    ctx.lineWidth = 2 + pvPulse * 2;
+    const strokeAlpha = 0.3 + (thunderCharge/THUNDER_MAX_CHARGE) * 0.4;
+    ctx.strokeStyle = `rgba(0,180,255,${strokeAlpha})`;
+    ctx.lineWidth = 2 + (thunderCharge/THUNDER_MAX_CHARGE) * 3;
     ctx.setLineDash([8, 4]);
     ctx.beginPath();
     ctx.arc(pvx, pvy, pvr, 0, Math.PI*2);
