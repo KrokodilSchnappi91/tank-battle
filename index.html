@@ -1813,33 +1813,25 @@ class Tank {
               if (Math.sqrt(dx*dx+dy*dy)>r) continue;
               const tx=cx+dx,ty=cy+dy;
               if (tx>=0&&tx<COLS&&ty>=0&&ty<ROWS)
-                if (mapData[ty*COLS+tx]===1||mapData[ty*COLS+tx]===2) mapData[ty*COLS+tx]=0;
+                if (mapData[ty*COLS+tx]===1||mapData[ty*COLS+tx]===2||mapData[ty*COLS+tx]===4) mapData[ty*COLS+tx]=0;
             }
             for (const e of enemies) {
               if (!e.alive) continue;
               if (Math.hypot(e.x-t.x, e.y-t.y)<r+0.5) e.hit();
             }
-            // 黑色核心爆炸粒子
-            for (let i = 0; i < 20; i++) {
+            // 黑色闪电光柱渲染(仿血红样式/半径1格)
+            lightningPillars.push({
+              x: t.x*CELL, y: t.y*CELL,
+              life: 22, maxLife: 22,
+              radius: 1, _blackPillar: true
+            });
+            // 黑光粒子
+            for (let i = 0; i < 15; i++) {
               const a = Math.random()*Math.PI*2;
-              const d = Math.random()*r*BASE_CELL;
-              particles.push(new Particle(t.x*BASE_CELL+Math.cos(a)*d, t.y*BASE_CELL+Math.sin(a)*d,
-                Math.cos(a)*(2+Math.random()*4), Math.sin(a)*(2+Math.random()*4),
-                '#111', 12+Math.random()*15));
-            }
-            // 白色光圈包裹
-            for (let i = 0; i < 30; i++) {
-              const a = Math.random()*Math.PI*2;
-              const d = Math.random()*r*BASE_CELL*0.7;
+              const d = Math.random()*1*BASE_CELL;
               particles.push(new Particle(t.x*BASE_CELL+Math.cos(a)*d, t.y*BASE_CELL+Math.sin(a)*d,
                 Math.cos(a)*(1+Math.random()*3), Math.sin(a)*(1+Math.random()*3),
-                '#fff', 8+Math.random()*10));
-            }
-            // 灰色闪光核心
-            for (let i = 0; i < 8; i++) {
-              particles.push(new Particle(t.x*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.5, t.y*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.5,
-                (Math.random()-0.5)*3, (Math.random()-0.5)*3,
-                '#888', 5+Math.random()*6));
+                '#222', 10+Math.random()*12));
             }
           });
         }
@@ -4117,6 +4109,41 @@ function render() {
   // 血红色闪电光柱渲染 — 3D圆柱光柱
   for (const p of lightningPillars) {
     const alpha = p.life / p.maxLife;
+    if (p._blackPillar) {
+      // 黑色闪电光柱(仿血红/半径1格)
+      const br = p.radius * CELL;
+      const bh = br * 1.5;
+      ctx.fillStyle = `rgba(0,0,0,${alpha*0.35})`;
+      ctx.beginPath(); ctx.ellipse(px, py, br, br*0.4, 0, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = `rgba(60,20,80,${alpha*0.5})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      for (let bolt=0; bolt<24; bolt++) {
+        const a = (bolt/24)*Math.PI*2;
+        const baseR = br*(0.2+Math.random()*0.8);
+        const bx = px+Math.cos(a)*baseR, by = py+Math.sin(a)*baseR*0.4;
+        const tX = px+Math.cos(a)*baseR*0.5, tY = py-bh+Math.sin(a)*baseR*0.2;
+        const isCore = bolt%6===0;
+        ctx.strokeStyle = isCore ? `rgba(255,255,255,${alpha*0.5})` : `rgba(${30+bolt*4},${15+bolt*2},${50+bolt*4},${alpha*0.7})`;
+        ctx.lineWidth = isCore?4:5;
+        ctx.shadowColor = isCore?'#fff':'#330044';
+        ctx.shadowBlur = isCore?6:12;
+        ctx.beginPath(); ctx.moveTo(bx, by);
+        for (let s=1;s<=5;s++) {
+          const t=s/5;
+          const sx=bx+(tX-bx)*t+(Math.sin(s*6+bolt)*br*0.18);
+          const sy=by+(tY-by)*t;
+          ctx.lineTo(sx,sy);
+        }
+        ctx.stroke();
+      }
+      ctx.shadowBlur=0; ctx.lineWidth=1;
+      ctx.strokeStyle=`rgba(100,30,150,${alpha*0.6})`;
+      ctx.lineWidth=2;
+      ctx.beginPath(); ctx.ellipse(px, py-bh, br, br*0.35, 0, 0, Math.PI*2); ctx.stroke();
+      ctx.shadowBlur=0;
+      continue;
+    }
     if (p._darkGreen) {
       // 刀光剑影：多层错乱深绿闪电围绕玩家
       const drx = (player ? player.x : p.x/CELL) * CELL;
