@@ -4357,14 +4357,6 @@ function render() {
     const pvx = player._prevLX * CELL;
     const pvy = player._prevLY * CELL;
     const pvr = player._prevLR * CELL;
-    const px = player.x * CELL;
-    const py = player.y * CELL;
-    // 起点范围圈
-    ctx.fillStyle = `rgba(255,30,0,${0.04+ratio*0.08})`;
-    ctx.beginPath(); ctx.arc(px, py, pvr, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = `rgba(255,50,0,${0.2+ratio*0.3})`;
-    ctx.lineWidth = 2 + ratio * 2;
-    ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(px, py, pvr, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
     // 落点范围圈
     ctx.fillStyle = `rgba(0,150,255,${0.08+ratio*0.12})`;
     ctx.beginPath(); ctx.arc(pvx, pvy, pvr, 0, Math.PI*2); ctx.fill();
