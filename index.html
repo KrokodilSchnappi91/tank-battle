@@ -690,6 +690,7 @@ let lightningPillars = [];    // 血光柱渲染特效
 let burnZones = [];           // 灼烧范围
 let greenRipples = [] // unused;        // 绿色波纹渲染
 let thunderCharge = 0;        // 雷公蓄力值
+let darkStrikeTimer = 0;      // 黑闪计时器
 const THUNDER_MAX_CHARGE = 90; // 最大蓄力帧数
 let bossKillCount = 0;        // Boss击杀总数（跨关卡）
 let demonKingActive = false;  // 魔王战中
@@ -3428,6 +3429,17 @@ function update() {
 
   // 雷公波纹技能冷却
   if (player && player._rippleCooldown > 0) player._rippleCooldown--;
+
+  // 雷公自动黑闪(每0.6s)
+  if (thunderMode && player && player.alive) {
+    darkStrikeTimer++;
+    if (darkStrikeTimer >= 54) {
+      darkStrikeTimer = 0;
+      spawnDarkLightning(2+Math.random()*(COLS-4), 2+Math.random()*(ROWS-4), 1);
+    }
+  } else {
+    darkStrikeTimer = 0;
+  }
 
   // 体力回复（杀神模式上限+50%）
   const staminaCap = godSlayerMode ? 750 : (mythicMode ? 250 : (thunderMode ? 300 : MAX_STAMINA));
