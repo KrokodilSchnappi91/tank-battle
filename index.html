@@ -4230,7 +4230,7 @@ function render() {
     const fallOffset = p._lowDensity ? ((p.life / p.maxLife) - 0.3) * r * 3 : 0; // 从上方落下
     const drawY = py - Math.max(0, fallOffset);
     const H = p._lowDensity ? r * 3.6 : r * 1.8;
-    const topR = p._lowDensity ? r * 0.5 : r * 0.7;
+    const topR = p._lowDensity ? r : r * 0.7;
     // 底部椭圆
     ctx.fillStyle = p._lowDensity ? `rgba(0,0,0,${alpha*0.4})` : `rgba(255,0,0,${alpha*0.3})`;
     ctx.beginPath();
@@ -4246,7 +4246,7 @@ function render() {
       const baseR = r * (0.2 + Math.random() * 0.8);
       const baseX = px + Math.cos(angle) * baseR;
       const baseY = drawY + Math.sin(angle) * baseR * 0.4;
-      const topRatio = p._lowDensity ? 0.35 : 0.7;
+      const topRatio = p._lowDensity ? 1.0 : 0.7;
       const tRX = baseR * topRatio;
       const tRY = baseR * topRatio * 0.35;
       const topX = px + Math.cos(angle + p.life*0.04) * tRX;
