@@ -2109,14 +2109,19 @@ class Tank {
           const lx=px+dir.x*s*0.35, ly=py+dir.y*s*0.35;
           if (lx<0||lx>=COLS||ly<0||ly>=ROWS) break;
           const life = 4 + s * 0.08;
-          // 密集蓝色颗粒
+          // 密集白色颗粒+灰色点缀
           for (let p=0; p<3; p++) {
             particles.push(new Particle(
               lx*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.5, ly*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.5,
               (Math.random()-0.5)*1.5, (Math.random()-0.5)*1.5,
-              ['#111','#222','#333'][p], Math.min(life+Math.random()*4, 18)
+              ['#ddd','#eee','#fff'][p], Math.min(life+Math.random()*4, 18)
             ));
           }
+          if (s%5===0) particles.push(new Particle(
+            lx*BASE_CELL, ly*BASE_CELL,
+            (Math.random()-0.5)*1, (Math.random()-0.5)*1,
+            '#888', 6+Math.random()*4
+          ));
         }
       }
       player._chainHit = false;
