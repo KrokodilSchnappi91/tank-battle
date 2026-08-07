@@ -4330,12 +4330,24 @@ function render() {
   ctx.textAlign = 'left';
   ctx.fillText(`⚡${Math.ceil(stamina)}/${stCap}`, stBarX + stBarW + 5, stBarY + stBarH - 1);
 
-  // 雷公蓄力预览落点
+  // 雷公蓄力预览落点+起点范围
   if (thunderMode && player && player.alive && thunderCharge > 0 && player._previewX !== undefined) {
     const pvx = player._previewX * CELL;
     const pvy = player._previewY * CELL;
     const pvr = player._previewR * CELL;
     const pvPulse = 0.5 + Math.sin(Date.now()/120) * 0.3;
+    const px = player.x * CELL;
+    const py = player.y * CELL;
+    // 起点范围圈
+    ctx.strokeStyle = `rgba(255,50,0,${0.3+pvPulse*0.2})`;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.arc(px, py, pvr, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255,0,0,${0.06+pvPulse*0.03})`;
+    ctx.fill();
+    ctx.setLineDash([]);
     // 落点光圈
     ctx.strokeStyle = `rgba(255,255,255,${0.5+pvPulse*0.3})`;
     ctx.lineWidth = 3;
@@ -4344,13 +4356,12 @@ function render() {
     ctx.arc(pvx, pvy, 6, 0, Math.PI*2);
     ctx.stroke();
     ctx.setLineDash([]);
-    // 范围圈
+    // 落点范围圈
     ctx.strokeStyle = `rgba(0,180,255,${0.35+pvPulse*0.2})`;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(pvx, pvy, pvr, 0, Math.PI*2);
     ctx.stroke();
-    // 范围填充
     ctx.fillStyle = `rgba(0,150,255,${0.08+pvPulse*0.04})`;
     ctx.fill();
     // 落点十字
