@@ -1798,6 +1798,23 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
+          // 黑色闪电：所有敌人+随机8位置/延迟18帧/半径1.5
+          const targets = [];
+          for (const e of enemies) {
+            if (e.alive) targets.push({ x: e.x, y: e.y });
+          }
+          for (let i = 0; i < 8; i++) {
+            targets.push({ x: 2+Math.random()*(COLS-4), y: 2+Math.random()*(ROWS-4) });
+          }
+          targets.forEach((t, idx) => {
+            // 加入延迟队列(18帧=0.3s)
+            thunderQueue.push({
+              index: idx, total: targets.length,
+              x: t.x, y: t.y,
+              delay: 18,
+              _blackStrike: true
+            });
+          });
         }
       }
 
@@ -3576,7 +3593,27 @@ function update() {
     thunderQueue.forEach(q => q.delay--);
 
     toRelease.forEach(q => {
-      if (q._isRipple) {
+      if (q._blackStrike) {
+        // 黑色闪电打击(仿血光柱)
+        const r = 1.5;
+        const cx = Math.floor(q.x), cy = Math.floor(q.y);
+        for (let dy=-2;dy<=2;dy++) for (let dx=-2;dx<=2;dx++) {
+          if (Math.sqrt(dx*dx+dy*dy)>r) continue;
+          const tx=cx+dx,ty=cy+dy;
+          if (tx>=0&&tx<COLS&&ty>=0&&ty<ROWS)
+            if (mapData[ty*COLS+tx]===1||mapData[ty*COLS+tx]===2) mapData[ty*COLS+tx]=0;
+        }
+        for (const e of enemies) {
+          if (!e.alive) continue;
+          if (Math.hypot(e.x-q.x, e.y-q.y)<r+0.5) e.hit();
+        }
+        lightningPillars.push({
+          x: q.x*CELL, y: q.y*CELL,
+          life: 20, maxLife: 20,
+          radius: r, _blackPillar: true
+        });
+        screenShake = Math.max(screenShake, 3);
+      } else if (q._isRipple) {
         // 绿色波纹：复用lightningPillars渲染
         const rippleR = (q.index + 1) * 2.2; // 每圈2.2格，16圈共35格
         lightningPillars.push({
@@ -4073,6 +4110,38 @@ function render() {
   // 血红色闪电光柱渲染 — 3D圆柱光柱
   for (const p of lightningPillars) {
     const alpha = p.life / p.maxLife;
+    if (p._blackPillar) {
+      // 黑色闪电光柱(仿血红样式)
+      const br = p.radius * CELL;
+      const bh = br * 1.5;
+      ctx.fillStyle = `rgba(0,0,0,${alpha*0.3})`;
+      ctx.beginPath(); ctx.ellipse(px, py, br, br*0.4, 0, 0, Math.PI*2); ctx.fill();
+      for (let bolt=0; bolt<20; bolt++) {
+        const a = (bolt/20)*Math.PI*2;
+        const baseR = br*(0.2+Math.random()*0.8);
+        const bx = px+Math.cos(a)*baseR, by = py+Math.sin(a)*baseR*0.4;
+        const tx = px+Math.cos(a)*baseR*0.5, ty = py-bh+Math.sin(a)*baseR*0.2;
+        ctx.strokeStyle = `rgba(${20+bolt*3},${10+bolt*2},${30+bolt*3},${alpha*0.7})`;
+        ctx.lineWidth = bolt%5===0?5:3;
+        ctx.shadowColor = '#220044';
+        ctx.shadowBlur = 15;
+        ctx.beginPath(); ctx.moveTo(bx, by);
+        for (let s=1;s<=5;s++) {
+          const t=s/5;
+          const sx=bx+(tx-bx)*t+(Math.sin(s*6+bolt)*br*0.2);
+          const sy=by+(ty-by)*t;
+          ctx.lineTo(sx,sy);
+        }
+        ctx.stroke();
+      }
+      ctx.shadowBlur=0; ctx.lineWidth=1;
+      // 顶部光圈
+      ctx.strokeStyle=`rgba(80,20,120,${alpha*0.6})`;
+      ctx.lineWidth=2;
+      ctx.beginPath(); ctx.ellipse(px, py-bh, br, br*0.35, 0, 0, Math.PI*2); ctx.stroke();
+      ctx.shadowBlur=0;
+      continue;
+    }
     if (p._darkGreen) {
       // 刀光剑影：多层错乱深绿闪电围绕玩家
       const drx = (player ? player.x : p.x/CELL) * CELL;
