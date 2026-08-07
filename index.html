@@ -4270,10 +4270,14 @@ function render() {
       }
       ctx.beginPath();
       ctx.moveTo(baseX, baseY);
-      const jitterStrength = p._lowDensity ? 0.06 : 0.25;
+      const jitterStrength = p._lowDensity ? 0.15 : 0.25;
       for (let s = 1; s <= 6; s++) {
         const t = s / 6;
-        const sx = baseX + (topX - baseX) * t + (Math.sin(s*7+bolt+p.life*0.15) * r * jitterStrength);
+        // 折线感：三角形波+阶梯突变
+        const zigzag = p._lowDensity
+          ? ((s + bolt) % 3 - 1) * jitterStrength * 2 // 三段阶梯
+          : Math.sin(s*7+bolt+p.life*0.15);
+        const sx = baseX + (topX - baseX) * t + (zigzag * r);
         const sy = baseY + (topY - baseY) * t;
         ctx.lineTo(sx, sy);
       }
