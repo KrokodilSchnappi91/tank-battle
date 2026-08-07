@@ -3534,7 +3534,7 @@ function update() {
         screenShake = Math.max(screenShake, 3 + q.index);
       } else {
         const spin = q._reverseSpin ? -1 : 1;
-        const angle = (Math.PI * 2 / q.total) * q.index * spin + Date.now() * 0.002;
+        const angle = (Math.PI * 2 / q.total) * q.index * spin + Date.now() * 0.003;
         const dir = { x: Math.cos(angle), y: Math.sin(angle), angle };
         const bolt = new Bullet(q.x + dir.x * 0.6, q.y + dir.y * 0.6, dir, true, false, 99);
         bolt.isMissile = true;
