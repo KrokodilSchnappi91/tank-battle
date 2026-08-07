@@ -936,14 +936,16 @@ function spawnBloodLightning(x, y, radius, colorType) {
   const cx = Math.floor(x), cy = Math.floor(y);
   const RADIUS = radius || 4;
   const isWhite = colorType === 'white';
-  // 摧毁周围障碍
-  for (let dy = -RADIUS; dy <= RADIUS; dy++)
-    for (let dx = -RADIUS; dx <= RADIUS; dx++) {
-      if (Math.sqrt(dx*dx+dy*dy) > RADIUS) continue;
-      const tx = cx+dx, ty = cy+dy;
-      if (tx>=0 && tx<COLS && ty>=0 && ty<ROWS)
-        if (mapData[ty*COLS+tx]===1 || mapData[ty*COLS+tx]===2) mapData[ty*COLS+tx]=0;
-    }
+  // 摧毁周围障碍(白色闪电跳过)
+  if (!isWhite) {
+    for (let dy = -RADIUS; dy <= RADIUS; dy++)
+      for (let dx = -RADIUS; dx <= RADIUS; dx++) {
+        if (Math.sqrt(dx*dx+dy*dy) > RADIUS) continue;
+        const tx = cx+dx, ty = cy+dy;
+        if (tx>=0 && tx<COLS && ty>=0 && ty<ROWS)
+          if (mapData[ty*COLS+tx]===1 || mapData[ty*COLS+tx]===2) mapData[ty*COLS+tx]=0;
+      }
+  }
   // 伤害敌人(白色闪电跳过)
   if (!isWhite) {
     for (let i = enemies.length-1; i >= 0; i--) {
@@ -1802,10 +1804,8 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
-          // 3道白色闪电(复用血红闪电/半径1格)
-          for (let i = 0; i < 3; i++) {
-            spawnBloodLightning(2+Math.random()*(COLS-4), 2+Math.random()*(ROWS-4), 1, 'white');
-          }
+          // 1道白色闪电(最小测试)
+          spawnBloodLightning(2+Math.random()*(COLS-4), 2+Math.random()*(ROWS-4), 1, 'white');
           // 闪烁粒子
           for (let i = 0; i < 15; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*5, (Math.random()-0.5)*5, '#00bfff', 8+Math.random()*10));
@@ -4086,35 +4086,11 @@ function render() {
   for (const p of lightningPillars) {
     const alpha = p.life / p.maxLife;
     if (p._whitePillar) {
-      // 白色闪电光柱(密度降低60%/19条)
       const wr = p.radius * CELL;
-      const wh = wr * 1.5;
-      ctx.fillStyle = `rgba(255,255,255,${alpha*0.2})`;
-      ctx.beginPath(); ctx.ellipse(px, py, wr, wr*0.4, 0, 0, Math.PI*2); ctx.fill();
-      ctx.strokeStyle = `rgba(200,200,200,${alpha*0.4})`;
+      ctx.fillStyle = `rgba(255,255,255,${alpha*0.25})`;
+      ctx.beginPath(); ctx.arc(px, py, wr, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = `rgba(200,200,200,${alpha*0.5})`;
       ctx.lineWidth = 2; ctx.stroke();
-      for (let bolt=0; bolt<19; bolt++) {
-        const a = (bolt/19)*Math.PI*2;
-        const baseR = wr*(0.2+Math.random()*0.8);
-        const bx=px+Math.cos(a)*baseR, by=py+Math.sin(a)*baseR*0.4;
-        const tX=px+Math.cos(a)*baseR*0.5, tY=py-wh+Math.sin(a)*baseR*0.2;
-        const isCore = bolt%5===0;
-        ctx.strokeStyle = isCore ? `rgba(255,255,255,${alpha*0.6})` : `rgba(180,180,200,${alpha*0.45})`;
-        ctx.lineWidth = isCore?3:4;
-        ctx.shadowColor = isCore?'#fff':'#aaa';
-        ctx.shadowBlur = isCore?6:10;
-        ctx.beginPath(); ctx.moveTo(bx, by);
-        for (let s=1;s<=4;s++) {
-          const t=s/4;
-          ctx.lineTo(bx+(tX-bx)*t+(Math.sin(s*7+bolt)*wr*0.15), by+(tY-by)*t);
-        }
-        ctx.stroke();
-      }
-      ctx.shadowBlur=0; ctx.lineWidth=1;
-      ctx.strokeStyle=`rgba(200,200,220,${alpha*0.5})`;
-      ctx.lineWidth=2;
-      ctx.beginPath(); ctx.ellipse(px, py-wh, wr, wr*0.35, 0, 0, Math.PI*2); ctx.stroke();
-      ctx.shadowBlur=0;
       continue;
     }
     if (p._darkGreen) {
