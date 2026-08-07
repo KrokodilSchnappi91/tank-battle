@@ -962,13 +962,16 @@ function spawnBloodLightning(x, y, radius) {
   }
 }
 
-// 黑闪专用函数(纯视觉/不破墙不伤敌)
+// 黑闪专用函数(纯粒子/不碰lightningPillars)
 function spawnDarkLightning(x, y, radius) {
-  lightningPillars.push({ x: x * CELL, y: y * CELL, life: 120, maxLife: 120, radius: radius || 1, _lowDensity: true });
-  for (let i = 0; i < 15; i++) {
+  const r = (radius||1)*BASE_CELL;
+  for (let i = 0; i < 30; i++) {
     const a = Math.random()*Math.PI*2;
-    const d = Math.random()*BASE_CELL;
-    particles.push(new Particle(x*BASE_CELL+Math.cos(a)*d, y*BASE_CELL+Math.sin(a)*d, Math.cos(a)*(1+Math.random()*2), Math.sin(a)*(1+Math.random()*2), '#333', 10+Math.random()*10));
+    const d = Math.random()*r;
+    particles.push(new Particle(x*BASE_CELL+Math.cos(a)*d, y*BASE_CELL+Math.sin(a)*d, Math.cos(a)*(2+Math.random()*4), Math.sin(a)*(2+Math.random()*4), '#111', 15+Math.random()*20));
+  }
+  for (let i = 0; i < 10; i++) {
+    particles.push(new Particle(x*BASE_CELL+(Math.random()-0.5)*r, y*BASE_CELL+(Math.random()-0.5)*r, (Math.random()-0.5)*3, (Math.random()-0.5)*3, '#555', 8+Math.random()*8));
   }
 }
 
@@ -4129,37 +4132,6 @@ function render() {
       ctx.lineWidth=2;
       ctx.beginPath(); ctx.ellipse(px, py-wh, wr, wr*0.35, 0, 0, Math.PI*2); ctx.stroke();
       ctx.shadowBlur=0;
-      continue;
-    }
-    if (p._lowDensity) {
-      // 黑闪：折线/高长/白核
-      const br = p.radius * CELL;
-      const bh = br * 3.6;
-      ctx.fillStyle = `rgba(0,0,0,${alpha*0.6})`;
-      ctx.beginPath(); ctx.ellipse(px, py, br, br*0.4, 0, 0, Math.PI*2); ctx.fill();
-      ctx.strokeStyle = `rgba(20,20,20,${alpha*0.6})`; ctx.lineWidth=3; ctx.stroke();
-      for (let bolt=0; bolt<5; bolt++) {
-        const a=(bolt/5)*Math.PI*2;
-        const bR=br*(0.5+Math.random()*0.5);
-        const bx=px+Math.cos(a)*bR, by=py+Math.sin(a)*bR*0.4;
-        const tX=px+Math.cos(a)*bR, tY=py-bh+Math.sin(a)*bR*0.35;
-        const isW=bolt%3===0;
-        ctx.strokeStyle=isW?`rgba(255,255,255,${alpha*0.7})`:`rgba(5,3,5,${alpha*0.95})`;
-        ctx.lineWidth=isW?2:4; ctx.shadowColor=isW?'#fff':'#000'; ctx.shadowBlur=isW?3:8;
-        ctx.beginPath(); ctx.moveTo(bx,by);
-        for(let s=1;s<=6;s++){const t=s/6;
-          const zig=((s+bolt)%3-1)*0.3;
-          ctx.lineTo(bx+(tX-bx)*t+zig*br, by+(tY-by)*t);}
-        ctx.stroke();
-      }
-      ctx.shadowBlur=0; ctx.lineWidth=1;
-      ctx.strokeStyle=`rgba(15,15,15,${alpha*0.7})`; ctx.lineWidth=2;
-      ctx.beginPath(); ctx.ellipse(px,py-bh,br,br*0.35,0,0,Math.PI*2); ctx.stroke();
-      ctx.shadowBlur=0;
-      const gA=alpha*0.7;
-      const gl=ctx.createRadialGradient(px,py,0,px,py,br);
-      gl.addColorStop(0,`rgba(30,30,30,${gA})`); gl.addColorStop(0.3,`rgba(5,5,5,${gA*0.5})`); gl.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(px,py,br,0,Math.PI*2); ctx.fill();
       continue;
     }
     if (p._darkGreen) {
