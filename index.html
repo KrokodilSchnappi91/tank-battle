@@ -4228,11 +4228,11 @@ function render() {
     const H = r * 1.8;
     const topR = r * 0.7; // 顶部70%（圆柱体）
     // 底部椭圆
-    ctx.fillStyle = `rgba(255,0,0,${alpha*0.3})`;
+    ctx.fillStyle = p._lowDensity ? `rgba(0,0,0,${alpha*0.4})` : `rgba(255,0,0,${alpha*0.3})`;
     ctx.beginPath();
     ctx.ellipse(px, py, r, r*0.4, 0, 0, Math.PI*2);
     ctx.fill();
-    ctx.strokeStyle = `rgba(255,100,0,${alpha*0.5})`;
+    ctx.strokeStyle = p._lowDensity ? `rgba(40,40,40,${alpha*0.5})` : `rgba(255,100,0,${alpha*0.5})`;
     ctx.lineWidth = 3;
     ctx.stroke();
     // 圆柱体内闪电束
@@ -4246,15 +4246,23 @@ function render() {
       const tRY = baseR * 0.7 * 0.35;
       const topX = px + Math.cos(angle + p.life*0.04) * tRX;
       const topY = py - H + Math.sin(angle + p.life*0.04) * tRY;
-      const isCore = bolt % 7 === 0; // 7条纯白
-      const isGold = bolt % 3 === 0; // 16条金色
-      const isRed = !isCore && !isGold; // 25条血红
-      ctx.strokeStyle = isCore
-        ? `rgba(255,255,255,${alpha})`
-        : (isGold ? `rgba(255,240,50,${alpha*0.8})` : `rgba(255,${10+bolt*2},0,${alpha*0.9})`);
-      ctx.lineWidth = isCore ? 7 : (isGold ? 8 : 9);
-      ctx.shadowColor = isCore ? '#fff' : (isGold ? '#ffdd00' : '#ff0000');
-      ctx.shadowBlur = isCore ? 14 : (isGold ? 18 : 26);
+      const isCore = bolt % 7 === 0;
+      const isGold = bolt % 3 === 0;
+      const isRed = !isCore && !isGold;
+      if (p._lowDensity) {
+        // 黑色闪电
+        ctx.strokeStyle = isCore ? `rgba(180,180,180,${alpha*0.6})` : `rgba(${5+bolt*2},${3+bolt},${8+bolt*2},${alpha*0.85})`;
+        ctx.lineWidth = isCore ? 4 : 6;
+        ctx.shadowColor = '#000';
+        ctx.shadowBlur = isCore ? 6 : 12;
+      } else {
+        ctx.strokeStyle = isCore
+          ? `rgba(255,255,255,${alpha})`
+          : (isGold ? `rgba(255,240,50,${alpha*0.8})` : `rgba(255,${10+bolt*2},0,${alpha*0.9})`);
+        ctx.lineWidth = isCore ? 7 : (isGold ? 8 : 9);
+        ctx.shadowColor = isCore ? '#fff' : (isGold ? '#ffdd00' : '#ff0000');
+        ctx.shadowBlur = isCore ? 14 : (isGold ? 18 : 26);
+      }
       ctx.beginPath();
       ctx.moveTo(baseX, baseY);
       for (let s = 1; s <= 6; s++) {
@@ -4268,21 +4276,27 @@ function render() {
     ctx.shadowBlur = 0;
     ctx.lineWidth = 1;
     // 顶部光圈
-    ctx.strokeStyle = `rgba(255,80,0,${alpha*0.7})`;
+    ctx.strokeStyle = p._lowDensity ? `rgba(60,60,60,${alpha*0.6})` : `rgba(255,80,0,${alpha*0.7})`;
     ctx.lineWidth = 2;
-    ctx.shadowColor = '#ff4400';
+    ctx.shadowColor = p._lowDensity ? '#000' : '#ff4400';
     ctx.shadowBlur = 6;
     ctx.beginPath();
     ctx.ellipse(px, py - H, topR, topR*0.35, 0, 0, Math.PI*2);
     ctx.stroke();
     ctx.shadowBlur = 0;
-    // 中心光球（更亮）
+    // 中心光球
     const glowAlpha = alpha * 0.7;
     const glow = ctx.createRadialGradient(px, py, 0, px, py, r);
-    glow.addColorStop(0, `rgba(255,255,255,${glowAlpha})`);
-    glow.addColorStop(0.1, `rgba(255,220,50,${glowAlpha*0.8})`);
-    glow.addColorStop(0.3, `rgba(255,30,0,${glowAlpha*0.5})`);
-    glow.addColorStop(1, `rgba(255,0,0,0)`);
+    if (p._lowDensity) {
+      glow.addColorStop(0, `rgba(100,100,100,${glowAlpha})`);
+      glow.addColorStop(0.3, `rgba(20,20,20,${glowAlpha*0.5})`);
+      glow.addColorStop(1, `rgba(0,0,0,0)`);
+    } else {
+      glow.addColorStop(0, `rgba(255,255,255,${glowAlpha})`);
+      glow.addColorStop(0.1, `rgba(255,220,50,${glowAlpha*0.8})`);
+      glow.addColorStop(0.3, `rgba(255,30,0,${glowAlpha*0.5})`);
+      glow.addColorStop(1, `rgba(255,0,0,0)`);
+    }
     ctx.fillStyle = glow;
     ctx.beginPath();
     ctx.arc(px, py, r, 0, Math.PI*2);
