@@ -2104,13 +2104,19 @@ class Tank {
             }
           }
         }
-        // 粗蓝色激光粒子（渐隐消失）
+        // 弥散颗粒线条
         for (let s=0; s<=steps; s++) {
           const lx=px+dir.x*s*0.35, ly=py+dir.y*s*0.35;
           if (lx<0||lx>=COLS||ly<0||ly>=ROWS) break;
-          const life = 3 + s * 0.1; // 越远存活越久，近处快速消失
-          particles.push(new Particle(lx*BASE_CELL, ly*BASE_CELL, (Math.random()-0.5)*2,(Math.random()-0.5)*2,'#00ccff',Math.min(life,15)));
-          if (s%4===0) particles.push(new Particle(lx*BASE_CELL, ly*BASE_CELL, (Math.random()-0.5)*1,(Math.random()-0.5)*1,'#ffffff',Math.min(life*0.6,8)));
+          const life = 4 + s * 0.08;
+          // 密集蓝色颗粒
+          for (let p=0; p<3; p++) {
+            particles.push(new Particle(
+              lx*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.5, ly*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.5,
+              (Math.random()-0.5)*1.5, (Math.random()-0.5)*1.5,
+              ['#00bfff','#33ccff','#66ddff'][p], Math.min(life+Math.random()*4, 18)
+            ));
+          }
         }
       }
       player._chainHit = false;
