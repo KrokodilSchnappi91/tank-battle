@@ -1493,40 +1493,44 @@ class Tank {
       return;
     }
 
-    // ===== 移动输入：WASD（桌面）或左摇杆（手机） =====
+    // ===== 移动输入：WASD/摇杆 → 360°全方向 =====
     let moveDx = 0, moveDy = 0;
     if (moveJoy.active) {
       moveDx = moveJoy.dx;
       moveDy = moveJoy.dy;
     } else {
-      if (isKeyDown('KeyW')) moveDy = -1;
-      if (isKeyDown('KeyS')) moveDy = 1;
-      if (isKeyDown('KeyA')) moveDx = -1;
-      if (isKeyDown('KeyD')) moveDx = 1;
+      if (isKeyDown('KeyW') || isKeyDown('ArrowUp'))    moveDy = -1;
+      if (isKeyDown('KeyS') || isKeyDown('ArrowDown'))  moveDy = 1;
+      if (isKeyDown('KeyA') || isKeyDown('ArrowLeft'))  moveDx = -1;
+      if (isKeyDown('KeyD') || isKeyDown('ArrowRight')) moveDx = 1;
     }
 
     if (moveDx !== 0 || moveDy !== 0) {
-      // 更新车身朝向（优先水平方向）
-      if (moveDx !== 0) this.dir = moveDx > 0 ? DIR.RIGHT : DIR.LEFT;
-      else if (moveDy !== 0) this.dir = moveDy > 0 ? DIR.DOWN : DIR.UP;
+      // 360°方向：归一化向量
+      const mag = Math.sqrt(moveDx*moveDx + moveDy*moveDy);
+      const normDx = moveDx / mag;
+      const normDy = moveDy / mag;
+      const moveAngle = Math.atan2(normDy, normDx);
+      const moveDir = { x: normDx, y: normDy, angle: moveAngle };
+      this.dir = moveDir;
 
-      // 移动车身（普通半速，神话1.5倍速）
+      // 移动车身
       const spd = this.speed * (mythicMode ? 0.05 : 0.025);
-      const nx = this.x + moveDx * spd;
-      const ny = this.y + moveDy * spd;
+      const nx = this.x + normDx * spd;
+      const ny = this.y + normDy * spd;
 
-      if (moveDx !== 0 && moveDy !== 0) {
-        if (this.canMoveTo(nx, this.y, this.dir)) this.x = nx;
-        if (this.canMoveTo(this.x, ny, this.dir)) this.y = ny;
-      } else if (moveDx !== 0) {
-        if (this.canMoveTo(nx, this.y, this.dir)) this.x = nx;
-      } else if (moveDy !== 0) {
-        if (this.canMoveTo(this.x, ny, this.dir)) this.y = ny;
+      // 尝试对角移动，不行则分别尝试
+      if (this.canMoveTo(nx, ny, moveDir)) {
+        this.x = nx; this.y = ny;
+      } else if (this.canMoveTo(nx, this.y, moveDir)) {
+        this.x = nx;
+      } else if (this.canMoveTo(this.x, ny, moveDir)) {
+        this.y = ny;
       }
 
       // 无摇杆输入时炮塔跟随移动方向
       if (!aimJoy.active && !mouseOnCanvas) {
-        this.turretDir = this.dir;
+        this.turretDir = moveDir;
       }
     }
 
@@ -1534,7 +1538,6 @@ class Tank {
     if (aimJoy.active) {
       const angle = Math.atan2(aimJoy.dy, aimJoy.dx);
       this.turretDir = { x: Math.cos(angle), y: Math.sin(angle), angle };
-      // 右摇杆拖动时自动射击
       this.shoot();
     } else if (mouseOnCanvas && !isTouchDevice) {
       const angle = Math.atan2(mouseY - this.y, mouseX - this.x);
