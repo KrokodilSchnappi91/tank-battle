@@ -962,28 +962,12 @@ function spawnBloodLightning(x, y, radius) {
   }
 }
 
-// 黑闪专用函数(光柱+粒子)
+// 黑闪专用函数(纯视觉光柱+粒子)
 function spawnDarkLightning(x, y, radius) {
-  const RADIUS = radius || 1;
-  // 破坏障碍
-  const cx = Math.floor(x), cy = Math.floor(y);
-  for (let dy=-RADIUS;dy<=RADIUS;dy++) for (let dx=-RADIUS;dx<=RADIUS;dx++) {
-    if (Math.sqrt(dx*dx+dy*dy)>RADIUS) continue;
-    const tx=cx+dx,ty=cy+dy;
-    if (tx>=0&&tx<COLS&&ty>=0&&ty<ROWS)
-      if (mapData[ty*COLS+tx]===1||mapData[ty*COLS+tx]===2) mapData[ty*COLS+tx]=0;
-  }
-  // 伤敌
-  for (let i=enemies.length-1;i>=0;i--) {
-    const e=enemies[i]; if(!e||!e.alive) continue;
-    if (Math.hypot(e.x-x,e.y-y)<RADIUS+1) e.hit();
-  }
-  // 光柱渲染
-  lightningPillars.push({x:x*CELL,y:y*CELL,life:90,maxLife:90,radius:RADIUS,_blackPillar:true});
-  // 粒子
-  for (let i=0;i<20;i++) {
-    const a=Math.random()*Math.PI*2; const d=Math.random()*RADIUS*BASE_CELL;
-    particles.push(new Particle(x*BASE_CELL+Math.cos(a)*d,y*BASE_CELL+Math.sin(a)*d,Math.cos(a)*(2+Math.random()*4),Math.sin(a)*(2+Math.random()*4),'#111',15+Math.random()*20));
+  lightningPillars.push({x:x*CELL,y:y*CELL,life:90,maxLife:90,radius:radius||1,_blackPillar:true});
+  for (let i=0;i<15;i++) {
+    const a=Math.random()*Math.PI*2; const d=Math.random()*BASE_CELL;
+    particles.push(new Particle(x*BASE_CELL+Math.cos(a)*d,y*BASE_CELL+Math.sin(a)*d,Math.cos(a)*(1+Math.random()*3),Math.sin(a)*(1+Math.random()*3),'#222',10+Math.random()*15));
   }
 }
 
@@ -3453,7 +3437,7 @@ function update() {
     if (darkStrikeTimer >= 54) {
       darkStrikeTimer = 0;
       // shift+click触发6道，自动触发1道
-      const count = player._multiStrike ? 6 : 1;
+      const count = player._multiStrike ? 3 : 1;
       player._multiStrike = false;
       for (let i = 0; i < count; i++) {
         spawnDarkLightning(2+Math.random()*(COLS-4), 2+Math.random()*(ROWS-4), 1);
