@@ -1798,7 +1798,8 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
-          // 黑色闪电：所有敌人+随机8位置(直接执行不排队)
+          // 黑色闪电：所有敌人+随机8位置
+          // 伤害立即执行，视觉效果延迟0.3s(18frame)
           const targets = [];
           for (const e of enemies) {
             if (e.alive) targets.push({ x: e.x, y: e.y });
@@ -1809,6 +1810,7 @@ class Tank {
           targets.forEach((t) => {
             const r = 1.5;
             const cx = Math.floor(t.x), cy = Math.floor(t.y);
+            // 伤害立即生效
             for (let dy=-2;dy<=2;dy++) for (let dx=-2;dx<=2;dx++) {
               if (Math.sqrt(dx*dx+dy*dy)>r) continue;
               const tx=cx+dx,ty=cy+dy;
@@ -1819,10 +1821,11 @@ class Tank {
               if (!e.alive) continue;
               if (Math.hypot(e.x-t.x, e.y-t.y)<r+0.5) e.hit();
             }
+            // 视觉效果延迟18帧
             lightningPillars.push({
               x: t.x*CELL, y: t.y*CELL,
-              life: 20, maxLife: 20,
-              radius: r, _blackPillar: true
+              life: 18+20, maxLife: 38,
+              radius: r, _blackPillar: true, _blackDelay: 18
             });
           });
         }
@@ -4101,7 +4104,7 @@ function render() {
   for (const p of lightningPillars) {
     const alpha = p.life / p.maxLife;
     if (p._blackPillar) {
-      // 黑色闪电光柱(仿血红样式)
+      if (p._blackDelay > 0) { p._blackDelay--; continue; } // 延迟中
       const br = p.radius * CELL;
       const bh = br * 1.5;
       ctx.fillStyle = `rgba(0,0,0,${alpha*0.3})`;
