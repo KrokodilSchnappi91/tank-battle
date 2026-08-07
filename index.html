@@ -4236,7 +4236,7 @@ function render() {
     ctx.lineWidth = 3;
     ctx.stroke();
     // 圆柱体内闪电束
-    const boltCount = p._lowDensity ? 19 : 48;
+    const boltCount = p._whitePillar ? 19 : (p._lowDensity ? 5 : 48);
     for (let bolt = 0; bolt < boltCount; bolt++) {
       const angle = (bolt / boltCount) * Math.PI * 2 + p.life * 0.03;
       const baseR = r * (0.2 + Math.random() * 0.8);
