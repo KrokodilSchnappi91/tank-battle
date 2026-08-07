@@ -951,7 +951,7 @@ function spawnBloodLightning(x, y, radius, colorType) {
     if (Math.hypot(e.x-x, e.y-y) < RADIUS + 1) e.hit();
   }
   // 加入光柱渲染队列
-  lightningPillars.push({ x: x * CELL, y: y * CELL, life: 25, maxLife: 25, radius: RADIUS, _whitePillar: isWhite });
+  lightningPillars.push({ x: x * CELL, y: y * CELL, life: 25, maxLife: 25, radius: RADIUS, _whitePillar: isWhite, _lowDensity: isWhite });
   // 爆炸粒子
   const pCount = 20 + RADIUS * 8;
   for (let i = 0; i < pCount; i++) {
@@ -4235,8 +4235,9 @@ function render() {
     ctx.lineWidth = 3;
     ctx.stroke();
     // 圆柱体内闪电束
-    for (let bolt = 0; bolt < 48; bolt++) {
-      const angle = (bolt / 48) * Math.PI * 2 + p.life * 0.03;
+    const boltCount = p._lowDensity ? 19 : 48;
+    for (let bolt = 0; bolt < boltCount; bolt++) {
+      const angle = (bolt / boltCount) * Math.PI * 2 + p.life * 0.03;
       const baseR = r * (0.2 + Math.random() * 0.8);
       const baseX = px + Math.cos(angle) * baseR;
       const baseY = py + Math.sin(angle) * baseR * 0.4;
