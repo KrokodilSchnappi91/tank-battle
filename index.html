@@ -2104,11 +2104,12 @@ class Tank {
             }
           }
         }
-        // 蓝色闪电粒子
-        for (let s=0; s<=steps; s+=2) {
+        // 粗蓝色激光粒子
+        for (let s=0; s<=steps; s++) {
           const lx=px+dir.x*s*0.35, ly=py+dir.y*s*0.35;
           if (lx<0||lx>=COLS||ly<0||ly>=ROWS) break;
-          particles.push(new Particle(lx*BASE_CELL, ly*BASE_CELL, (Math.random()-0.5)*3,(Math.random()-0.5)*3,'#00ccff',8+Math.random()*8));
+          particles.push(new Particle(lx*BASE_CELL, ly*BASE_CELL, (Math.random()-0.5)*2,(Math.random()-0.5)*2,'#00ccff',12+Math.random()*12));
+          if (s%3===0) particles.push(new Particle(lx*BASE_CELL, ly*BASE_CELL, (Math.random()-0.5)*1.5,(Math.random()-0.5)*1.5,'#ffffff',6+Math.random()*6));
         }
       }
       player._chainHit = false;
