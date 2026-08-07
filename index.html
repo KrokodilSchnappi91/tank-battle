@@ -1369,14 +1369,27 @@ class Tank {
       const spaceHeld = isKeyDown(' ') || isKeyDown('Space');
       if (spaceHeld && thunderCharge < THUNDER_MAX_CHARGE) {
         thunderCharge++;
-        // 蓄力时可调整方向
-        let aimDx = 0, aimDy = 0;
-        if (aimJoy.active) { aimDx = aimJoy.dx; aimDy = aimJoy.dy; }
-        else if (mouseOnCanvas) { aimDx = mouseX - this.x; aimDy = mouseY - this.y; }
-        else { aimDx = this.dir.x; aimDy = this.dir.y; }
-        const aimAngle = Math.atan2(aimDy, aimDx);
-        this.dir = { x: Math.cos(aimAngle), y: Math.sin(aimAngle), angle: aimAngle };
-        this.turretDir = this.dir;
+        // 蓄力时可自由移动控制方向
+        let moveDx = 0, moveDy = 0;
+        if (moveJoy.active) { moveDx = moveJoy.dx; moveDy = moveJoy.dy; }
+        else {
+          if (isKeyDown('KeyW')||isKeyDown('ArrowUp'))    moveDy = -1;
+          if (isKeyDown('KeyS')||isKeyDown('ArrowDown'))  moveDy = 1;
+          if (isKeyDown('KeyA')||isKeyDown('ArrowLeft'))  moveDx = -1;
+          if (isKeyDown('KeyD')||isKeyDown('ArrowRight')) moveDx = 1;
+        }
+        if (moveDx !== 0 || moveDy !== 0) {
+          const mag = Math.sqrt(moveDx*moveDx+moveDy*moveDy);
+          const ndx = moveDx/mag, ndy = moveDy/mag;
+          const ang = Math.atan2(ndy, ndx);
+          this.dir = { x: ndx, y: ndy, angle: ang };
+          this.turretDir = this.dir;
+          // 蓄力期间慢速移动
+          const spd = this.speed * 0.018;
+          const nx = this.x + ndx * spd;
+          const ny = this.y + ndy * spd;
+          if (this.canMoveTo(nx, ny, this.dir)) { this.x = nx; this.y = ny; }
+        }
         if (thunderCharge % 3 === 0) {
           for (let i = 0; i < 3; i++) {
             particles.push(new Particle(
