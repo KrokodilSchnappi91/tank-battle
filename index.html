@@ -687,6 +687,7 @@ let elitesSpawned = false;    // 精英已生成标记
 let nukes = [];               // 核弹列表
 let thunderQueue = [];        // 雷公闪电队列
 let lightningPillars = [];    // 血光柱渲染特效
+let burnZones = [];           // 灼烧范围
 let greenRipples = [] // unused;        // 绿色波纹渲染
 let thunderCharge = 0;        // 雷公蓄力值
 const THUNDER_MAX_CHARGE = 90; // 最大蓄力帧数
@@ -2097,7 +2098,11 @@ class Tank {
           if (lx<0||lx>=COLS||ly<0||ly>=ROWS) break;
           const cx=Math.floor(lx),cy=Math.floor(ly);
           if (cx>=0&&cx<COLS&&cy>=0&&cy<ROWS) {
-            if (mapData[cy*COLS+cx]===1||mapData[cy*COLS+cx]===2) mapData[cy*COLS+cx]=0;
+            const wasGrass = mapData[cy*COLS+cx]===4;
+            if (mapData[cy*COLS+cx]===1||mapData[cy*COLS+cx]===2||wasGrass) {
+              mapData[cy*COLS+cx] = 0;
+              if (wasGrass) burnZones.push({ x: cx, y: cy, life: 120 });
+            }
             for (const t of enemies) {
               if (!t.alive) continue;
               if (Math.abs(t.x-lx)<0.8&&Math.abs(t.y-ly)<0.8) t.hit();
@@ -3538,6 +3543,19 @@ function update() {
   nukes = nukes.filter(n => n.timer > -30); // 爆炸后保留30帧特效
 
   // 血光柱+绿波纹更新
+  // 灼烧区更新
+  burnZones.forEach(z => z.life--);
+  burnZones = burnZones.filter(z => z.life > 0);
+  // 灼烧区伤害敌人
+  for (const z of burnZones) {
+    if (z.life % 20 === 0) {
+      for (const enemy of enemies) {
+        if (!enemy.alive) continue;
+        if (Math.abs(enemy.x-(z.x+0.5))<0.8 && Math.abs(enemy.y-(z.y+0.5))<0.8) enemy.hit();
+      }
+    }
+  }
+
   lightningPillars.forEach(p => {
     p.life--;
     // 绿色波纹每3帧造成一次伤害
@@ -4220,6 +4238,21 @@ function render() {
     ctx.beginPath();
     ctx.arc(px, py, r, 0, Math.PI*2);
     ctx.fill();
+  }
+
+  // 灼烧区渲染
+  for (const z of burnZones) {
+    const alpha = z.life / 120;
+    ctx.fillStyle = `rgba(255,80,0,${alpha*0.25})`;
+    ctx.fillRect(z.x*CELL, z.y*CELL, CELL, CELL);
+    // 火焰粒子
+    if (Math.random() < 0.3) {
+      particles.push(new Particle(
+        (z.x+0.5)*CELL, (z.y+0.5)*CELL,
+        (Math.random()-0.5)*1, -1-Math.random()*2,
+        ['#ff4400','#ff6600','#ffaa00'][Math.floor(Math.random()*3)], 8+Math.random()*8
+      ));
+    }
   }
 
   // Boss 血条：魔王顶部大血条 / 普通Boss头顶小血条
