@@ -691,6 +691,7 @@ let burnZones = [];           // 灼烧范围
 let greenRipples = [] // unused;        // 绿色波纹渲染
 let thunderCharge = 0;        // 雷公蓄力值
 let darkStrikeTimer = 0;      // 黑闪计时器
+let pendingDarkStrike = false; // 待处理黑闪(模块级标记)
 const THUNDER_MAX_CHARGE = 90; // 最大蓄力帧数
 let bossKillCount = 0;        // Boss击杀总数（跨关卡）
 let demonKingActive = false;  // 魔王战中
@@ -1830,7 +1831,7 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
-          spawnDarkLightning(this.x, this.y, 1);
+          pendingDarkStrike = true;
         }
       }
 
@@ -3447,6 +3448,12 @@ function update() {
 
   // 雷公波纹技能冷却
   if (player && player._rippleCooldown > 0) player._rippleCooldown--;
+
+  // 黑闪处理(模块级标记/update循环)
+  if (pendingDarkStrike && thunderMode && player && player.alive) {
+    pendingDarkStrike = false;
+    spawnDarkLightning(player.x, player.y, 1);
+  }
 
   // 体力回复（杀神模式上限+50%）
   const staminaCap = godSlayerMode ? 750 : (mythicMode ? 250 : (thunderMode ? 300 : MAX_STAMINA));
