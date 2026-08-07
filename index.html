@@ -4330,73 +4330,54 @@ function render() {
   ctx.fillText(`⚡${Math.ceil(stamina)}/${stCap}`, stBarX + stBarW + 5, stBarY + stBarH - 1);
 
   // 雷公蓄力预览落点+起点范围
-  // DEBUG: 无条件测试圈
-  if (player && player.alive) {
-    const tx = player.x * CELL;
-    const ty = player.y * CELL;
-    const tr = 50;
-    ctx.fillStyle = 'rgba(0,255,0,0.15)';
-    ctx.beginPath(); ctx.arc(tx, ty, tr, 0, Math.PI*2); ctx.fill();
-  }
   if (thunderMode && player && player.alive && thunderCharge > 0) {
-    // 调试：绘制明显标记确认代码在执行
-    const tpx = player.x * CELL;
-    const tpy = player.y * CELL;
-    const tpr = (30 + thunderCharge * 2) * CELL / 4;
-    ctx.fillStyle = 'rgba(255,255,0,0.3)';
-    ctx.beginPath(); ctx.arc(tpx, tpy, tpr, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,0,0.8)';
-    ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.arc(tpx, tpy, tpr, 0, Math.PI*2); ctx.stroke();
-    const pvx = (player._previewX !== undefined ? player._previewX : player.x) * CELL;
-    const pvy = (player._previewY !== undefined ? player._previewY : player.y) * CELL;
-    const pvr = (player._previewR !== undefined ? player._previewR : 3) * CELL;
-    const pvPulse = 0.5 + Math.sin(Date.now()/120) * 0.3;
+    // 直接用当前方向和蓄力比例计算落点
+    const ratio = thunderCharge / THUNDER_MAX_CHARGE;
+    const dist = 8 + Math.floor(ratio * 22);
+    const rad = 2 + Math.floor(ratio * 6);
+    const dir = player.dir;
+    let lx = player.x, ly = player.y;
+    for (let d = dist; d >= 1; d--) {
+      const tx = Math.round(player.x + dir.x * d);
+      const ty = Math.round(player.y + dir.y * d);
+      if (tx>1&&tx<COLS-1&&ty>1&&ty<ROWS-1) {
+        let blocked = false;
+        for (let oy=-1;oy<=1;oy++) for (let ox=-1;ox<=1;ox++) {
+          if (tx+ox>=0&&tx+ox<COLS&&ty+oy>=0&&ty+oy<ROWS)
+            {const t=mapData[(ty+oy)*COLS+(tx+ox)];if(t===1||t===2||t===3)blocked=true;}
+        }
+        if (!blocked) { lx=tx+0.5; ly=ty+0.5; break; }
+      }
+    }
+    // 平滑
+    if (!player._prevLX) { player._prevLX=lx; player._prevLY=ly; player._prevLR=rad; }
+    player._prevLX += (lx - player._prevLX) * 0.3;
+    player._prevLY += (ly - player._prevLY) * 0.3;
+    player._prevLR += (rad - player._prevLR) * 0.3;
+    const pvx = player._prevLX * CELL;
+    const pvy = player._prevLY * CELL;
+    const pvr = player._prevLR * CELL;
     const px = player.x * CELL;
     const py = player.y * CELL;
-    // 起点范围圈（红色半透明/蓄力越久越大）
-    const startFillA = 0.06 + (thunderCharge/THUNDER_MAX_CHARGE) * 0.1;
-    ctx.fillStyle = `rgba(255,30,0,${startFillA})`;
-    ctx.beginPath();
-    ctx.arc(px, py, pvr, 0, Math.PI*2);
-    ctx.fill();
-    const startStrokeA = 0.25 + (thunderCharge/THUNDER_MAX_CHARGE) * 0.35;
-    ctx.strokeStyle = `rgba(255,50,0,${startStrokeA})`;
-    ctx.lineWidth = 2 + (thunderCharge/THUNDER_MAX_CHARGE) * 2;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.arc(px, py, pvr, 0, Math.PI*2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    // 落点范围圈（蓝色半透明/蓄力越久越大）
-    const fillAlpha = 0.1 + (thunderCharge/THUNDER_MAX_CHARGE) * 0.15;
-    ctx.fillStyle = `rgba(0,150,255,${fillAlpha})`;
-    ctx.beginPath();
-    ctx.arc(pvx, pvy, pvr, 0, Math.PI*2);
-    ctx.fill();
-    const strokeAlpha = 0.3 + (thunderCharge/THUNDER_MAX_CHARGE) * 0.4;
-    ctx.strokeStyle = `rgba(0,180,255,${strokeAlpha})`;
-    ctx.lineWidth = 2 + (thunderCharge/THUNDER_MAX_CHARGE) * 3;
-    ctx.setLineDash([8, 4]);
-    ctx.beginPath();
-    ctx.arc(pvx, pvy, pvr, 0, Math.PI*2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.lineWidth = 1;
+    // 起点范围圈
+    ctx.fillStyle = `rgba(255,30,0,${0.04+ratio*0.08})`;
+    ctx.beginPath(); ctx.arc(px, py, pvr, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = `rgba(255,50,0,${0.2+ratio*0.3})`;
+    ctx.lineWidth = 2 + ratio * 2;
+    ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(px, py, pvr, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    // 落点范围圈
+    ctx.fillStyle = `rgba(0,150,255,${0.08+ratio*0.12})`;
+    ctx.beginPath(); ctx.arc(pvx, pvy, pvr, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = `rgba(0,180,255,${0.25+ratio*0.35})`;
+    ctx.lineWidth = 2 + ratio * 3;
+    ctx.setLineDash([8, 4]); ctx.beginPath(); ctx.arc(pvx, pvy, pvr, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
     // 中心点
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(pvx, pvy, 3, 0, Math.PI*2);
-    ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(pvx, pvy, 3, 0, Math.PI*2); ctx.fill();
     // 距离文字
-    if (player._previewX !== undefined) {
-      const pvDist = Math.floor(Math.hypot(player._previewX-player.x, player._previewY-player.y));
-      ctx.fillStyle = '#fff';
-      const pvfs = Math.max(13, CELL*0.55);
-      ctx.font = `bold ${pvfs}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.fillText(`${pvDist}格`, pvx, pvy + pvr + pvfs + 6);
-    }
+    const pvDist = Math.floor(Math.hypot(player._prevLX-player.x, player._prevLY-player.y));
+    ctx.fillStyle = '#fff'; const pvfs = Math.max(13, CELL*0.55);
+    ctx.font = `bold ${pvfs}px Arial`; ctx.textAlign = 'center';
+    ctx.fillText(`${pvDist}格`, pvx, pvy + pvr + pvfs + 6);
   }
 
   // 雷公模式指示器
