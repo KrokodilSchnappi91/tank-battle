@@ -1819,18 +1819,27 @@ class Tank {
               if (!e.alive) continue;
               if (Math.hypot(e.x-t.x, e.y-t.y)<r+0.5) e.hit();
             }
-            // 黑色爆炸粒子
-            for (let i = 0; i < 25; i++) {
+            // 黑色核心爆炸粒子
+            for (let i = 0; i < 20; i++) {
               const a = Math.random()*Math.PI*2;
               const d = Math.random()*r*BASE_CELL;
               particles.push(new Particle(t.x*BASE_CELL+Math.cos(a)*d, t.y*BASE_CELL+Math.sin(a)*d,
                 Math.cos(a)*(2+Math.random()*4), Math.sin(a)*(2+Math.random()*4),
                 '#111', 12+Math.random()*15));
             }
+            // 白色光圈包裹
+            for (let i = 0; i < 30; i++) {
+              const a = Math.random()*Math.PI*2;
+              const d = Math.random()*r*BASE_CELL*0.7;
+              particles.push(new Particle(t.x*BASE_CELL+Math.cos(a)*d, t.y*BASE_CELL+Math.sin(a)*d,
+                Math.cos(a)*(1+Math.random()*3), Math.sin(a)*(1+Math.random()*3),
+                '#fff', 8+Math.random()*10));
+            }
+            // 灰色闪光核心
             for (let i = 0; i < 8; i++) {
-              particles.push(new Particle(t.x*BASE_CELL, t.y*BASE_CELL,
-                (Math.random()-0.5)*4, (Math.random()-0.5)*4,
-                '#444', 6+Math.random()*8));
+              particles.push(new Particle(t.x*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.5, t.y*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.5,
+                (Math.random()-0.5)*3, (Math.random()-0.5)*3,
+                '#888', 5+Math.random()*6));
             }
           });
         }
