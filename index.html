@@ -1808,12 +1808,18 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
-          // 黑色粒子
-          for (let i = 0; i < 20; i++) {
-            particles.push(new Particle(this.x*BASE_CELL+(Math.random()-0.5)*BASE_CELL*2, this.y*BASE_CELL+(Math.random()-0.5)*BASE_CELL*2, (Math.random()-0.5)*6, (Math.random()-0.5)*6-2, '#111', 15+Math.random()*20));
-          }
-          for (let i = 0; i < 8; i++) {
-            particles.push(new Particle(this.x*BASE_CELL+(Math.random()-0.5)*BASE_CELL, this.y*BASE_CELL+(Math.random()-0.5)*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#555', 8+Math.random()*10));
+          // 黑色闪电柱粒子(6道/折线上升)
+          for (let bolt = 0; bolt < 6; bolt++) {
+            const bx = this.x + (bolt-2.5)*0.6;
+            const by = this.y;
+            const h = 3+Math.random()*2;
+            for (let s = 0; s < 15; s++) {
+              const t = s/15;
+              const sx = bx + (Math.sin(s*2.5+bolt)*0.3);
+              const sy = by - t*h*BASE_CELL/CELL;
+              particles.push(new Particle(sx*BASE_CELL, sy*BASE_CELL, (Math.random()-0.5)*1.5, -1-Math.random()*2, '#111', 10+Math.random()*15));
+              if (s%3===0) particles.push(new Particle(sx*BASE_CELL, sy*BASE_CELL, (Math.random()-0.5)*1, -0.5-Math.random()*1.5, '#555', 6+Math.random()*8));
+            }
           }
         }
       }
