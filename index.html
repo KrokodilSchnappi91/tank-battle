@@ -2177,11 +2177,28 @@ class Tank {
       ctx.fillRect(-half, -half * 0.3, half * 2, 3);
     }
 
-    // 神话条纹
+    // 神话：金色双层条纹+中心线
     if (isMythic) {
-      ctx.fillStyle = '#ff6b00';
+      ctx.fillStyle = '#ff8c00';
       ctx.fillRect(-half, -half * 0.85, half * 2, 4);
       ctx.fillRect(-half, half * 0.85 - 4, half * 2, 4);
+      ctx.fillStyle = '#ffd700';
+      ctx.fillRect(-half, -half * 0.85 + 4, half * 2, 2);
+      ctx.fillRect(-half, half * 0.85 - 6, half * 2, 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillRect(-half, -2, half * 2, 3); // 中心白线
+    }
+
+    // 杀神：火焰锯齿条纹
+    if (this.isPlayer && godSlayerMode) {
+      ctx.fillStyle = '#ff6600';
+      for (let f = 0; f < 3; f++) {
+        ctx.fillRect(-half + f*4, -half * 0.85, 3, half * 1.7);
+        ctx.fillRect(half - f*4 - 3, -half * 0.85, 3, half * 1.7);
+      }
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(-half, -half * 0.85 + 2, half * 2, 2);
+      ctx.fillRect(-half, half * 0.85 - 4, half * 2, 2);
     }
 
     // 雷公条纹
@@ -2198,7 +2215,7 @@ class Tank {
     ctx.fillRect(half - trackW + 2, -half * 0.85, trackW, half * 1.7);
 
     // 履带纹理
-    ctx.fillStyle = isMythic ? '#ffd700' : (isThunder ? '#00bfff' : '#666');
+    ctx.fillStyle = godSlayerMode ? '#ff4400' : (isMythic ? '#ffd700' : (isThunder ? '#00bfff' : '#666'));
     for (let i = -half * 0.7; i < half * 0.7; i += Math.max(4, CELL * 0.2)) {
       ctx.fillRect(-half - 2, i, trackW, 2);
       ctx.fillRect(half - trackW + 2, i, trackW, 2);
@@ -2237,20 +2254,39 @@ class Tank {
     const barrelW = Math.max(3, CELL * 0.24);
     ctx.fillRect(-barrelW/2, -half * 0.85, barrelW, half * 1.15);
 
-    // 炮管尖端（加粗+亮色）
-    ctx.fillStyle = isMythic ? '#ffd700' : (isThunder ? '#fff' : (this.isPlayer ? '#fff' : '#fff'));
+    // 炮管尖端
+    ctx.fillStyle = isMythic ? '#ffd700' : (isThunder ? '#fff' : (godSlayerMode ? '#ffaa00' : '#fff'));
     ctx.fillRect(-2, -half * 0.85 - 2, 4, Math.max(4, CELL * 0.22));
 
     ctx.shadowBlur = 0;
-    // 玩家头顶三角标记
+    // 玩家头顶标记
     if (this.isPlayer) {
-      ctx.fillStyle = thunderMode ? '#00bfff' : (godSlayerMode ? '#ff4500' : (isMythic ? '#ffd700' : '#2ecc71'));
+      const markColor = thunderMode ? '#00bfff' : (godSlayerMode ? '#ff4500' : (isMythic ? '#ffd700' : '#2ecc71'));
+      // 旋转光环
+      ctx.strokeStyle = markColor;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = alpha * 0.6;
       ctx.beginPath();
-      ctx.moveTo(0, -half * 1.4);
-      ctx.lineTo(-4, -half * 1.0);
-      ctx.lineTo(4, -half * 1.0);
+      ctx.arc(0, 0, half * 1.2, -Math.PI/2 + Date.now()*0.003, Math.PI/2 + Date.now()*0.003);
+      ctx.stroke();
+      ctx.globalAlpha = alpha;
+      // 三角标记
+      ctx.fillStyle = markColor;
+      ctx.beginPath();
+      ctx.moveTo(0, -half * 1.5);
+      ctx.lineTo(-5, -half * 1.1);
+      ctx.lineTo(5, -half * 1.1);
       ctx.closePath();
       ctx.fill();
+      // 形态文字
+      if (isMythic || godSlayerMode || isThunder) {
+        ctx.fillStyle = '#fff';
+        const mfs = Math.max(8, CELL * 0.35);
+        ctx.font = `bold ${mfs}px Arial`;
+        ctx.textAlign = 'center';
+        const label = isThunder ? '雷公' : (godSlayerMode ? '杀神' : '神话');
+        ctx.fillText(label, 0, -half * 1.8);
+      }
     }
 
     // Boss 王冠标记
