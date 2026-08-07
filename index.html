@@ -1808,9 +1808,12 @@ class Tank {
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
-          // 闪烁粒子
-          for (let i = 0; i < 15; i++) {
-            particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*5, (Math.random()-0.5)*5, '#00bfff', 8+Math.random()*10));
+          // 黑色粒子
+          for (let i = 0; i < 20; i++) {
+            particles.push(new Particle(this.x*BASE_CELL+(Math.random()-0.5)*BASE_CELL*2, this.y*BASE_CELL+(Math.random()-0.5)*BASE_CELL*2, (Math.random()-0.5)*6, (Math.random()-0.5)*6-2, '#111', 15+Math.random()*20));
+          }
+          for (let i = 0; i < 8; i++) {
+            particles.push(new Particle(this.x*BASE_CELL+(Math.random()-0.5)*BASE_CELL, this.y*BASE_CELL+(Math.random()-0.5)*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#555', 8+Math.random()*10));
           }
         }
       }
