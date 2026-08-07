@@ -1369,6 +1369,14 @@ class Tank {
       const spaceHeld = isKeyDown(' ') || isKeyDown('Space');
       if (spaceHeld && thunderCharge < THUNDER_MAX_CHARGE) {
         thunderCharge++;
+        // 蓄力时可调整方向
+        let aimDx = 0, aimDy = 0;
+        if (aimJoy.active) { aimDx = aimJoy.dx; aimDy = aimJoy.dy; }
+        else if (mouseOnCanvas) { aimDx = mouseX - this.x; aimDy = mouseY - this.y; }
+        else { aimDx = this.dir.x; aimDy = this.dir.y; }
+        const aimAngle = Math.atan2(aimDy, aimDx);
+        this.dir = { x: Math.cos(aimAngle), y: Math.sin(aimAngle), angle: aimAngle };
+        this.turretDir = this.dir;
         if (thunderCharge % 3 === 0) {
           for (let i = 0; i < 3; i++) {
             particles.push(new Particle(
