@@ -3658,7 +3658,7 @@ function update() {
     if(!b._hitEnemies) b._hitEnemies=new Set();
     const r=b.radius;
     const cx=Math.floor(b.x), cy=Math.floor(b.y);
-    // 初次接触：烧草+伤敌(仅一次)
+    // 烧草
     for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){
       if(Math.sqrt(dx*dx+dy*dy)>r) continue;
       const tx=cx+dx, ty=cy+dy;
@@ -3666,9 +3666,12 @@ function update() {
         if(mapData[ty*COLS+tx]===4) mapData[ty*COLS+tx]=0;
       }
     }
-    for(const e of enemies){
-      if(!e.alive||b._hitEnemies.has(e)) continue;
-      if(Math.hypot(e.x-b.x, e.y-b.y)<r+0.5){e.hit(); b._hitEnemies.add(e);}
+    // 伤害敌人(每60帧一次/避免秒杀)
+    if(b.life%60===0){
+      for(const e of enemies){
+        if(!e.alive) continue;
+        if(Math.hypot(e.x-b.x, e.y-b.y)<r+0.5) e.hit();
+      }
     }
     // 吸收周围子弹(螺旋吸入轨迹)
     for(const bl of bullets){
