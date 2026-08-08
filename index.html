@@ -3062,7 +3062,80 @@ class PowerUp {
 
 // 全部使用程序生成地图（种子保证同一关永远一样）
 function getMapTemplate(lvl) {
+  if (lvl <= 10) return handcraftedLevel(lvl);
+  if (lvl <= 66) return themedLevel(lvl);
   return generateMap(lvl);
+}
+
+// ==================== 手绘关卡 (Lv 1-10) ====================
+function handcraftedLevel(lvl) {
+  const map = new Array(COLS * ROWS).fill(0);
+  const s = (x, y, v) => { if (x>=0&&x<COLS&&y>=0&&y<ROWS) map[y*COLS+x] = v; };
+  const rect = (x, y, w, h, v) => { for(let dy=0;dy<h;dy++) for(let dx=0;dx<w;dx++) s(x+dx,y+dy,v); };
+  const clear = (cx, cy, r) => { for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++) s(cx+dx,cy+dy,0); };
+  const midX=Math.floor(COLS/2), midY=Math.floor(ROWS/2);
+
+  switch(lvl) {
+    case 1: rect(midX-6,midY-4,12,1,1);rect(midX-6,midY+3,12,1,1);rect(midX-3,midY-2,1,5,1);rect(midX+2,midY-2,1,5,1);break;
+    case 2: rect(midX-8,midY-1,16,2,1);rect(midX-1,midY-6,2,12,1);rect(midX-3,midY-3,6,6,2);for(let i=0;i<4;i++)s(midX+Math.round(Math.cos(i*Math.PI/2)*5),midY+Math.round(Math.sin(i*Math.PI/2)*5),0);break;
+    case 3: rect(2,4,3,2,1);rect(COLS-5,4,3,2,1);rect(2,ROWS-6,3,2,1);rect(COLS-5,ROWS-6,3,2,1);rect(midX-1,midY-3,2,6,2);rect(midX-5,midY,10,1,1);for(let y=0;y<ROWS;y+=6)for(let x=0;x<COLS;x+=12)s(x+3,y+3,4);break;
+    case 4: for(let i=0;i<4;i++){const cx=i<2?8:COLS-9,cy=i%2===0?5:ROWS-6;rect(cx-2,cy-2,5,5,2);}rect(midX-2,midY-2,4,4,1);s(midX,midY,4);break;
+    case 5: rect(4,4,COLS-8,1,2);rect(4,ROWS-5,COLS-8,1,2);rect(4,4,1,ROWS-8,2);rect(COLS-5,4,1,ROWS-8,2);rect(8,8,2,2,1);rect(COLS-10,8,2,2,1);rect(8,ROWS-10,2,2,1);rect(COLS-10,ROWS-10,2,2,1);rect(midX-1,midY-4,2,8,1);for(let y=midY-4;y<=midY+4;y+=8)rect(midX-6,y,12,2,4);break;
+    case 6: for(let row=3;row<ROWS-3;row+=4){const off=(Math.floor(row/4)%2)*10;rect(3+off,row,8,2,1);}break;
+    case 7: rect(midX-6,midY-6,12,1,2);rect(midX-6,midY+5,12,1,2);rect(midX-6,midY-5,1,11,2);rect(midX+5,midY-5,1,11,2);rect(midX-2,midY-2,4,4,1);break;
+    case 8: rect(5,5,COLS-10,ROWS-10,3);rect(midX-4,midY-4,8,8,1);for(let i=0;i<4;i++){const a=i*Math.PI/2;rect(midX+Math.round(Math.cos(a)*10)-1,midY+Math.round(Math.sin(a)*10)-1,3,3,2);}break;
+    case 9: rect(midX-10,2,3,5,2);rect(midX+7,2,3,5,2);rect(midX-10,ROWS-7,3,5,2);rect(midX+7,ROWS-7,3,5,2);for(let y=4;y<ROWS-4;y+=3)rect(midX-1,y,2,2,1);break;
+    case 10: rect(2,2,COLS-4,1,2);rect(2,2,1,ROWS-4,2);rect(2,ROWS-3,COLS-4,1,2);rect(COLS-3,2,1,ROWS-4,2);rect(midX-3,midY-3,6,6,2);for(let i=0;i<5;i++)rect(6+i*10,5,4,4,1);for(let i=0;i<5;i++)rect(6+i*10,ROWS-9,4,4,1);break;
+  }
+  clear(COLS/2, ROWS-2, 2); clear(1, 1, 2); clear(COLS-2, 1, 2);
+  return map;
+}
+
+// ==================== 主题关卡 (Lv 11-66) ====================
+function themedLevel(lvl) {
+  const map = new Array(COLS * ROWS).fill(0);
+  const s = (x, y, v) => { if (x>=0&&x<COLS&&y>=0&&y<ROWS) map[y*COLS+x] = v; };
+  const rect = (x, y, w, h, v) => { for(let dy=0;dy<h;dy++) for(let dx=0;dx<w;dx++) s(x+dx,y+dy,v); };
+  const clear = (cx, cy, r) => { for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++) s(cx+dx,cy+dy,0); };
+  const midX=Math.floor(COLS/2), midY=Math.floor(ROWS/2);
+  const subLvl = ((lvl - 1) % 7) + 1;
+  const diff = lvl * 1.5;
+
+  // 基础布局（7种轮换）
+  switch(subLvl) {
+    case 1:
+      rect(midX-10,midY,20,1,1);rect(midX,midY-8,1,16,1);
+      if(diff>30) rect(midX-2,midY-2,4,4,2);
+      break;
+    case 2:
+      rect(5,5,COLS-10,1,2);rect(5,ROWS-6,COLS-10,1,2);
+      rect(5,5,1,ROWS-10,2);rect(COLS-6,5,1,ROWS-10,2);
+      rect(midX-4,midY-3,8,6,1);
+      break;
+    case 3:
+      for(let y=3;y<ROWS-3;y+=3) rect(4,y,COLS-8,1,1);
+      break;
+    case 4:
+      for(let i=0;i<4;i++){const cx=i<2?6:COLS-7,cy=i%2===0?4:ROWS-5;rect(cx-3,cy-3,7,7,i%3===0?2:1);}
+      for(let i=0;i<8;i++) s(midX+Math.round(Math.cos(i*Math.PI/4)*6),midY+Math.round(Math.sin(i*Math.PI/4)*6),4);
+      break;
+    case 5:
+      for(let row=2;row<ROWS-2;row+=3){const off=(Math.floor(row/3)%2)*8;rect(3+off,row,6,2,1);}
+      break;
+    case 6:
+      for(let y=2;y<ROWS-2;y+=3) for(let x=2;x<COLS-2;x+=3) s(x,y,(x+y)%6===0?2:1);
+      break;
+    case 7:
+      rect(midX-8,midY-6,16,1,2);rect(midX-8,midY+5,16,1,2);
+      rect(midX-8,midY-6,1,12,2);rect(midX+7,midY-6,1,12,2);
+      rect(midX-3,midY-2,6,4,1);
+      clear(midX-8,midY,2);clear(midX+8,midY,2);
+      break;
+  }
+  // 难度递增：增加钢墙和砖墙
+  for(let i=0;i<Math.floor(diff*0.3);i++){const x=3+Math.floor(Math.random()*(COLS-6)),y=3+Math.floor(Math.random()*(ROWS-6));if(map[y*COLS+x]===0)map[y*COLS+x]=(i%3===0?2:1);}
+  clear(1,1,2);clear(COLS-2,1,2);clear(COLS/2,ROWS-2,2);
+  return map;
 }
 
 function seededRandom(seed) {
