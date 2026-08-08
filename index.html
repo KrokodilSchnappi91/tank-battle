@@ -1396,6 +1396,12 @@ class Tank {
   }
 
   playerInput() {
+    // ===== 黑白闪电柱(shift+click触发/纯视觉) =====
+    if (this._spawnBlackPillar && thunderMode) {
+      this._spawnBlackPillar = false;
+      lightningPillars.push({x:this.x*CELL, y:this.y*CELL, life:25, maxLife:25, radius:1, _bwPillar:true});
+    }
+
     // ===== 雷公蓄力瞬移 =====
     if (thunderCharge > 0) {
       const spaceHeld = isKeyDown(' ') || isKeyDown('Space');
@@ -1826,6 +1832,7 @@ class Tank {
             }
           }
           this.x = bx; this.y = by;
+          this._spawnBlackPillar = true;
           // 折线黑白闪电柱(纯粒子/6道)
           for (let bolt = 0; bolt < 6; bolt++) {
             const bx2 = this.x + (bolt - 2.5) * 0.5;
@@ -4274,6 +4281,38 @@ function render() {
       gl.addColorStop(0.3, `rgba(5,5,5,${gA*0.5})`);
       gl.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
+      continue;
+    }
+    if (p._bwPillar) {
+      // 黑白闪电光柱(完全独立/仿血红)
+      const br = p.radius * CELL;
+      const r = br * 1.2;
+      const H = r * 1.8;
+      const topR = r * 0.7;
+      ctx.fillStyle = `rgba(0,0,0,${alpha*0.35})`;
+      ctx.beginPath(); ctx.ellipse(px, py, r, r*0.4, 0, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = `rgba(40,40,40,${alpha*0.5})`; ctx.lineWidth=3; ctx.stroke();
+      for(let bolt=0;bolt<48;bolt++){
+        const a=(bolt/48)*Math.PI*2+p.life*0.03;
+        const bR=r*(0.2+Math.random()*0.8);
+        const bx=px+Math.cos(a)*bR, by=py+Math.sin(a)*bR*0.4;
+        const tX=px+Math.cos(a+p.life*0.04)*bR*0.7, tY=py-H+Math.sin(a+p.life*0.04)*bR*0.7*0.35;
+        const isW=bolt%7===0, isG=bolt%3===0;
+        ctx.strokeStyle=isW?`rgba(255,255,255,${alpha})`:isG?`rgba(80,80,80,${alpha*0.8})`:`rgba(5,3,5,${alpha*0.9})`;
+        ctx.lineWidth=isW?7:(isG?8:9); ctx.shadowColor=isW?'#fff':'#000'; ctx.shadowBlur=isW?14:(isG?18:26);
+        ctx.beginPath(); ctx.moveTo(bx,by);
+        for(let s=1;s<=6;s++){const t=s/6;
+          ctx.lineTo(bx+(tX-bx)*t+(Math.sin(s*7+bolt+p.life*0.15)*r*0.25),by+(tY-by)*t);}
+        ctx.stroke();
+      }
+      ctx.shadowBlur=0;ctx.lineWidth=1;
+      ctx.strokeStyle=`rgba(20,20,20,${alpha*0.7})`;ctx.lineWidth=2;ctx.shadowColor='#000';ctx.shadowBlur=6;
+      ctx.beginPath();ctx.ellipse(px,py-H,topR,topR*0.35,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+      const gA=alpha*0.7;
+      const gl=ctx.createRadialGradient(px,py,0,px,py,r);
+      gl.addColorStop(0,`rgba(40,40,40,${gA})`);gl.addColorStop(0.1,`rgba(20,20,20,${gA*0.8})`);
+      gl.addColorStop(0.3,`rgba(5,5,5,${gA*0.5})`);gl.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gl;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
       continue;
     }
     if (p._darkGreen) {
