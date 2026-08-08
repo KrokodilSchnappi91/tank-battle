@@ -2116,7 +2116,7 @@ class Tank {
     // 无敌时不受伤
     if (this.invincible > 0) return;
     this.hp--;
-    // 雷公形态：玩家击中敌人→从玩家向所有敌人发射快速连锁激光
+    // 雷公形态：连锁激光(仅破墙+粒子/不伤敌/避免秒杀Boss)
     if (!this.isPlayer && thunderMode && player && player.alive && !player._chainHit) {
       player._chainHit = true;
       const px = player.x, py = player.y;
@@ -2126,11 +2126,9 @@ class Tank {
         const dist = Math.sqrt(dx*dx+dy*dy);
         if (dist < 0.01) continue;
         const dir = { x: dx/dist, y: dy/dist, angle: Math.atan2(dy, dx) };
-        // 快速单束激光（非三连，更迅猛）
         const steps = Math.max(COLS, ROWS)*2;
-        for (let s=1; s<=steps; s+=2) { // 步长2=更快
-          const lx=px+dir.x*s*0.35;
-          const ly=py+dir.y*s*0.35;
+        for (let s=1; s<=steps; s+=2) {
+          const lx=px+dir.x*s*0.35, ly=py+dir.y*s*0.35;
           if (lx<0||lx>=COLS||ly<0||ly>=ROWS) break;
           const cx=Math.floor(lx),cy=Math.floor(ly);
           if (cx>=0&&cx<COLS&&cy>=0&&cy<ROWS) {
@@ -2139,30 +2137,14 @@ class Tank {
               mapData[cy*COLS+cx] = 0;
               if (wasGrass) burnZones.push({ x: cx, y: cy, life: 120 });
             }
-            for (const t of enemies) {
-              if (!t.alive) continue;
-              if (Math.abs(t.x-lx)<0.8&&Math.abs(t.y-ly)<0.8) t.hit();
-            }
           }
         }
-        // 弥散颗粒线条
+        // 粒子(沿激光路径)
         for (let s=0; s<=steps; s++) {
           const lx=px+dir.x*s*0.35, ly=py+dir.y*s*0.35;
           if (lx<0||lx>=COLS||ly<0||ly>=ROWS) break;
-          const life = 4 + s * 0.08;
-          // 高光迅猛白色激光+粉色微点
-          for (let p=0; p<3; p++) {
-            particles.push(new Particle(
-              lx*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.1, ly*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.1,
-              (Math.random()-0.5)*1.2, (Math.random()-0.5)*1.2,
-              ['#f8f8f8','#ffffff','#fdfdfd'][p], Math.min(life+Math.random()*3, 10)
-            ));
-          }
-          if (s%5===0) particles.push(new Particle(
-            lx*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.15, ly*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.15,
-            (Math.random()-0.5)*2, (Math.random()-0.5)*2,
-            '#ff99bb', 5+Math.random()*3
-          ));
+          particles.push(new Particle(lx*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.1, ly*BASE_CELL+(Math.random()-0.5)*BASE_CELL*0.1,
+            (Math.random()-0.5)*1.2, (Math.random()-0.5)*1.2, '#fff', 8+Math.random()*8));
         }
       }
       player._chainHit = false;
