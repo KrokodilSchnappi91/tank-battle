@@ -3672,16 +3672,30 @@ function update() {
     }
     // 吸收周围子弹(螺旋吸入轨迹)
     for(const bl of bullets){
-      if(!bl.alive||bl.isPlayer) continue;
-      if(Math.hypot(bl.x-b.x, bl.y-b.y)<r*1.8){
-        bl.alive=false; bl.spark();
-        for(let i=0;i<4;i++){
-          const aa=Math.random()*Math.PI*2;
-          particles.push(new Particle(bl.x*BASE_CELL, bl.y*BASE_CELL,
-            (b.x-bl.x)*0.15+(Math.random()-0.5)*2, (b.y-bl.y)*0.15+(Math.random()-0.5)*2,
-            '#fff', 6+Math.random()*8));
-        }
+      if(!bl.alive||bl.isPlayer||bl._absorbed) continue;
+      if(Math.hypot(bl.x-b.x, bl.y-b.y)<r*2.5){
+        bl._absorbed=true;
+        bl._absorbTarget={x:b.x, y:b.y};
+        bl._absorbLife=15;
       }
+    }
+    // 处理已被吸收的子弹(螺旋吸入动画)
+    for(const bl of bullets){
+      if(!bl._absorbed||bl._absorbLife<=0) continue;
+      bl._absorbLife--;
+      const t=bl._absorbTarget;
+      const dx=t.x-bl.x, dy=t.y-bl.y;
+      const dist=Math.hypot(dx,dy);
+      if(dist<0.2){bl.alive=false; bl.spark(); continue;}
+      // 螺旋轨迹
+      const ang=Math.atan2(dy,dx)+Math.sin(bl._absorbLife*0.5)*0.6;
+      const spd=dist*0.08;
+      bl.x+=Math.cos(ang)*spd;
+      bl.y+=Math.sin(ang)*spd;
+      // 轨迹粒子
+      particles.push(new Particle(bl.x*BASE_CELL, bl.y*BASE_CELL,
+        (Math.random()-0.5)*1.5, (Math.random()-0.5)*1.5,
+        '#fff', 4+Math.random()*5));
     }
     // 缓慢移动
     if(b.x<1||b.x>COLS-1) b.vx*=-1;
