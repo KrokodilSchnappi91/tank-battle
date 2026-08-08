@@ -4476,6 +4476,12 @@ function render() {
     ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
     ctx.strokeStyle=`rgba(60,60,60,${a*0.3})`;ctx.lineWidth=2;
     ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
+    // 旋转纹理(3条弧线左旋)
+    for(let i=0;i<3;i++){
+      const ang=(i/3)*Math.PI*2-bh.life*0.06;
+      ctx.strokeStyle=`rgba(40,40,40,${a*0.5})`;ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(cx,cy,r*0.65,ang,ang+1.2);ctx.stroke();
+    }
   }
 
   // 灼烧区渲染
