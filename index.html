@@ -3649,8 +3649,27 @@ function update() {
   }
   nukes = nukes.filter(n => n.timer > -30); // 爆炸后保留30帧特效
 
-  // 黑洞更新
-  blackHoles.forEach(b=>b.life--);
+  // 黑洞更新+粒子
+  blackHoles.forEach(b=>{
+    b.life--;
+    const a=b.life/b.maxLife;
+    // 旋转黑粒子(密集)
+    for(let i=0;i<3;i++){
+      const ang=Math.random()*Math.PI*2+b.life*0.1;
+      const d=b.radius*BASE_CELL*(0.3+Math.random()*0.7);
+      particles.push(new Particle(b.x*BASE_CELL+Math.cos(ang)*d, b.y*BASE_CELL+Math.sin(ang)*d,
+        -Math.sin(ang)*d*0.03+Math.cos(ang)*0.5, Math.cos(ang)*d*0.03+Math.sin(ang)*0.5,
+        '#050505', 12+Math.random()*15));
+    }
+    // 白色粒子被吸入(外→内螺旋)
+    if(Math.random()<0.4){
+      const ang=Math.random()*Math.PI*2;
+      const d=b.radius*BASE_CELL*(1.5+Math.random()*1);
+      particles.push(new Particle(b.x*BASE_CELL+Math.cos(ang)*d, b.y*BASE_CELL+Math.sin(ang)*d,
+        -Math.cos(ang)*d*0.015-Math.sin(ang)*1.5, -Math.sin(ang)*d*0.015+Math.cos(ang)*1.5,
+        '#fff', 8+Math.random()*10));
+    }
+  });
   blackHoles=blackHoles.filter(b=>b.life>0);
 
   // 血光柱+绿波纹更新
