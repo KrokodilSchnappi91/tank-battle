@@ -4266,23 +4266,31 @@ function render() {
     }
     if (p._bwPillar) {
       const br=p.radius*CELL, r=br*1.2, H=r*1.8, topR=r*0.7;
+      // 底座
       ctx.fillStyle=`rgba(0,0,0,${alpha*0.35})`;
       ctx.beginPath();ctx.ellipse(px,py,r,r*0.4,0,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle=`rgba(40,40,40,${alpha*0.5})`;ctx.lineWidth=3;ctx.stroke();
-      for(let b=0;b<5;b++){
-        const a=(b/5)*Math.PI*2+p.life*0.03;
-        const bR=r*(0.3+Math.random()*0.7);
-        const bx=px+Math.cos(a)*bR,by=py+Math.sin(a)*bR*0.4;
-        const tX=px+Math.cos(a+p.life*0.04)*bR*0.7,tY=py-H+Math.sin(a+p.life*0.04)*bR*0.7*0.35;
-        ctx.strokeStyle=b===0?`rgba(255,255,255,${alpha})`:`rgba(5,3,5,${alpha*0.9})`;
-        ctx.lineWidth=b===0?5:7;ctx.shadowColor=b===0?'#fff':'#000';ctx.shadowBlur=b===0?10:20;
-        ctx.beginPath();ctx.moveTo(bx,by);
-        for(let s=1;s<=4;s++){const t=s/4;ctx.lineTo(bx+(tX-bx)*t+(Math.sin(s*5+b)*r*0.2),by+(tY-by)*t);}
-        ctx.stroke();
+      // 唯一一道黑白闪电
+      const bR=r*0.5;
+      ctx.strokeStyle=`rgba(5,3,5,${alpha*0.95})`;ctx.lineWidth=8;ctx.shadowColor='#000';ctx.shadowBlur=22;
+      ctx.beginPath();ctx.moveTo(px,py);
+      for(let s=1;s<=6;s++){
+        const t=s/6, sx=px+(Math.sin(s*4.5+p.life*0.2)*r*0.25), sy=py-t*H;
+        ctx.lineTo(sx,sy);
       }
+      ctx.stroke();
+      ctx.strokeStyle=`rgba(255,255,255,${alpha*0.8})`;ctx.lineWidth=3;ctx.shadowColor='#fff';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.moveTo(px,py);
+      for(let s=1;s<=6;s++){
+        const t=s/6, sx=px+(Math.sin(s*4.5+p.life*0.2)*r*0.25), sy=py-t*H;
+        ctx.lineTo(sx,sy);
+      }
+      ctx.stroke();
       ctx.shadowBlur=0;ctx.lineWidth=1;
-      ctx.strokeStyle=`rgba(20,20,20,${alpha*0.7})`;ctx.lineWidth=2;ctx.shadowColor='#000';ctx.shadowBlur=6;
-      ctx.beginPath();ctx.ellipse(px,py-H,topR,topR*0.35,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+      // 顶圈
+      ctx.strokeStyle=`rgba(20,20,20,${alpha*0.7})`;ctx.lineWidth=2;
+      ctx.beginPath();ctx.ellipse(px,py-H,topR,topR*0.35,0,0,Math.PI*2);ctx.stroke();
+      // 光球
       const gA=alpha*0.7,gl=ctx.createRadialGradient(px,py,0,px,py,r);
       gl.addColorStop(0,`rgba(30,30,30,${gA})`);gl.addColorStop(0.3,`rgba(5,5,5,${gA*0.5})`);gl.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=gl;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
