@@ -1826,19 +1826,23 @@ class Tank {
             }
           }
           this.x = bx; this.y = by;
-          // 黑白缓慢闪烁黑洞(纯粒子)
-          const px=this.x*BASE_CELL, py=this.y*BASE_CELL;
-          for(let i=0;i<40;i++){
-            const a=Math.random()*Math.PI*2, d=Math.random()*BASE_CELL*1.5;
-            particles.push(new Particle(px+Math.cos(a)*d, py+Math.sin(a)*d, Math.cos(a)*(0.5+Math.random()*2), Math.sin(a)*(0.5+Math.random()*2), '#111', 15+Math.random()*25));
+          // 旋转黑洞(纯粒子)
+          const px2=this.x*BASE_CELL, py2=this.y*BASE_CELL;
+          const spinSpeed=0.04;
+          for(let i=0;i<80;i++){
+            const a=Math.random()*Math.PI*2, d=Math.random()*BASE_CELL*1.8;
+            const va=-Math.sin(a)*d*spinSpeed, vb=Math.cos(a)*d*spinSpeed;
+            particles.push(new Particle(px2+Math.cos(a)*d, py2+Math.sin(a)*d, va+(Math.random()-0.5)*1.5, vb+(Math.random()-0.5)*1.5, '#050505', 18+Math.random()*30));
           }
-          for(let i=0;i<12;i++){
+          for(let i=0;i<25;i++){
             const a=Math.random()*Math.PI*2, d=Math.random()*BASE_CELL*1.2;
-            particles.push(new Particle(px+Math.cos(a)*d, py+Math.sin(a)*d, Math.cos(a)*0.5, Math.sin(a)*0.5, '#555', 8+Math.random()*12));
+            const va=-Math.sin(a)*d*spinSpeed*1.5, vb=Math.cos(a)*d*spinSpeed*1.5;
+            particles.push(new Particle(px2+Math.cos(a)*d, py2+Math.sin(a)*d, va+(Math.random()-0.5)*1, vb+(Math.random()-0.5)*1, '#333', 12+Math.random()*15));
           }
-          for(let i=0;i<6;i++){
-            const a=Math.random()*Math.PI*2, d=Math.random()*BASE_CELL*0.6;
-            particles.push(new Particle(px+Math.cos(a)*d, py+Math.sin(a)*d, Math.cos(a)*0.3, Math.sin(a)*0.3, '#fff', 5+Math.random()*8));
+          for(let i=0;i<10;i++){
+            const a=Math.random()*Math.PI*2, d=Math.random()*BASE_CELL*0.5;
+            const va=-Math.sin(a)*d*spinSpeed*2, vb=Math.cos(a)*d*spinSpeed*2;
+            particles.push(new Particle(px2+Math.cos(a)*d, py2+Math.sin(a)*d, va+(Math.random()-0.5)*0.5, vb+(Math.random()-0.5)*0.5, '#fff', 6+Math.random()*6));
           }
         }
       }
