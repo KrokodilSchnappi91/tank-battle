@@ -3651,23 +3651,37 @@ function update() {
   }
   nukes = nukes.filter(n => n.timer > -30); // 爆炸后保留30帧特效
 
-  // 黑洞更新+粒子(左旋+漂移+伤害)
+  // 黑洞更新+粒子(左旋+漂移)
   blackHoles.forEach(b=>{
     b.life--;
     b.x+=b.vx; b.y+=b.vy;
-    // 伤害敌人+烧草
+    if(!b._hitEnemies) b._hitEnemies=new Set();
     const r=b.radius;
     const cx=Math.floor(b.x), cy=Math.floor(b.y);
+    // 初次接触：烧草+伤敌(仅一次)
     for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){
       if(Math.sqrt(dx*dx+dy*dy)>r) continue;
       const tx=cx+dx, ty=cy+dy;
       if(tx>=0&&tx<COLS&&ty>=0&&ty<ROWS){
-        if(mapData[ty*COLS+tx]===4) mapData[ty*COLS+tx]=0; // 烧草
+        if(mapData[ty*COLS+tx]===4) mapData[ty*COLS+tx]=0;
       }
     }
     for(const e of enemies){
-      if(!e.alive) continue;
-      if(Math.hypot(e.x-b.x, e.y-b.y)<r+0.5) e.hit();
+      if(!e.alive||b._hitEnemies.has(e)) continue;
+      if(Math.hypot(e.x-b.x, e.y-b.y)<r+0.5){e.hit(); b._hitEnemies.add(e);}
+    }
+    // 吸收周围子弹(螺旋吸入轨迹)
+    for(const bl of bullets){
+      if(!bl.alive||bl.isPlayer) continue;
+      if(Math.hypot(bl.x-b.x, bl.y-b.y)<r*1.8){
+        bl.alive=false; bl.spark();
+        for(let i=0;i<4;i++){
+          const aa=Math.random()*Math.PI*2;
+          particles.push(new Particle(bl.x*BASE_CELL, bl.y*BASE_CELL,
+            (b.x-bl.x)*0.15+(Math.random()-0.5)*2, (b.y-bl.y)*0.15+(Math.random()-0.5)*2,
+            '#fff', 6+Math.random()*8));
+        }
+      }
     }
     // 缓慢移动
     if(b.x<1||b.x>COLS-1) b.vx*=-1;
