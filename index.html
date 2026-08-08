@@ -4270,16 +4270,8 @@ function render() {
       ctx.fillStyle=`rgba(0,0,0,${alpha*0.35})`;
       ctx.beginPath();ctx.ellipse(px,py,r,r*0.4,0,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle=`rgba(40,40,40,${alpha*0.5})`;ctx.lineWidth=3;ctx.stroke();
-      // 唯一一道黑白闪电
-      const bR=r*0.5;
-      ctx.strokeStyle=`rgba(5,3,5,${alpha*0.95})`;ctx.lineWidth=8;ctx.shadowColor='#000';ctx.shadowBlur=22;
-      ctx.beginPath();ctx.moveTo(px,py);
-      for(let s=1;s<=6;s++){
-        const t=s/6, sx=px+(Math.sin(s*4.5+p.life*0.2)*r*0.25), sy=py-t*H;
-        ctx.lineTo(sx,sy);
-      }
-      ctx.stroke();
-      ctx.strokeStyle=`rgba(255,255,255,${alpha*0.8})`;ctx.lineWidth=3;ctx.shadowColor='#fff';ctx.shadowBlur=8;
+      // 单层黑色闪电
+      ctx.strokeStyle=`rgba(5,3,5,${alpha*0.95})`;ctx.lineWidth=6;ctx.shadowColor='#000';ctx.shadowBlur=18;
       ctx.beginPath();ctx.moveTo(px,py);
       for(let s=1;s<=6;s++){
         const t=s/6, sx=px+(Math.sin(s*4.5+p.life*0.2)*r*0.25), sy=py-t*H;
