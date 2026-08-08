@@ -1396,11 +1396,6 @@ class Tank {
   }
 
   playerInput() {
-    // ===== 黑白闪电柱 =====
-    if (this._spawnBlackPillar && thunderMode) {
-      this._spawnBlackPillar = false;
-      lightningPillars.push({x:this.x*CELL, y:this.y*CELL, life:25, maxLife:25, radius:1, _bwPillar:true});
-    }
     // ===== 雷公蓄力瞬移 =====
     if (thunderCharge > 0) {
       const spaceHeld = isKeyDown(' ') || isKeyDown('Space');
@@ -1831,7 +1826,7 @@ class Tank {
             }
           }
           this.x = bx; this.y = by;
-          this._spawnBlackPillar = true;
+          lightningPillars.push({x:this.x*CELL, y:this.y*CELL, life:25, maxLife:25, radius:1, _bwPillar:true});
           for (let i = 0; i < 12; i++) {
             particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
           }
