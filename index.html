@@ -4265,27 +4265,25 @@ function render() {
       continue;
     }
     if (p._bwPillar) {
-      const br=p.radius*CELL, r=br*1.2, H=r*1.8, topR=r*0.7;
-      // 底座
-      ctx.fillStyle=`rgba(0,0,0,${alpha*0.35})`;
-      ctx.beginPath();ctx.ellipse(px,py,r,r*0.4,0,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle=`rgba(40,40,40,${alpha*0.5})`;ctx.lineWidth=3;ctx.stroke();
-      // 单层黑色闪电
-      ctx.strokeStyle=`rgba(0,0,0,${alpha*0.95})`;ctx.lineWidth=4;ctx.shadowColor='#000';ctx.shadowBlur=14;
-      ctx.beginPath();ctx.moveTo(px,py);
-      for(let s=1;s<=6;s++){
-        const t=s/6, sx=px+(Math.sin(s*4.5+p.life*0.2)*r*0.25), sy=py-t*H;
-        ctx.lineTo(sx,sy);
-      }
-      ctx.stroke();
+      // 黑白缓慢闪烁黑洞
+      const br=p.radius*CELL;
+      const pulse=0.4+Math.sin(p.life*0.12)*0.4; // 缓慢脉动
+      const r=br*(0.8+pulse*0.5);
+      // 外圈暗色光晕
+      const og=ctx.createRadialGradient(px,py,0,px,py,r*1.8);
+      og.addColorStop(0,`rgba(0,0,0,${alpha*0.9})`);
+      og.addColorStop(0.3,`rgba(20,20,20,${alpha*0.6})`);
+      og.addColorStop(0.6,`rgba(50,50,50,${alpha*0.2})`);
+      og.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=og;ctx.beginPath();ctx.arc(px,py,r*1.8,0,Math.PI*2);ctx.fill();
+      // 白色脉冲环
+      ctx.strokeStyle=`rgba(255,255,255,${alpha*pulse*0.6})`;
+      ctx.lineWidth=2+pulse*3;ctx.shadowColor='#fff';ctx.shadowBlur=8+pulse*6;
+      ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.stroke();
       ctx.shadowBlur=0;ctx.lineWidth=1;
-      // 顶圈
-      ctx.strokeStyle=`rgba(20,20,20,${alpha*0.7})`;ctx.lineWidth=2;
-      ctx.beginPath();ctx.ellipse(px,py-H,topR,topR*0.35,0,0,Math.PI*2);ctx.stroke();
-      // 光球
-      const gA=alpha*0.7,gl=ctx.createRadialGradient(px,py,0,px,py,r);
-      gl.addColorStop(0,`rgba(30,30,30,${gA})`);gl.addColorStop(0.3,`rgba(5,5,5,${gA*0.5})`);gl.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=gl;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
+      // 内核黑点
+      ctx.fillStyle=`rgba(0,0,0,${alpha*0.95})`;
+      ctx.beginPath();ctx.arc(px,py,r*0.3,0,Math.PI*2);ctx.fill();
       continue;
     }
     if (p._darkGreen) {
