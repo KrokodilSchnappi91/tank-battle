@@ -1826,8 +1826,26 @@ class Tank {
             }
           }
           this.x = bx; this.y = by;
-          for (let i = 0; i < 12; i++) {
-            particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
+          // 折线黑白闪电柱(纯粒子/6道)
+          for (let bolt = 0; bolt < 6; bolt++) {
+            const bx2 = this.x + (bolt - 2.5) * 0.5;
+            const h = 2.5 + Math.random() * 1.5;
+            for (let s = 0; s < 20; s++) {
+              const t = s / 20;
+              const zig = Math.sin(s * 3.7 + bolt * 2.1) * 0.25;
+              const sx = bx2 + zig;
+              const sy = this.y - t * h;
+              // 黑色主体
+              particles.push(new Particle(sx * BASE_CELL, sy * BASE_CELL,
+                (Math.random() - 0.5) * 1, -1 - Math.random() * 2,
+                '#111', 10 + Math.random() * 18));
+              // 白色折线边缘
+              if (s % 3 === 0) {
+                particles.push(new Particle((sx + zig * 0.4) * BASE_CELL, sy * BASE_CELL,
+                  (Math.random() - 0.5) * 0.8, -0.5 - Math.random() * 1.5,
+                  '#fff', 6 + Math.random() * 8));
+              }
+            }
           }
         }
       }
