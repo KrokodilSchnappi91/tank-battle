@@ -689,6 +689,7 @@ let thunderQueue = [];        // 雷公闪电队列
 let lightningPillars = [];    // 血光柱渲染特效
 let burnZones = [];           // 灼烧范围
 let blackHoles = [];          // 黑洞特效
+let chainLock = false;        // 连锁闪电递归锁
 let greenRipples = [] // unused;        // 绿色波纹渲染
 let thunderCharge = 0;        // 雷公蓄力值
 const THUNDER_MAX_CHARGE = 90; // 最大蓄力帧数
@@ -2117,8 +2118,8 @@ class Tank {
     if (this.invincible > 0) return;
     this.hp--;
     // 雷公形态：玩家击中敌人→从玩家向所有敌人发射快速连锁激光
-    if (!this.isPlayer && thunderMode && player && player.alive && !player._chainHit) {
-      player._chainHit = true;
+    if (!this.isPlayer && thunderMode && player && player.alive && !chainLock) {
+      chainLock = true;
       const px = player.x, py = player.y;
       for (const e of enemies) {
         if (!e.alive) continue;
@@ -2165,7 +2166,7 @@ class Tank {
           ));
         }
       }
-      player._chainHit = false;
+      chainLock = false;
     }
     if (this.hp <= 0) {
       this.alive = false;
