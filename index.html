@@ -4482,6 +4482,22 @@ function render() {
       ctx.strokeStyle=`rgba(40,40,40,${a*0.5})`;ctx.lineWidth=3;
       ctx.beginPath();ctx.arc(cx,cy,r*0.65,ang,ang+1.2);ctx.stroke();
     }
+    // 周围闪电(4道锯齿)
+    for(let i=0;i<4;i++){
+      const ang=(i/4)*Math.PI*2-bh.life*0.08;
+      const sr=r*1.1, er=r*1.6;
+      ctx.strokeStyle=`rgba(255,255,255,${a*0.7})`;ctx.lineWidth=2;
+      ctx.shadowColor='#fff';ctx.shadowBlur=6;
+      ctx.beginPath();ctx.moveTo(cx+Math.cos(ang)*sr, cy+Math.sin(ang)*sr);
+      for(let s=1;s<=4;s++){
+        const t=s/4;
+        const mx=cx+Math.cos(ang)*(sr+(er-sr)*t)+Math.sin(ang+s*3)*r*0.2;
+        const my=cy+Math.sin(ang)*(sr+(er-sr)*t)+Math.cos(ang+s*3)*r*0.2;
+        ctx.lineTo(mx,my);
+      }
+      ctx.stroke();
+    }
+    ctx.shadowBlur=0;
   }
 
   // 灼烧区渲染
