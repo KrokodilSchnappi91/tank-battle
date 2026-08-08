@@ -1826,9 +1826,19 @@ class Tank {
             }
           }
           this.x = bx; this.y = by;
-          lightningPillars.push({x:this.x*CELL, y:this.y*CELL, life:25, maxLife:25, radius:1, _bwPillar:true});
-          for (let i = 0; i < 12; i++) {
-            particles.push(new Particle(this.x*BASE_CELL, this.y*BASE_CELL, (Math.random()-0.5)*4, (Math.random()-0.5)*4, '#00bfff', 8+Math.random()*10));
+          // 黑白缓慢闪烁黑洞(纯粒子)
+          const px=this.x*BASE_CELL, py=this.y*BASE_CELL;
+          for(let i=0;i<40;i++){
+            const a=Math.random()*Math.PI*2, d=Math.random()*BASE_CELL*1.5;
+            particles.push(new Particle(px+Math.cos(a)*d, py+Math.sin(a)*d, Math.cos(a)*(0.5+Math.random()*2), Math.sin(a)*(0.5+Math.random()*2), '#111', 15+Math.random()*25));
+          }
+          for(let i=0;i<12;i++){
+            const a=Math.random()*Math.PI*2, d=Math.random()*BASE_CELL*1.2;
+            particles.push(new Particle(px+Math.cos(a)*d, py+Math.sin(a)*d, Math.cos(a)*0.5, Math.sin(a)*0.5, '#555', 8+Math.random()*12));
+          }
+          for(let i=0;i<6;i++){
+            const a=Math.random()*Math.PI*2, d=Math.random()*BASE_CELL*0.6;
+            particles.push(new Particle(px+Math.cos(a)*d, py+Math.sin(a)*d, Math.cos(a)*0.3, Math.sin(a)*0.3, '#fff', 5+Math.random()*8));
           }
         }
       }
@@ -4257,28 +4267,6 @@ function render() {
       gl.addColorStop(0.3, `rgba(5,5,5,${gA*0.5})`);
       gl.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
-      continue;
-    }
-    if (p._bwPillar) {
-      // 黑白缓慢闪烁黑洞
-      const br=p.radius*CELL;
-      const pulse=0.4+Math.sin(p.life*0.12)*0.4; // 缓慢脉动
-      const r=br*(0.8+pulse*0.5);
-      // 外圈暗色光晕
-      const og=ctx.createRadialGradient(px,py,0,px,py,r*1.8);
-      og.addColorStop(0,`rgba(0,0,0,${alpha*0.9})`);
-      og.addColorStop(0.3,`rgba(20,20,20,${alpha*0.6})`);
-      og.addColorStop(0.6,`rgba(50,50,50,${alpha*0.2})`);
-      og.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=og;ctx.beginPath();ctx.arc(px,py,r*1.8,0,Math.PI*2);ctx.fill();
-      // 白色脉冲环
-      ctx.strokeStyle=`rgba(255,255,255,${alpha*pulse*0.6})`;
-      ctx.lineWidth=2+pulse*3;ctx.shadowColor='#fff';ctx.shadowBlur=8+pulse*6;
-      ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.stroke();
-      ctx.shadowBlur=0;ctx.lineWidth=1;
-      // 内核黑点
-      ctx.fillStyle=`rgba(0,0,0,${alpha*0.95})`;
-      ctx.beginPath();ctx.arc(px,py,r*0.3,0,Math.PI*2);ctx.fill();
       continue;
     }
     if (p._darkGreen) {
