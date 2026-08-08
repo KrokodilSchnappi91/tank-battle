@@ -3651,10 +3651,25 @@ function update() {
   }
   nukes = nukes.filter(n => n.timer > -30); // 爆炸后保留30帧特效
 
-  // 黑洞更新+粒子(左旋+漂移)
+  // 黑洞更新+粒子(左旋+漂移+伤害)
   blackHoles.forEach(b=>{
     b.life--;
-    b.x+=b.vx; b.y+=b.vy; // 缓慢移动
+    b.x+=b.vx; b.y+=b.vy;
+    // 伤害敌人+烧草
+    const r=b.radius;
+    const cx=Math.floor(b.x), cy=Math.floor(b.y);
+    for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){
+      if(Math.sqrt(dx*dx+dy*dy)>r) continue;
+      const tx=cx+dx, ty=cy+dy;
+      if(tx>=0&&tx<COLS&&ty>=0&&ty<ROWS){
+        if(mapData[ty*COLS+tx]===4) mapData[ty*COLS+tx]=0; // 烧草
+      }
+    }
+    for(const e of enemies){
+      if(!e.alive) continue;
+      if(Math.hypot(e.x-b.x, e.y-b.y)<r+0.5) e.hit();
+    }
+    // 缓慢移动
     if(b.x<1||b.x>COLS-1) b.vx*=-1;
     if(b.y<1||b.y>ROWS-1) b.vy*=-1;
     // 密集旋转黑粒子(左旋)
